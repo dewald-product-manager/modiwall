@@ -1,0 +1,236 @@
+{
+ "atrium": {
+  "src": "atrium.jpg",
+  "alt": "Living green wall in a stone-clad corporate atrium"
+ },
+ "monstera": {
+  "src": "monstera.jpg",
+  "alt": "Dense living wall of pothos and delicious monster in a home"
+ },
+ "dining": {
+  "src": "dining.jpg",
+  "alt": "Living wall behind a dining table in a South African home"
+ },
+ "pendants": {
+  "src": "pendants.jpg",
+  "alt": "Double-height living wall column behind pendant lights"
+ },
+ "reception-water": {
+  "src": "reception-water.jpg",
+  "alt": "Double-height reception with living wall columns either side of a water feature"
+ },
+ "courtyard-bands": {
+  "src": "courtyard-bands.jpg",
+  "alt": "Courtyard living wall planted in bands of fern, lime and burgundy foliage"
+ },
+ "courtyard-frame": {
+  "src": "courtyard-frame.jpg",
+  "alt": "Framed outdoor vertical garden above a stone bench"
+ },
+ "home-table": {
+  "src": "home-table.jpg",
+  "alt": "Trailing living wall beside a timber dining table"
+ },
+ "inverroche": {
+  "src": "inverroche.jpg",
+  "alt": "Green wall on the Inverroche stand in a retail concourse"
+ },
+ "pool": {
+  "src": "pool.jpg",
+  "alt": "Vertical gardens set between stone walls beside a swimming pool"
+ },
+ "bathroom": {
+  "src": "bathroom.jpg",
+  "alt": "Living wall behind glass in a marble bathroom"
+ },
+ "skylight": {
+  "src": "skylight.jpg",
+  "alt": "Vertical garden in a skylit courtyard"
+ },
+ "office": {
+  "src": "office.jpg",
+  "alt": "Office living wall with spider plant, lime pothos and philodendron"
+ },
+ "sun-city": {
+  "src": "sun-city.jpg",
+  "alt": "Planted tree structure in the Sun City Entertainment Centre",
+  "crop": [
+   560,
+   0,
+   1200,
+   800
+  ]
+ },
+ "laboratory": {
+  "src": "laboratory.jpg",
+  "alt": "Long living wall above the benches in a working laboratory"
+ },
+ "lounge-art": {
+  "src": "lounge-art.jpg",
+  "alt": "Living wall in a lounge with framed portraits and a red rug"
+ },
+ "retirement-entrance": {
+  "src": "retirement-entrance.jpg",
+  "alt": "Living wall on a stone plinth at a retirement village entrance"
+ },
+ "retirement-lounge": {
+  "src": "retirement-lounge.jpg",
+  "alt": "Living wall behind a sofa in a retirement village reception"
+ },
+ "slats": {
+  "src": "slats.jpg",
+  "alt": "Lime pothos living wall against a timber slat screen"
+ },
+ "sofa": {
+  "src": "sofa.jpg",
+  "alt": "Living wall seen through steel-framed glass behind a curved sofa"
+ },
+ "spa-pool": {
+  "src": "spa-pool.jpg",
+  "alt": "Living wall lit from above at the end of a dark indoor pool"
+ },
+ "pinehaven": {
+  "src": "pinehaven.jpg",
+  "alt": "Living green wall in the atrium of Netcare Pinehaven Hospital"
+ },
+ "pinehaven-tall": {
+  "src": "pinehaven-tall.jpg",
+  "alt": "Waiting area below the living wall at Netcare Pinehaven Hospital"
+ },
+ "pinehaven-lounge": {
+  "src": "pinehaven-lounge.jpg",
+  "alt": "Seating in front of the living wall at Netcare Pinehaven Hospital"
+ },
+ "stairs": {
+  "src": "stairs.jpg",
+  "alt": "Living wall beside a steel staircase in a double-volume home"
+ },
+ "stairs-tall": {
+  "src": "stairs-tall.jpg",
+  "alt": "Double-volume living wall beside a glass balustrade"
+ },
+ "stone-stripes": {
+  "src": "stone-stripes.jpg",
+  "alt": "Vertical garden strips alternating with stacked stone cladding"
+ },
+ "pretoria-east": {
+  "src": "pretoria-east.jpg",
+  "alt": "Living wall in a hospital waiting room in Pretoria East"
+ },
+ "reception-desk": {
+  "src": "reception-desk.jpg",
+  "alt": "Living wall behind an office reception desk"
+ },
+ "piano": {
+  "src": "piano.jpg",
+  "alt": "Living wall wrapping a window beside an upright piano"
+ },
+ "billboard": {
+  "src": "billboard.jpg",
+  "alt": "Technician on ropes planting a living billboard"
+ },
+ "maintenance": {
+  "src": "maintenance.jpg",
+  "alt": "Modiwall technicians maintaining a tall living wall from a lift"
+ },
+ "art-rings": {
+  "src": "art-rings.jpg",
+  "alt": "Tall artificial green wall behind ring pendant lights in a reception"
+ },
+ "art-lounge": {
+  "src": "art-lounge.jpg",
+  "alt": "Artificial green wall in a family lounge"
+ },
+ "art-washroom": {
+  "src": "art-washroom.jpg",
+  "alt": "Artificial green wall around mirrors in a washroom with blue tiles"
+ },
+ "art-mixed": {
+  "src": "art-mixed.jpg",
+  "alt": "Mixed-foliage artificial green wall with variegated leaves"
+ },
+ "art-mezzanine": {
+  "src": "art-mezzanine.jpg",
+  "alt": "Artificial green wall above a lounge with blue armchairs"
+ },
+ "art-entrance": {
+  "src": "art-entrance.jpg",
+  "alt": "Artificial green wall with burgundy accents at an entrance"
+ },
+ "art-desk": {
+  "src": "art-desk.jpg",
+  "alt": "Artificial green wall behind a yellow reception desk"
+ },
+ "art-meeting": {
+  "src": "art-meeting.jpg",
+  "alt": "Artificial tropical green wall behind two chairs in an office"
+ },
+ "art-shower": {
+  "src": "art-shower.jpg",
+  "alt": "Artificial green walls either side of a glass water wall"
+ },
+ "art-terrace": {
+  "src": "art-terrace.jpg",
+  "alt": "Artificial green panels along a restaurant terrace"
+ },
+ "part-panel": {
+  "src": "part-panel.jpg",
+  "alt": "Modiwall back panel with vertical water channels"
+ },
+ "part-grid": {
+  "src": "part-grid.jpg",
+  "alt": "Modiwall front grid that holds the clip-in pots"
+ },
+ "part-pot": {
+  "src": "part-pot.jpg",
+  "alt": "Three black Modiwall clip-in pots"
+ },
+ "press-pinehaven": {
+  "src": "press-pinehaven.jpg",
+  "alt": "African Design Magazine article on the green wall at Netcare Pinehaven"
+ },
+ "press-suncity": {
+  "src": "press-suncity.jpg",
+  "alt": "African Design Magazine article on the Sun City green wall tree"
+ },
+ "client-hollard": {
+  "src": "client-hollard.png",
+  "alt": "Hollard",
+  "kind": "logo"
+ },
+ "client-nedbank-golf": {
+  "src": "client-nedbank-golf.png",
+  "alt": "Nedbank Golf Challenge",
+  "kind": "logo"
+ },
+ "client-netcare": {
+  "src": "client-netcare.png",
+  "alt": "Netcare",
+  "kind": "logo"
+ },
+ "client-torrecid": {
+  "src": "client-torrecid.png",
+  "alt": "Torrecid",
+  "kind": "logo"
+ },
+ "client-old-mutual": {
+  "src": "client-old-mutual.png",
+  "alt": "Old Mutual",
+  "kind": "logo"
+ },
+ "client-sun-city": {
+  "src": "client-sun-city.png",
+  "alt": "Sun City",
+  "kind": "logo"
+ },
+ "client-bidvest": {
+  "src": "client-bidvest.png",
+  "alt": "Bidvest TopTurf",
+  "kind": "logo"
+ },
+ "client-virgin-active": {
+  "src": "client-virgin-active.png",
+  "alt": "Virgin Active",
+  "kind": "logo"
+ }
+}

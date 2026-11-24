@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /api/
+Disallow: /thank-you.html
+
+Sitemap: https://www.modiwall.com/sitemap.xml

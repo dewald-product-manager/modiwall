@@ -1,0 +1,46 @@
+<!-- {
+"title": "Commission a Living Wall | Quotes and Design | Modiwall",
+"description": "Tell us the size of your wall, how much light it gets and where it is. Modiwall will quote for a living or artificial green wall anywhere in South Africa.",
+"crumb": "Commission a wall"
+} -->
+<section class="wrap quote">
+  <div class="quote__side">
+    <h1>Commission a wall</h1>
+    <p class="lede">A rough size and a place is enough. We reply with questions, ideas and a figure.</p>
+    <div class="quote__pic">{{img pendants | 26rem}}</div>
+    <p>Rather talk? <a class="link" href="tel:+27768740299">+27 76 874 0299</a></p>
+  </div>
+  <form class="form" data-form action="/api/quote.php" method="post" accept-charset="utf-8">
+    <fieldset class="f"><legend>What kind of wall?</legend>
+      <div class="chips">
+        <label><input type="radio" name="wall" value="living"><span>Living</span></label>
+        <label><input type="radio" name="wall" value="artificial"><span>Artificial</span></label>
+        <label><input type="radio" name="wall" value="unsure"><span>Advise me</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="f"><legend>Where will it be?</legend>
+      <div class="chips">
+        <label><input type="radio" name="where" value="indoors"><span>Indoors</span></label>
+        <label><input type="radio" name="where" value="outdoors"><span>Outdoors</span></label>
+        <label><input type="radio" name="where" value="both"><span>Both</span></label>
+      </div>
+    </fieldset>
+    <div class="f"><label for="area">Roughly how big?</label>
+      <div class="range"><input id="area" name="area" type="range" min="1" max="60" step="0.5" value="6"><output for="area" data-area>6 m²</output></div>
+      <input type="hidden" name="exact" value="">
+    </div>
+    <div class="form__row">
+      <div class="f"><label for="name">Name</label><input id="name" name="name" autocomplete="name" maxlength="80" required aria-describedby="e-name"><span class="f__e" id="e-name" data-e="name"></span></div>
+      <div class="f"><label for="email">Email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" required aria-describedby="e-email"><span class="f__e" id="e-email" data-e="email"></span></div>
+      <div class="f"><label for="phone">Phone (optional)</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" aria-describedby="e-phone"><span class="f__e" id="e-phone" data-e="phone"></span></div>
+      <div class="f"><label for="place">Town or suburb (optional)</label><input id="place" name="place" autocomplete="address-level2" maxlength="80"></div>
+    </div>
+    <div class="f"><label for="role">You are a</label>
+      <select id="role" name="role"><option value="home">Homeowner</option><option value="estate">Estate or body corporate</option><option value="architect">Architect or designer</option><option value="business">Business or corporate</option><option value="developer">Developer</option><option value="other">Something else</option></select>
+    </div>
+    <div class="f"><label for="message">Anything we should know? (optional)</label><textarea id="message" name="message" maxlength="3000" aria-describedby="m-hint"></textarea><small id="m-hint">Light, deadline, access, or an existing wall that needs care.</small></div>
+    <div class="trap" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+    <div class="f"><label class="check"><input type="checkbox" name="consent" value="yes" required aria-describedby="e-consent"><span>Modiwall may use these details to reply to me. See the <a href="/privacy-policy.html">privacy policy</a>.</span></label><span class="f__e" id="e-consent" data-e="consent"></span></div>
+    <div class="form__foot"><button class="btn btn--lime" type="submit">Send commission request</button><p class="form__msg" role="alert" data-msg></p></div>
+  </form>
+</section>

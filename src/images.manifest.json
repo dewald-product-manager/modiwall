@@ -1,0 +1,672 @@
+{
+ "atrium": {
+  "alt": "Living green wall in a stone-clad corporate atrium",
+  "w": 1024,
+  "h": 768,
+  "widths": [
+   480,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "avg": "#898774"
+ },
+ "monstera": {
+  "alt": "Dense living wall of pothos and delicious monster in a home",
+  "w": 1680,
+  "h": 2240,
+  "widths": [
+   480,
+   800,
+   1280,
+   1680
+  ],
+  "fallback": 800,
+  "avg": "#6d7964"
+ },
+ "dining": {
+  "alt": "Living wall behind a dining table in a South African home",
+  "w": 2446,
+  "h": 1835,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#77746d"
+ },
+ "pendants": {
+  "alt": "Double-height living wall column behind pendant lights",
+  "w": 1808,
+  "h": 2411,
+  "widths": [
+   480,
+   800,
+   1280,
+   1808
+  ],
+  "fallback": 800,
+  "avg": "#91978e"
+ },
+ "reception-water": {
+  "alt": "Double-height reception with living wall columns either side of a water feature",
+  "w": 1500,
+  "h": 2000,
+  "widths": [
+   480,
+   800,
+   1280,
+   1500
+  ],
+  "fallback": 800,
+  "avg": "#928c8a"
+ },
+ "courtyard-bands": {
+  "alt": "Courtyard living wall planted in bands of fern, lime and burgundy foliage",
+  "w": 2000,
+  "h": 1500,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#8a9080"
+ },
+ "courtyard-frame": {
+  "alt": "Framed outdoor vertical garden above a stone bench",
+  "w": 1912,
+  "h": 1434,
+  "widths": [
+   480,
+   800,
+   1280,
+   1912
+  ],
+  "fallback": 800,
+  "avg": "#858a72"
+ },
+ "home-table": {
+  "alt": "Trailing living wall beside a timber dining table",
+  "w": 2195,
+  "h": 1647,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#757465"
+ },
+ "inverroche": {
+  "alt": "Green wall on the Inverroche stand in a retail concourse",
+  "w": 2042,
+  "h": 1532,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6d6e68"
+ },
+ "pool": {
+  "alt": "Vertical gardens set between stone walls beside a swimming pool",
+  "w": 1777,
+  "h": 1332,
+  "widths": [
+   480,
+   800,
+   1280,
+   1777
+  ],
+  "fallback": 800,
+  "avg": "#457e79"
+ },
+ "bathroom": {
+  "alt": "Living wall behind glass in a marble bathroom",
+  "w": 2730,
+  "h": 2047,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#696c6c"
+ },
+ "skylight": {
+  "alt": "Vertical garden in a skylit courtyard",
+  "w": 1773,
+  "h": 2364,
+  "widths": [
+   480,
+   800,
+   1280,
+   1773
+  ],
+  "fallback": 800,
+  "avg": "#697477"
+ },
+ "office": {
+  "alt": "Office living wall with spider plant, lime pothos and philodendron",
+  "w": 1280,
+  "h": 960,
+  "widths": [
+   480,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "avg": "#4f5740"
+ },
+ "sun-city": {
+  "alt": "Planted tree structure in the Sun City Entertainment Centre",
+  "w": 600,
+  "h": 800,
+  "widths": [
+   480,
+   600
+  ],
+  "fallback": 600,
+  "avg": "#62616b"
+ },
+ "laboratory": {
+  "alt": "Long living wall above the benches in a working laboratory",
+  "w": 2953,
+  "h": 2215,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#8d8d84"
+ },
+ "lounge-art": {
+  "alt": "Living wall in a lounge with framed portraits and a red rug",
+  "w": 2558,
+  "h": 1919,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#87766a"
+ },
+ "retirement-entrance": {
+  "alt": "Living wall on a stone plinth at a retirement village entrance",
+  "w": 2000,
+  "h": 1500,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#737058"
+ },
+ "retirement-lounge": {
+  "alt": "Living wall behind a sofa in a retirement village reception",
+  "w": 2000,
+  "h": 1500,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#736756"
+ },
+ "slats": {
+  "alt": "Lime pothos living wall against a timber slat screen",
+  "w": 2066,
+  "h": 2755,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6c6854"
+ },
+ "sofa": {
+  "alt": "Living wall seen through steel-framed glass behind a curved sofa",
+  "w": 2167,
+  "h": 2830,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#65625a"
+ },
+ "spa-pool": {
+  "alt": "Living wall lit from above at the end of a dark indoor pool",
+  "w": 3514,
+  "h": 2343,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#262a25"
+ },
+ "pinehaven": {
+  "alt": "Living green wall in the atrium of Netcare Pinehaven Hospital",
+  "w": 2048,
+  "h": 1365,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#767974"
+ },
+ "pinehaven-tall": {
+  "alt": "Waiting area below the living wall at Netcare Pinehaven Hospital",
+  "w": 1788,
+  "h": 2682,
+  "widths": [
+   480,
+   800,
+   1280,
+   1788
+  ],
+  "fallback": 800,
+  "avg": "#808781"
+ },
+ "pinehaven-lounge": {
+  "alt": "Seating in front of the living wall at Netcare Pinehaven Hospital",
+  "w": 2048,
+  "h": 1365,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#908f82"
+ },
+ "stairs": {
+  "alt": "Living wall beside a steel staircase in a double-volume home",
+  "w": 2000,
+  "h": 1333,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#787973"
+ },
+ "stairs-tall": {
+  "alt": "Double-volume living wall beside a glass balustrade",
+  "w": 1333,
+  "h": 2000,
+  "widths": [
+   480,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "avg": "#65695b"
+ },
+ "stone-stripes": {
+  "alt": "Vertical garden strips alternating with stacked stone cladding",
+  "w": 1778,
+  "h": 1184,
+  "widths": [
+   480,
+   800,
+   1280,
+   1778
+  ],
+  "fallback": 800,
+  "avg": "#757c58"
+ },
+ "pretoria-east": {
+  "alt": "Living wall in a hospital waiting room in Pretoria East",
+  "w": 596,
+  "h": 586,
+  "widths": [
+   480,
+   596
+  ],
+  "fallback": 596,
+  "avg": "#747460"
+ },
+ "reception-desk": {
+  "alt": "Living wall behind an office reception desk",
+  "w": 2766,
+  "h": 2075,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6b735b"
+ },
+ "piano": {
+  "alt": "Living wall wrapping a window beside an upright piano",
+  "w": 1024,
+  "h": 1365,
+  "widths": [
+   480,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "avg": "#79756c"
+ },
+ "billboard": {
+  "alt": "Technician on ropes planting a living billboard",
+  "w": 474,
+  "h": 474,
+  "widths": [
+   474
+  ],
+  "fallback": 474,
+  "avg": "#29546b"
+ },
+ "maintenance": {
+  "alt": "Modiwall technicians maintaining a tall living wall from a lift",
+  "w": 960,
+  "h": 1280,
+  "widths": [
+   480,
+   800,
+   960
+  ],
+  "fallback": 800,
+  "avg": "#8b8785"
+ },
+ "art-rings": {
+  "alt": "Tall artificial green wall behind ring pendant lights in a reception",
+  "w": 1752,
+  "h": 2337,
+  "widths": [
+   480,
+   800,
+   1280,
+   1752
+  ],
+  "fallback": 800,
+  "avg": "#7c8569"
+ },
+ "art-lounge": {
+  "alt": "Artificial green wall in a family lounge",
+  "w": 2310,
+  "h": 1732,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#7c7c6d"
+ },
+ "art-washroom": {
+  "alt": "Artificial green wall around mirrors in a washroom with blue tiles",
+  "w": 1930,
+  "h": 1448,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6c7165"
+ },
+ "art-mixed": {
+  "alt": "Mixed-foliage artificial green wall with variegated leaves",
+  "w": 2448,
+  "h": 3264,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#7b856e"
+ },
+ "art-mezzanine": {
+  "alt": "Artificial green wall above a lounge with blue armchairs",
+  "w": 1321,
+  "h": 1761,
+  "widths": [
+   480,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "avg": "#6a6c63"
+ },
+ "art-entrance": {
+  "alt": "Artificial green wall with burgundy accents at an entrance",
+  "w": 1200,
+  "h": 1600,
+  "widths": [
+   480,
+   800,
+   1200
+  ],
+  "fallback": 800,
+  "avg": "#7a7a5d"
+ },
+ "art-desk": {
+  "alt": "Artificial green wall behind a yellow reception desk",
+  "w": 1100,
+  "h": 825,
+  "widths": [
+   480,
+   800,
+   1100
+  ],
+  "fallback": 800,
+  "avg": "#617c40"
+ },
+ "art-meeting": {
+  "alt": "Artificial tropical green wall behind two chairs in an office",
+  "w": 783,
+  "h": 768,
+  "widths": [
+   480,
+   783
+  ],
+  "fallback": 783,
+  "avg": "#656a50"
+ },
+ "art-shower": {
+  "alt": "Artificial green walls either side of a glass water wall",
+  "w": 2291,
+  "h": 1718,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6d7465"
+ },
+ "art-terrace": {
+  "alt": "Artificial green panels along a restaurant terrace",
+  "w": 640,
+  "h": 1138,
+  "widths": [
+   480,
+   640
+  ],
+  "fallback": 640,
+  "avg": "#67665f"
+ },
+ "part-panel": {
+  "alt": "Modiwall back panel with vertical water channels",
+  "w": 850,
+  "h": 600,
+  "widths": [
+   480,
+   800
+  ],
+  "fallback": 800,
+  "avg": "#989899"
+ },
+ "part-grid": {
+  "alt": "Modiwall front grid that holds the clip-in pots",
+  "w": 850,
+  "h": 600,
+  "widths": [
+   480,
+   800
+  ],
+  "fallback": 800,
+  "avg": "#919091"
+ },
+ "part-pot": {
+  "alt": "Three black Modiwall clip-in pots",
+  "w": 850,
+  "h": 600,
+  "widths": [
+   480,
+   800
+  ],
+  "fallback": 800,
+  "avg": "#838283"
+ },
+ "press-pinehaven": {
+  "alt": "African Design Magazine article on the green wall at Netcare Pinehaven",
+  "w": 1018,
+  "h": 669,
+  "widths": [
+   480,
+   800,
+   1018
+  ],
+  "fallback": 800,
+  "avg": "#b2b4b2"
+ },
+ "press-suncity": {
+  "alt": "African Design Magazine article on the Sun City green wall tree",
+  "w": 520,
+  "h": 735,
+  "widths": [
+   480
+  ],
+  "fallback": 480,
+  "avg": "#a09f95"
+ },
+ "client-hollard": {
+  "alt": "Hollard",
+  "kind": "logo",
+  "w": 570,
+  "h": 153,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#bcaec1"
+ },
+ "client-nedbank-golf": {
+  "alt": "Nedbank Golf Challenge",
+  "kind": "logo",
+  "w": 214,
+  "h": 214,
+  "widths": [
+   214
+  ],
+  "fallback": 214,
+  "avg": "#8bad92"
+ },
+ "client-netcare": {
+  "alt": "Netcare",
+  "kind": "logo",
+  "w": 322,
+  "h": 258,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#988e9a"
+ },
+ "client-torrecid": {
+  "alt": "Torrecid",
+  "kind": "logo",
+  "w": 283,
+  "h": 83,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#c5cac8"
+ },
+ "client-old-mutual": {
+  "alt": "Old Mutual",
+  "kind": "logo",
+  "w": 1181,
+  "h": 260,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#ccdfd7"
+ },
+ "client-sun-city": {
+  "alt": "Sun City",
+  "kind": "logo",
+  "w": 1152,
+  "h": 456,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#e9e7e4"
+ },
+ "client-bidvest": {
+  "alt": "Bidvest TopTurf",
+  "kind": "logo",
+  "w": 198,
+  "h": 104,
+  "widths": [
+   198
+  ],
+  "fallback": 198,
+  "avg": "#c4c5ce"
+ },
+ "client-virgin-active": {
+  "alt": "Virgin Active",
+  "kind": "logo",
+  "w": 1200,
+  "h": 571,
+  "widths": [
+   280
+  ],
+  "fallback": 280,
+  "avg": "#f3dbdf"
+ }
+}

@@ -1,0 +1,63 @@
+# Modiwall - Apache configuration
+Options -Indexes -MultiViews
+ServerSignature Off
+ErrorDocument 404 /404.html
+ErrorDocument 403 /404.html
+AddDefaultCharset utf-8
+AddType image/avif .avif
+AddType font/woff2 .woff2
+AddType application/manifest+json .webmanifest
+
+# ---- one address: https://www.modiwall.com ----
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteCond %{HTTP_HOST} modiwall\.com$ [NC]
+RewriteRule ^ https://www.modiwall.com%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^modiwall\.com$ [NC]
+RewriteRule ^ https://www.modiwall.com%{REQUEST_URI} [R=301,L]
+RewriteRule ^index\.html$ / [R=301,L]
+
+# ---- old pages keep their search ranking ----
+RewriteRule ^(blog|blog-2)\.html$ /benefits-and-uses.html [R=301,L]
+RewriteRule ^publications\.html$ /clients.html#press [R=301,L,NE]
+RewriteRule ^(info|products)\.html$ /how-it-works.html [R=301,L]
+RewriteRule ^privacy-policy-2\.html$ /privacy-policy.html [R=301,L]
+RewriteRule ^distributoors/?$ /contact-us.html [R=301,L]
+RewriteRule ^feed\.(xml|json)$ - [G,L]
+
+# ---- nothing hidden is served ----
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+<FilesMatch "\.(bak|old|orig|log|sql|ini|sh|md|mjs|py)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "accelerometer=(self), camera=(), geolocation=(), gyroscope=(self), microphone=(), payment=(), usb=(), interest-cohort=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-site"
+  Header always unset X-Powered-By
+  <FilesMatch "\.html$">
+    Header set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; manifest-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  # css and js carry ?v=hash, fonts never change
+  <FilesMatch "\.(css|js|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # photos keep their name when replaced, so refresh them monthly
+  <FilesMatch "\.(avif|jpg|png|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000, stale-while-revalidate=604800"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json image/svg+xml application/xml application/manifest+json
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml application/xml application/manifest+json
+</IfModule>
