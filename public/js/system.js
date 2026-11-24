@@ -1,4 +1,4 @@
-import { foliage } from './wall.js?v=b5a40f4d';
+import { foliage } from './wall.js?v=a7e8a1e7';
 const COLS = 5;
 const ROWS = 4;
 const wrap = (body, box = '0 0 500 500') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box}">${body}</svg>`;
@@ -49,7 +49,7 @@ const potLayer = el('rig__layer');
 const plantLayer = el('rig__layer');
 const potEls = pots.map((i) => {
 const { x, y } = potAt(i);
-return pic('/img/pot.webp', potLayer, 'rig__it', { left: pc(x - 46), top: pc(y - 22), width: '18.4%' });
+return pic(new URL('../img/pot.webp', import.meta.url).href, potLayer, 'rig__it', { left: pc(x - 46), top: pc(y - 22), width: '18.4%' });
 });
 const tile = (box) => {
 const cv = document.createElement('canvas');

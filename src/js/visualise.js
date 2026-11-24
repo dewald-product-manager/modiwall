@@ -139,7 +139,7 @@ export async function initVisualiser(root) {
     const text = (v) => (v * STEP).toFixed(1);
     out.textContent = `${text(state.cols)} × ${text(state.rows)} m`;
     root.querySelector('[data-vis-area]').textContent = `${area % 1 ? area : area.toFixed(0)} m²`;
-    cta.href = `/get-a-quote.html?area=${area}`;
+    cta.href = `get-a-quote.html?area=${area}`;
     fit();
   }
 

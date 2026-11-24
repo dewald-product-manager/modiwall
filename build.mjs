@@ -9,7 +9,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync
 
 const SITE = 'https://www.modiwall.com';
 const OUT = 'public';
-const read = (p) => readFileSync(p, 'utf8');
+const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n'); // same hashes on Windows and elsewhere
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8);
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const images = JSON.parse(read('src/images.manifest.json'));
@@ -93,6 +93,12 @@ for (const file of pages) {
   let body = expand(raw.slice(m[0].length), ctx);
   let html = expand(read('src/partials/shell.html'), ctx).replace('<!--BODY-->', () => body);
   html = html.replace(new RegExp(`(<a[^>]*href="${path}")(?=[^>]*data-nav)`, 'g'), '$1 aria-current="page"').replace(/\n\s*\n+/g, '\n');
+  // Every page sits in one folder, so relative links work on modiwall.com, GitHub Pages or any subfolder.
+  // 404.html can be served from any depth and stays absolute.
+  if (file !== '404.html') {
+    html = html.replace(/\b(href|src|action|data-peek)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
+      .replace(/\bsrcset="([^"]+)"/g, (_, v) => `srcset="${v.replace(/(^|, )\//g, '$1')}"`);
+  }
   writeFileSync(`${OUT}/${file}`, html);
   if (!meta.noindex) {
     const imgs = [...new Set([...body.matchAll(/<img src="(\/img\/(?!plant|client|part)[^"]+)"[^>]*alt="([^"]*)"/g)].map((x) => `<image:image><image:loc>${SITE}${x[1]}</image:loc></image:image>`))];
@@ -100,4 +106,19 @@ for (const file of pages) {
   }
 }
 writeFileSync(`${OUT}/sitemap.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${sitemap.join('\n')}\n</urlset>\n`);
+
+/* ---- GitHub Pages serves the repository root: send visitors to the built site ---- */
+writeFileSync('index.html', `<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<title>Modiwall</title>
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=public/">
+<link rel="canonical" href="${SITE}/">
+</head>
+<body><p><a href="public/">Open the Modiwall website</a></p></body>
+</html>
+`);
+writeFileSync('.nojekyll', '');
 console.log(`${pages.length} pages, css ${(css.length / 1024).toFixed(1)} KB`);

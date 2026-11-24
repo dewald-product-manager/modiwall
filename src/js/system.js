@@ -60,7 +60,7 @@ export function initSystem(sec) {
   const plantLayer = el('rig__layer');
   const potEls = pots.map((i) => {
     const { x, y } = potAt(i);
-    return pic('/img/pot.webp', potLayer, 'rig__it', { left: pc(x - 46), top: pc(y - 22), width: '18.4%' });
+    return pic(new URL('../img/pot.webp', import.meta.url).href, potLayer, 'rig__it', { left: pc(x - 46), top: pc(y - 22), width: '18.4%' });
   });
   const tile = (box) => {
     const cv = document.createElement('canvas');

@@ -28,6 +28,11 @@ Gallery links point at the largest size of each photo automatically. The links i
 
 Plants on the living wall: replace a cut-out in `src/foliage/` (transparent PNG), then `python tools/foliage.py`.
 
+## Preview on GitHub Pages
+
+Pages publishes `main` from the repository root. `index.html` there sends visitors to `public/`, which is the built site.
+The form cannot send on Pages (no PHP), and the preview asks search engines not to list it.
+
 ## Before going live
 
 - `src/static/api/quote.php` sends the form to info@modiwall.com. Set `MAIL_FROM` to a real mailbox on the domain and send a test. Without PHP, point the form's `action` elsewhere.

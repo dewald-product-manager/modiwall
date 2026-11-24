@@ -220,7 +220,7 @@ const breathe = () => new Promise((r) => { setTimeout(r, 0); });
 let atlasPromise;
 export const foliage = () => (atlasPromise ??= (async () => {
 const img = new Image();
-img.src = '/img/foliage.webp';
+img.src = new URL('../img/foliage.webp', import.meta.url).href;
 await img.decode();
 return img;
 })());

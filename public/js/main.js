@@ -4,6 +4,10 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const root = document.documentElement;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 root.classList.add('js');
+if (location.hostname.endsWith('.github.io')) {
+const tag = document.querySelector('meta[name=robots]');
+if (tag) tag.content = 'noindex';
+}
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
 let to = scrollY;
 let at = scrollY;
@@ -119,7 +123,7 @@ c.style.setProperty('--i', i % 4);
 $$('[data-slot], [data-watch]').forEach((el) => io.observe(el));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=b5a40f4d').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=a7e8a1e7').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
@@ -135,8 +139,8 @@ p.append(n, ' ');
 });
 });
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=21cd17ed').then((m) => m.initVisualiser(vis));
-if ($('[data-system]')) import('./system.js?v=77df17a7').then((m) => m.initSystem($('[data-system]')));
+if (vis) import('./visualise.js?v=d52aed25').then((m) => m.initVisualiser(vis));
+if ($('[data-system]')) import('./system.js?v=c6e7ac2e').then((m) => m.initSystem($('[data-system]')));
 const rooms = $('[data-rooms]');
 if (rooms) {
 const track = $('[data-track]', rooms);
@@ -198,7 +202,7 @@ if (strip) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=b5a40f4d').then((m) => m.stripWall(strip)).catch(() => {});
+import('./wall.js?v=a7e8a1e7').then((m) => m.stripWall(strip)).catch(() => {});
 }, { rootMargin: '0px 0px -12% 0px' });
 near.observe(strip);
 }
@@ -303,7 +307,7 @@ if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
 const form = $('[data-form]');
-if (form) import('./form.js?v=de96ba28').then((m) => m.initForm(form));
+if (form) import('./form.js?v=6dd56d65').then((m) => m.initForm(form));
 const dock = $('[data-dock]');
 if (dock && hero) {
 new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero.closest('[data-pin]'));
@@ -316,7 +320,7 @@ const end = $('.cta');
 if (dock && end) new IntersectionObserver(([e]) => dock.classList.toggle('away', e.isIntersecting)).observe(end);
 const fetched = new Set([location.pathname]);
 const warm = (e) => {
-const a = e.target.closest?.('a[href^="/"]');
+const a = e.target.closest?.('a[href*=".html"]:not([href^="http"])');
 if (!a || a.matches('[data-lightbox]') || navigator.connection?.saveData) return;
 const path = new URL(a.href).pathname;
 if (fetched.has(path)) return;

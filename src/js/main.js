@@ -5,6 +5,12 @@ const root = document.documentElement;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 root.classList.add('js');
 
+/* the GitHub Pages copy is a preview: keep it out of search results */
+if (location.hostname.endsWith('.github.io')) {
+  const tag = document.querySelector('meta[name=robots]');
+  if (tag) tag.content = 'noindex';
+}
+
 /* ---- eased wheel scrolling (mouse only): scroll-linked scenes and the page move in the same frame ---- */
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
   let to = scrollY;
@@ -359,7 +365,7 @@ if (dock && end) new IntersectionObserver(([e]) => dock.classList.toggle('away',
 /* ---- fetch the next page while the visitor is still hovering the link ---- */
 const fetched = new Set([location.pathname]);
 const warm = (e) => {
-  const a = e.target.closest?.('a[href^="/"]');
+  const a = e.target.closest?.('a[href*=".html"]:not([href^="http"])');
   if (!a || a.matches('[data-lightbox]') || navigator.connection?.saveData) return;
   const path = new URL(a.href).pathname;
   if (fetched.has(path)) return;

@@ -1,5 +1,5 @@
 
-import { frameWall } from './wall.js?v=b5a40f4d';
+import { frameWall } from './wall.js?v=a7e8a1e7';
 const STEP = 0.5; // metres per panel
 function quadMatrix(w, h, [a, b, c, d]) { // a top left, b top right, c bottom right, d bottom left
 const dx1 = b.x - c.x;
@@ -126,7 +126,7 @@ const area = state.cols * state.rows * STEP * STEP;
 const text = (v) => (v * STEP).toFixed(1);
 out.textContent = `${text(state.cols)} × ${text(state.rows)} m`;
 root.querySelector('[data-vis-area]').textContent = `${area % 1 ? area : area.toFixed(0)} m²`;
-cta.href = `/get-a-quote.html?area=${area}`;
+cta.href = `get-a-quote.html?area=${area}`;
 fit();
 }
 function fit() {
