@@ -1,14 +1,14 @@
 # Modiwall website
 
-Static site in plain HTML, CSS and JavaScript. No frameworks, no third-party requests, no cookies.
+Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefaces are Italiana and Montserrat from Google Fonts, served from this site.
 
 | Folder | What it holds |
 | --- | --- |
 | `src/pages` | One file per page. The JSON comment at the top sets title, description and structured data. |
 | `src/partials` | Header, footer, logo, closing call to action, visualiser. |
-| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall, `visualise.js` is "See it on your wall", `system.js` is the panel scene. |
+| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall, `visualise.js` is "See it on your wall", `system.js` is the panel scene, `corridor.js` is the walk through the projects, `boot.js` runs before first paint. |
 | `src/originals` | Master photos. |
-| `src/foliage` | Plant cut-outs used by the living wall. |
+| `src/foliage` | Plant cut-outs from photos of planted Modiwalls, used by the living wall. |
 | `src/static` | Copied as is: fonts, icons, `.htaccess`, `robots.txt`, the form handler. |
 | `public` | The built site. **Upload the contents of this folder.** |
 

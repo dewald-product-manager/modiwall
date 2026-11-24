@@ -1,12 +1,15 @@
 <div class="vis" data-vis>
   <div class="vis__stage" data-vis-stage>
     <canvas class="vis__photo" data-vis-photo aria-hidden="true"></canvas>
-    <div class="vis__plane" data-vis-plane aria-hidden="true"><canvas></canvas></div>
+    <div class="vis__lamp" aria-hidden="true"></div>
+    <div class="vis__plane" data-vis-plane aria-hidden="true"><div class="vis__trough" data-vis-trough></div><canvas></canvas></div>
     <svg class="vis__svg" aria-hidden="true"><polygon data-vis-line></polygon></svg>
     <button class="vis__corner" type="button" data-corner aria-label="Top left corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Top right corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Bottom right corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Bottom left corner. Move with the arrow keys"></button>
+    <div class="vis__tools"><button type="button" data-vis-evening aria-pressed="false">Evening</button><button type="button" data-vis-bare>Hold to compare</button><button type="button" data-vis-save>Save picture</button></div>
+    <div class="vis__wait"><svg class="mark lg lg-wait" viewBox="235 100 1526 1140" aria-label="Loading" role="img">{{> mark-paths}}</svg></div>
   </div>
   <div class="vis__panel">
     <div class="vis__src">

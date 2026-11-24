@@ -91,7 +91,7 @@ matchMedia('(min-width: 1021px)').addEventListener('change', (e) => {
 });
 
 /* ---- headings: words slide in one after another, like panels ---- */
-if (!reduced) $$('h2, .open h1, .quote h1, .lost h1').forEach((h) => {
+if (!reduced) $$('h2, .open h1, .ph h1, .vis-top h1, .quote h1, .lost h1').forEach((h) => {
   if (h.closest('.foot, .lightbox') || h.matches('.vh')) return;
   const words = h.textContent.trim().split(/\s+/);
   h.setAttribute('aria-label', words.join(' '));
@@ -229,15 +229,71 @@ if (peek && !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches
   peek.addEventListener('pointerleave', () => card.classList.remove('on'));
 }
 
-/* ---- a living strip along the foot of the page, built only when it is near ---- */
-const strip = $('[data-strip]');
-if (strip) {
+/* ---- living strips along page openings and closings, built only when near ---- */
+$$('[data-strip]').forEach((strip) => {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./wall.js').then((m) => m.stripWall(strip)).catch(() => {});
-  }, { rootMargin: '0px 0px -12% 0px' });
+    import('./wall.js').then((m) => m.stripWall(strip)).catch(() => strip.remove());
+  }, { rootMargin: '0px 0px -8% 0px' });
   near.observe(strip);
+});
+
+/* ---- after dark: one lamp ---- */
+const night = $('[data-night]');
+if (night) {
+  const near = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    near.disconnect();
+    import('./wall.js').then((m) => m.nightWall(night)).catch(() => night.classList.add('no-webgl'));
+  }, { rootMargin: '60% 0px' });
+  near.observe(night);
+}
+
+/* ---- the mark draws itself whenever it arrives ---- */
+$$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
+  m.classList.toggle('in', e.isIntersecting);
+  m.classList.toggle('lg-go', e.isIntersecting && !reduced);
+}, { threshold: 0.35 }).observe(m));
+
+/* ---- pointer: a disc that names what a click will do ---- */
+if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  const disc = document.createElement('div');
+  disc.className = 'cur';
+  disc.setAttribute('aria-hidden', 'true');
+  const label = document.createElement('b');
+  disc.append(document.createElement('i'), label);
+  document.body.append(disc);
+  let x = 0;
+  let y = 0;
+  let tx = 0;
+  let ty = 0;
+  let raf = 0;
+  let then = 0;
+  const run = (t) => {
+    const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 90);
+    then = t;
+    x += (tx - x) * k;
+    y += (ty - y) * k;
+    disc.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+    raf = disc.classList.contains('on') || Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(run) : 0;
+  };
+  addEventListener('pointermove', (e) => {
+    const hit = e.target.closest?.('[data-cursor]');
+    tx = e.clientX;
+    ty = e.clientY;
+    if (hit && !disc.classList.contains('on')) {
+      x = tx;
+      y = ty;
+    }
+    if (hit) label.textContent = hit.dataset.cursor;
+    disc.classList.toggle('on', !!hit && !e.buttons);
+    if (hit && !raf) {
+      then = 0;
+      raf = requestAnimationFrame(run);
+    }
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => disc.classList.remove('on'));
 }
 
 /* ---- questions: animated open and close ---- */
@@ -255,30 +311,28 @@ $$('details.faq').forEach((d) => {
   });
 });
 
-/* ---- project filters ---- */
+/* ---- the corridor of projects, its filters and its index ---- */
 const filters = $('[data-filters]');
-if (filters) {
-  const tiles = $$('.tile');
+const hall = $('[data-hall-page]');
+if (hall) import('./corridor.js').then((m) => {
+  const walk = m.initCorridor(hall);
+  const rows = $$('.index li');
+  const frames = $$('[data-frame]', hall);
   const status = $('[data-filter-status]');
-  filters.addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    const apply = () => {
-      $$('button', filters).forEach((x) => x.setAttribute('aria-pressed', x === b));
-      let n = 0;
-      tiles.forEach((t) => {
-        t.hidden = b.value !== 'all' && t.dataset.place !== b.value;
-        if (!t.hidden) n++;
-        t.classList.add('in');
-      });
-      if (status) status.textContent = `${n} projects shown`;
-    };
-    if (document.startViewTransition && !reduced) document.startViewTransition(apply);
-    else apply();
-  });
-}
-
-if (filters && /^#(health|work|hospitality|home)$/.test(location.hash)) filters.querySelector(`[value=${location.hash.slice(1)}]`).click();
+  rows.forEach((li, i) => $('a', li).addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    frames[i].click();
+  }));
+  const pick = (b) => {
+    $$('button', filters).forEach((x) => x.setAttribute('aria-pressed', x === b));
+    rows.forEach((li) => { li.hidden = b.value !== 'all' && li.dataset.place !== b.value; });
+    walk.filter(b.value);
+    status.textContent = `${rows.filter((li) => !li.hidden).length} walls shown`;
+  };
+  filters.addEventListener('click', (e) => e.target.closest('button') && pick(e.target.closest('button')));
+  if (/^#(health|work|hospitality|home)$/.test(location.hash)) pick($(`[value=${location.hash.slice(1)}]`, filters));
+});
 
 /* ---- lightbox ---- */
 const shots = $$('a[data-lightbox]');

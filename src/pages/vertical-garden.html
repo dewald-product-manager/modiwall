@@ -5,56 +5,89 @@
 "pageType": "CollectionPage",
 "service": "Living wall design, supply, installation and maintenance"
 } -->
-<section class="open">
-  <div class="open__t">
-    <h1>Living walls</h1>
-    <p class="lede">Vertical gardens grown on our patented panels, with water built in. We plant them in bathrooms, stairwells and courtyards, and in hospital atriums and head offices.</p>
-    <div class="open__acts"><a class="btn btn--lime" href="/get-a-quote.html">Commission a wall</a><a class="link" href="/how-it-works.html">How the system works</a></div>
-  </div>
-  <div class="open__img">{{eager courtyard-bands | (min-width:800px) 52vw, 100vw}}</div>
-</section>
-
-<section class="sec" aria-labelledby="all-h">
-  <div class="wrap">
-    <div class="head"><h2 id="all-h">Walls we have planted</h2></div>
-    <div class="filters" data-filters role="group" aria-label="Show walls in">
-      <button type="button" value="all" aria-pressed="true">All</button>
-      <button type="button" value="home" aria-pressed="false">Private homes</button>
-      <button type="button" value="health" aria-pressed="false">Healthcare</button>
-      <button type="button" value="work" aria-pressed="false">Offices</button>
-      <button type="button" value="hospitality" aria-pressed="false">Hospitality and retail</button>
+<section class="hall" data-hall-page aria-label="Walls we have planted">
+  <div class="hall__pin" data-hall>
+    <div class="hall__roof" aria-hidden="true"></div><div class="hall__floor" aria-hidden="true"></div>
+    <div class="hall__cam" data-cam>
+{{js:corridor([
+ ["bathroom","home","Marble bathroom"],
+ ["pendants","home","Double-height home"],
+ ["pinehaven","health","Netcare Pinehaven Hospital"],
+ ["stairs","home","Staircase wall"],
+ ["reception-water","work","Reception and water feature"],
+ ["pool","home","Poolside wall"],
+ ["slats","work","Timber slat entrance"],
+ ["stone-stripes","hospitality","Stone and planting"],
+ ["lounge-art","home","Lounge"],
+ ["monstera","home","Delicious monster wall"],
+ ["sun-city","hospitality","Sun City"],
+ ["skylight","home","Skylit courtyard"],
+ ["office","work","Corner office"],
+ ["spa-pool","hospitality","Indoor pool"],
+ ["sofa","home","Living room"],
+ ["stairs-tall","home","Double volume"],
+ ["courtyard-frame","home","Framed courtyard wall"],
+ ["home-table","home","Dining corner"],
+ ["atrium","work","Corporate atrium"],
+ ["inverroche","hospitality","Inverroche"],
+ ["laboratory","work","Laboratory"],
+ ["pinehaven-tall","health","Netcare Pinehaven, waiting area"],
+ ["retirement-entrance","health","Retirement village entrance"],
+ ["reception-desk","work","Reception desk"],
+ ["piano","home","Music room"],
+ ["retirement-lounge","health","Retirement village lounge"],
+ ["pretoria-east","health","Pretoria East hospital"],
+ ["billboard","hospitality","Living billboard"]
+])}}
     </div>
-    <p class="vh" role="status" data-filter-status></p>
-    <ul class="tiles" data-slots>
-{{js:gallery([
- ["pinehaven","health","Netcare Pinehaven Hospital","w8 h5 wide"],
- ["pendants","home","Double-height home","h5"],
- ["stone-stripes","hospitality","Stone and planting","w5"],
- ["slats","work","Timber slat entrance","w3"],
- ["stairs","home","Staircase wall",""],
- ["reception-water","work","Reception and water feature","h6"],
- ["bathroom","home","Marble bathroom","w5 h3"],
- ["sun-city","hospitality","Sun City","w3 h3"],
- ["lounge-art","home","Lounge","w3 h3"],
- ["inverroche","hospitality","Inverroche","w5 h3"],
- ["pool","home","Poolside wall",""],
- ["office","work","Corner office",""],
- ["skylight","home","Skylit courtyard",""],
- ["laboratory","work","Laboratory","w8"],
- ["monstera","home","Delicious monster wall",""],
- ["spa-pool","hospitality","Indoor pool",""],
- ["courtyard-frame","home","Framed courtyard wall",""],
- ["sofa","home","Living room",""],
- ["retirement-entrance","health","Retirement village entrance",""],
- ["retirement-lounge","health","Retirement village lounge",""],
- ["pretoria-east","health","Pretoria East hospital",""],
- ["atrium","work","Corporate atrium",""],
- ["home-table","home","Dining corner",""],
- ["reception-desk","work","Reception desk",""],
- ["stairs-tall","home","Double volume","h5"],
- ["pinehaven-tall","health","Netcare Pinehaven, waiting area","h5"],
- ["piano","home","Music room","h5"],
- ["billboard","hospitality","Living billboard",""]
+    <div class="hall__ui">
+      <div><h1>Living walls, walked through</h1><p class="hall__title" data-hall-title aria-hidden="true"></p></div>
+      <div class="filters" data-filters role="group" aria-label="Show walls in">
+        <button type="button" value="all" aria-pressed="true">All</button>
+        <button type="button" value="home" aria-pressed="false">Private homes</button>
+        <button type="button" value="health" aria-pressed="false">Healthcare</button>
+        <button type="button" value="work" aria-pressed="false">Offices</button>
+        <button type="button" value="hospitality" aria-pressed="false">Hospitality</button>
+      </div>
+      <div class="hall__line" aria-hidden="true"><i data-hall-meter></i></div>
+    </div>
+  </div>
+</section>
+<p class="vh" role="status" data-filter-status></p>
+
+<section class="sec" aria-labelledby="idx-h">
+  <div class="wrap">
+    <div class="head"><h2 id="idx-h">Every wall, by name</h2><p class="lede">Each was drawn for one place.</p></div>
+    <ul class="index" data-peeks>
+{{js:index([
+ ["bathroom","home","Marble bathroom"],
+ ["pendants","home","Double-height home"],
+ ["pinehaven","health","Netcare Pinehaven Hospital"],
+ ["stairs","home","Staircase wall"],
+ ["reception-water","work","Reception and water feature"],
+ ["pool","home","Poolside wall"],
+ ["slats","work","Timber slat entrance"],
+ ["stone-stripes","hospitality","Stone and planting"],
+ ["lounge-art","home","Lounge"],
+ ["monstera","home","Delicious monster wall"],
+ ["sun-city","hospitality","Sun City"],
+ ["skylight","home","Skylit courtyard"],
+ ["office","work","Corner office"],
+ ["spa-pool","hospitality","Indoor pool"],
+ ["sofa","home","Living room"],
+ ["stairs-tall","home","Double volume"],
+ ["courtyard-frame","home","Framed courtyard wall"],
+ ["home-table","home","Dining corner"],
+ ["atrium","work","Corporate atrium"],
+ ["inverroche","hospitality","Inverroche"],
+ ["laboratory","work","Laboratory"],
+ ["pinehaven-tall","health","Netcare Pinehaven, waiting area"],
+ ["retirement-entrance","health","Retirement village entrance"],
+ ["reception-desk","work","Reception desk"],
+ ["piano","home","Music room"],
+ ["retirement-lounge","health","Retirement village lounge"],
+ ["pretoria-east","health","Pretoria East hospital"],
+ ["billboard","hospitality","Living billboard"]
 ])}}
     </ul>
   </div>

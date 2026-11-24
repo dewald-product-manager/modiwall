@@ -20,7 +20,7 @@ cpSync('src/static', OUT, { recursive: true });
 
 /* ---- css + js ---- */
 const minCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
-const css = minCss(['base', 'layout', 'home', 'pages'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
+const css = minCss(['base', 'layout', 'home', 'pages', 'lux'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
 mkdirSync(`${OUT}/css`, { recursive: true });
 mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);
@@ -63,7 +63,12 @@ const gallery = (items) => items.map(([name, place, title, span = '']) => `<li c
 
 const helpers = {
   gallery,
-  clients: () => Object.entries(images).filter(([, v]) => v.kind === 'logo').map(([k]) => `<li>${picture(k, '140px')}</li>`).join(''),
+  // optical heights, so every client carries the same weight on the page
+  clients: () => [['netcare', 'Netcare', 4.9, 600, 479], ['hollard', 'Hollard', 2.9, 600, 159], ['sun-city', 'Sun City', 3.9, 600, 237], ['virgin-active', 'Virgin Active', 4.2, 600, 286], ['old-mutual', 'Old Mutual', 2.35, 600, 132], ['bidvest', 'Bidvest TopTurf', 4.1, 600, 313], ['nedbank-golf', 'Nedbank Golf Challenge', 5.6, 600, 600], ['torrecid', 'Torrecid', 2.9, 600, 176]]
+    .map(([f, name, h, w, hh]) => `<li class="cl cl--${f}"><img src="/img/clients/${f}.svg" width="${w}" height="${hh}" alt="${name}" loading="lazy" decoding="async"></li>`).join(''),
+  // the corridor: first frames load at once, the rest as they come near
+  corridor: (items) => items.map(([name, place, title], i) => `<a href="${full(name)}" data-lightbox data-frame data-cursor="View" data-place="${place}" data-title="${esc(title)}" data-ratio="${(images[name].w / images[name].h).toFixed(3)}">${picture(name, '(min-width:800px) 42vw, 86vw', '', i < 2)}<span class="tile__cap">${title}</span></a>`).join('\n'),
+  index: (items) => items.map(([name, place, title], i) => `<li data-place="${place}"><a href="${full(name)}" data-open="${i}" data-peek="/img/${name}-${images[name].widths.includes(800) ? 800 : images[name].widths.at(-1)}.avif"><b>${title}</b><span>${{ home: 'Private home', health: 'Healthcare', work: 'Office', hospitality: 'Hospitality and retail' }[place]}</span></a></li>`).join('\n'),
   faq: (list) => list.map(([q, a]) => `<details class="faq"><summary>${q}</summary><div class="faq__a"><div><p>${a}</p></div></div></details>`).join('\n'),
 };
 
@@ -117,7 +122,7 @@ for (const file of pages) {
     data: meta, title: esc(meta.title), description: esc(meta.description), url, crumb: meta.crumb || '', bodyClass: meta.bodyClass || '',
     robots: meta.noindex ? 'noindex' : 'index, follow, max-image-preview:large',
     shareImg: share.src, shareAlt: esc(share.alt),
-    cssv: ver['css/site.css'], jsv: ver['js/main.js'], htmlv: ver['js/html.js'],
+    cssv: ver['css/site.css'], jsv: ver['js/main.js'], htmlv: ver['js/html.js'], bootv: ver['js/boot.js'],
     jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'),
     year: '2026',
   };

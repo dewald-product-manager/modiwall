@@ -13,8 +13,10 @@ uniform vec2 uRes, uOrigin, uShift;
 uniform float uM, uT, uGust, uTilt;
 uniform vec3 uPtr;
 uniform vec3 uRip[4];
+uniform vec2 uPar;
+uniform vec4 uLamp; // x, y, reach, on
 uniform vec2 uCell[${MAX_CELLS}];
-out vec2 vUv; out float vShade, vGlow;
+out vec2 vUv; out float vShade, vGlow, vLamp, vY;
 void main(){
 vec2 c = uCell[int(aB.y + .5)];
 float g = c.x < 0. ? 0. : clamp((uT - c.x - aB.w) / 1.7, 0., 1.);
@@ -48,17 +50,21 @@ glow += w * .22;
 }
 float beam = (p.x * .62 + p.y * .78 - mod(uT * uM * .42, uRes.x + uRes.y + uM * 8.) + uM * 4.) / (uM * 2.6);
 glow += exp(-beam * beam) * .24;
-p += uShift;
+p += uShift + uPar * (aC.x - .62); // nearer leaves slide further
+vec2 ld = p - uLamp.xy;
+float facing = .72 + .46 * dot(normalize(vec2(aQ.x * aC.z * 2.2, y - .45) + .001), normalize(ld));
+vLamp = uLamp.w * facing / (1. + dot(ld, ld) / (uLamp.z * uLamp.z));
+vY = y;
 vGlow = glow;
 vShade = aC.x;
-vec2 cell = vec2(mod(aB.x, 4.), floor(aB.x / 4.));
-vUv = (cell + vec2(.5 + aQ.x * aC.z * .99, 1. - y * .985 - .008)) / 4.;
+vec2 cell = vec2(mod(aB.x, 5.), floor(aB.x / 5.));
+vUv = (cell + vec2(.5 + aQ.x * aC.z * .99, 1. - y * .985 - .008)) / vec2(5., 4.);
 gl_Position = vec4(p.x / uRes.x * 2. - 1., 1. - p.y / uRes.y * 2., 0., 1.);
 }`;
 const LEAF_FS = `#version 300 es
 precision mediump float;
-in vec2 vUv; in float vShade, vGlow;
-uniform sampler2D uTex; uniform float uShadow; uniform vec3 uTint; uniform float uGrade;
+in vec2 vUv; in float vShade, vGlow, vLamp, vY;
+uniform sampler2D uTex; uniform float uShadow, uAmb; uniform vec3 uTint; uniform float uGrade;
 out vec4 o;
 void main(){
 vec4 t = texture(uTex, vUv, -.35);
@@ -70,10 +76,12 @@ vec3 ramp = mix(vec3(.02, .09, .07), vec3(.10, .34, .23), smoothstep(0., .34, l)
 ramp = mix(ramp, vec3(.42, .66, .20), smoothstep(.28, .62, l));
 ramp = mix(ramp, vec3(.70, .86, .40), smoothstep(.6, 1., l));
 col = mix(col, ramp, uGrade);
-col = mix(col * col * 1.15, col, .55);
-col *= vShade * (1. + vGlow * 1.5);
-col += vec3(.05, .06, .0) * vGlow * vShade;
-o = vec4(col * uTint, 1.) * t.a;
+col = mix(col * col * 1.2, col, .62);
+col *= vShade * mix(.7, 1.06, vY);          // darker where it leaves the pot
+float sheen = smoothstep(.45, .8, l) * vShade;
+vec3 light = vec3(uAmb) * mix(vec3(.62, .8, 1.1), vec3(1.), uAmb) + vec3(1.5, 1.2, .82) * vLamp;
+col = col * light * (1. + vGlow * 1.3) + vec3(.9, .84, .6) * sheen * (vGlow * .16 + vLamp * .22);
+o = vec4(min(col, 1.) * uTint, 1.) * t.a;
 }`;
 const PANEL_VS = `#version 300 es
 precision highp float;
@@ -94,19 +102,15 @@ gl_Position = vec4(p.x / uRes.x * 2. - 1., 1. - p.y / uRes.y * 2., 0., 1.);
 }`;
 const PANEL_FS = `#version 300 es
 precision mediump float;
-in vec2 vUv; in float vA; uniform sampler2D uTex; out vec4 o;
-void main(){ o = texture(uTex, vUv) * vA; }`;
-const SP = {
-monstera: { s: 0, len: 0.92 }, scindapsus: { s: 1, len: 0.84 }, ivy: { s: 2, len: 0.8 }, fern: { s: 3, len: 0.86 },
-delmon: { s: 4, len: 0.86 }, diff: { s: 5, len: 0.82 }, grass: { s: 6, len: 0.94 }, laurel: { s: 7, len: 0.82 },
-fittonia: { s: 8, len: 0.74 }, trad: { s: 9, len: 0.78 },
-hfern: { s: 10, len: 0.96, h: 1 }, hivy: { s: 11, len: 0.9, h: 1 }, htrad: { s: 12, len: 0.86, h: 1 },
-haspar: { s: 13, len: 0.98, h: 1 }, hdelmon: { s: 14, len: 0.82, h: 1 }, hbox: { s: 15, len: 0.8, h: 1 },
-};
+in vec2 vUv; in float vA; uniform sampler2D uTex; uniform float uAmb; out vec4 o;
+void main(){ vec4 t = texture(uTex, vUv) * vA; o = vec4(t.rgb * (.25 + .75 * uAmb), t.a); }`;
+const LIST = [['limeA', 0.62], ['limeB', 0.56], ['philoA', 0.6], ['philoB', 0.66], ['monA', 0.7], ['monB', 0.74], ['monG', 0.82], ['fernA', 0.76], ['fernB', 0.88], ['fernC', 0.9],
+['spiderA', 0.8], ['spiderB', 0.8], ['aspA', 0.62], ['aspB', 0.6], ['heart', 0.64], ['herb', 0.6], ['ribbonA', 0.8], ['varieg', 0.56], ['burg', 0.54], ['ribbonB', 0.8]];
+const SP = Object.fromEntries(LIST.map(([n, len], i) => [n, { s: i, len }]));
 const STYLES = [
-[['scindapsus', 'scindapsus', 'trad'], ['trad', 'htrad', 'scindapsus'], ['fern', 'hfern', 'haspar'], ['ivy', 'hivy', 'laurel'], ['monstera', 'delmon', 'monstera'], ['diff', 'laurel', 'diff'], ['grass', 'hfern', 'grass']],
-[['fern', 'hfern'], ['haspar', 'fern', 'hfern'], ['hfern', 'haspar', 'ivy'], ['fern', 'hivy', 'grass'], ['haspar', 'fern'], ['grass', 'hfern'], ['fern', 'haspar', 'grass']],
-[['monstera', 'delmon'], ['scindapsus', 'monstera'], ['delmon', 'diff'], ['monstera', 'laurel'], ['diff', 'scindapsus'], ['delmon', 'fittonia'], ['monstera', 'diff']],
+[['limeA', 'limeB', 'limeA'], ['varieg', 'limeB', 'philoA'], ['aspA', 'aspB', 'herb'], ['fernA', 'fernB', 'fernC'], ['philoA', 'philoB', 'heart'], ['monG', 'monA', 'philoB'], ['spiderA', 'spiderB', 'ribbonA']],
+[['aspA', 'aspB'], ['fernA', 'aspB'], ['fernB', 'fernC'], ['fernA', 'herb'], ['ribbonA', 'fernB'], ['spiderA', 'fernC'], ['aspA', 'ribbonB']],
+[['monG', 'monA', 'philoB'], ['philoA', 'philoB'], ['heart', 'philoB', 'monG'], ['monA', 'monB', 'heart'], ['philoB', 'heart'], ['fernB', 'philoA'], ['monG', 'burg']],
 ];
 function rng(seed) {
 let a = seed >>> 0;
@@ -140,15 +144,16 @@ const x0 = (px + 0.5 + off + (r() - 0.5) * 0.7) / PLANTS;
 const y0 = (py + 0.62 + off * 0.5 + (r() - 0.5) * 0.6) / PLANTS;
 const sp = speciesAt(x0, y0, r, style);
 const a = (r() * 2 - 1) * (layer === 2 ? 0.62 : 0.95);
-data[o++] = layer ? Math.min(cols - 0.04, x0) : Math.min(cols - 0.16, Math.max(0.16, x0));
-data[o++] = sp.h ? y0 - 0.34 : y0 + 0.12;
-data[o++] = sp.h ? Math.PI + a * 0.35 : a;
-data[o++] = sp.len * (0.74 + r() * 0.4) * (layer ? 1 : 1.12);
+data[o++] = layer ? Math.min(cols - 0.04, x0) : Math.min(cols - 0.3, Math.max(0.3, x0));
+const len = sp.len * (0.82 + r() * 0.36) * (layer ? 1 : 1.12);
+data[o++] = y0 - len * 0.52;
+data[o++] = Math.PI + a * 0.42; // everything hangs from its pot
+data[o++] = len;
 data[o++] = sp.s;
 data[o++] = Math.floor(py / PLANTS) * cols + Math.floor(px / PLANTS);
 data[o++] = r() * 6.28;
 data[o++] = 0.35 + r() * 0.9;
-data[o++] = (layer === 0 ? 0.46 : layer === 1 ? 0.68 : 1.06) + (r() - 0.5) * 0.18;
+data[o++] = (layer === 0 ? 0.5 : layer === 1 ? 0.7 : 1.04) + (r() - 0.5) * 0.18;
 data[o++] = 0.92 + r() * 0.2;
 data[o++] = r() < 0.5 ? -1 : 1;
 data[o++] = (r() - 0.5) * 0.3;
@@ -224,7 +229,7 @@ img.src = new URL('../img/foliage.webp', import.meta.url).href;
 await img.decode();
 return img;
 })());
-export async function createWall(canvas, { grade = 0.5 } = {}) {
+export async function createWall(canvas, { grade = 0.12 } = {}) {
 const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, powerPreference: 'high-performance' });
 if (!gl) throw new Error('no webgl2');
 const raw = [compile(gl, LEAF_VS, LEAF_FS), compile(gl, PANEL_VS, PANEL_FS)];
@@ -282,6 +287,9 @@ L: { w: 1, h: 1, cols: 0, rows: 0, m: 100, ox: 0, oy: 0, count: 0, back: 0 },
 ptr: { x: -9999, y: -9999, s: 0, target: 0 },
 gust: 0,
 tilt: 0,
+par: { x: 0, y: 0 },
+lamp: { x: 0, y: 0, r: 1, on: 0 },
+amb: 1,
 tint: [1, 1, 1],
 planted: [],
 now: () => (performance.now() - t0) / 1000,
@@ -347,6 +355,9 @@ gl.uniform3f(leafP.u.uPtr, W.ptr.x, W.ptr.y, W.ptr.s);
 gl.uniform3fv(leafP.u.uRip, rip);
 gl.uniform3fv(leafP.u.uTint, W.tint);
 gl.uniform1f(leafP.u.uGrade, grade);
+gl.uniform2f(leafP.u.uPar, W.par.x * L.m * 0.16, W.par.y * L.m * 0.16);
+gl.uniform4f(leafP.u.uLamp, W.lamp.x, W.lamp.y, W.lamp.r, W.lamp.on);
+gl.uniform1f(leafP.u.uAmb, W.amb);
 gl.uniform1f(leafP.u.uGust, W.gust);
 gl.uniform1f(leafP.u.uTilt, W.tilt);
 gl.uniform1f(leafP.u.uShadow, shadow);
@@ -355,6 +366,7 @@ gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verts, n);
 };
 leaves(0.09, L.m * 0.06, L.m * 0.12, L.back);
 use(panelP, panelTex, panelVao);
+gl.uniform1f(panelP.u.uAmb, W.amb);
 gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, L.cols * L.rows);
 leaves(0, 0, 0, L.count);
 },
@@ -376,6 +388,9 @@ avg = 12;
 frames = 0;
 }
 }
+const ease = 1 - Math.exp(-dt / 260);
+W.par.x += ((W.parTo?.x ?? 0) - W.par.x) * ease;
+W.par.y += ((W.parTo?.y ?? 0) - W.par.y) * ease;
 W.ptr.s += (W.ptr.target - W.ptr.s) * (1 - Math.exp(-dt / 200));
 each?.(dt);
 W.draw();
@@ -392,6 +407,10 @@ document.addEventListener('visibilitychange', go);
 if (reduced) W.draw();
 go();
 },
+snapshot() {
+W.draw(); // the drawing buffer is only readable right after a draw
+return createImageBitmap(canvas);
+},
 lost(fn) {
 canvas.addEventListener('webglcontextlost', fn);
 },
@@ -403,6 +422,7 @@ const at = (e) => {
 const r = box.getBoundingClientRect();
 W.ptr.x = e.clientX - r.left;
 W.ptr.y = e.clientY - r.top;
+W.parTo = { x: 0.5 - W.ptr.x / r.width, y: 0.5 - W.ptr.y / r.height };
 };
 area.addEventListener('pointermove', (e) => {
 at(e);
@@ -531,7 +551,7 @@ new ResizeObserver(layout).observe(host);
 W.run(host);
 }
 export async function frameWall(canvas, watch) {
-const W = await createWall(canvas, { grade: 0.42 });
+const W = await createWall(canvas, { grade: 0.1 });
 W.run(watch);
 return {
 W,
@@ -541,4 +561,92 @@ if (fresh) for (let i = 0; i < cols * rows; i++) W.plant(i, true, ((i % cols) + 
 if (reduced) W.draw();
 },
 };
+}
+export async function nightWall(sec) {
+const canvas = sec.querySelector('[data-wall]');
+const stage = sec.querySelector('[data-stage]');
+const lamp = sec.querySelector('[data-lamp]');
+const sw = sec.querySelector('[data-switch]');
+const W = await createWall(canvas);
+let on = false;
+let level = 0;
+let x = 0.5; // lamp position across the stage, 0 to 1
+let vx = 0;
+let swing = 0;
+let vs = 0;
+let drag = null;
+W.amb = 0.1;
+function layout() {
+const hr = sec.getBoundingClientRect();
+const sr = stage.getBoundingClientRect();
+const rows = Math.max(3, Math.round(sr.height / (hr.width < 700 ? 110 : 150)));
+const m = sr.height / rows;
+const cols = Math.min(Math.floor(MAX_CELLS / rows), Math.ceil(sr.width / m));
+if (W.place({ w: hr.width, h: hr.height, cols, rows, m, ox: sr.right - hr.left - cols * m, oy: sr.top - hr.top })) {
+for (let i = 0; i < cols * rows; i++) W.plant(i, true, 0);
+}
+}
+const set = (v) => {
+on = v;
+sw.setAttribute('aria-pressed', v);
+sec.classList.toggle('is-lit', v);
+vs += (Math.random() < 0.5 ? -1 : 1) * 0.0016; // the pull of the cord sets it swinging
+if (reduced) {
+level = v ? 1 : 0;
+apply();
+W.draw();
+}
+};
+function apply() {
+const hr = sec.getBoundingClientRect();
+const sr = stage.getBoundingClientRect();
+const px = sr.left - hr.left + sr.width * x;
+const drop = lamp.offsetHeight;
+const lx = px + Math.sin(swing) * drop;
+const ly = Math.cos(swing) * drop;
+lamp.style.transform = `translateX(${px.toFixed(1)}px) rotate(${(-swing * 57.3).toFixed(2)}deg)`;
+W.lamp = { x: lx, y: ly + 20, r: Math.min(sr.width, sr.height) * 0.46, on: level * 1.25 };
+W.amb = 0.1 + level * 0.2;
+sec.style.setProperty('--lit', level.toFixed(3));
+sec.style.setProperty('--lx', `${lx.toFixed(1)}px`);
+sec.style.setProperty('--ly', `${ly.toFixed(1)}px`);
+}
+sw.addEventListener('click', () => set(!on));
+lamp.addEventListener('pointerdown', (e) => {
+drag = { x: e.clientX, from: x, moved: 0 };
+lamp.setPointerCapture(e.pointerId);
+});
+lamp.addEventListener('pointermove', (e) => {
+if (!drag) return;
+const d = e.clientX - drag.x;
+drag.moved = Math.max(drag.moved, Math.abs(d));
+const nx = Math.min(0.95, Math.max(0.05, drag.from + d / stage.offsetWidth));
+vs -= (nx - x) * 0.012;
+x = nx;
+});
+lamp.addEventListener('pointerup', () => {
+if (drag && drag.moved < 6) set(!on);
+drag = null;
+});
+lamp.addEventListener('pointercancel', () => { drag = null; });
+pointer(W, sec, sec);
+layout();
+apply();
+new ResizeObserver(() => {
+layout();
+apply();
+}).observe(stage);
+W.run(sec, (dt) => {
+level += ((on ? 1 : 0) - level) * (1 - Math.exp(-dt / (on ? 240 : 420)));
+const steps = Math.max(1, Math.round(dt / 8));
+for (let k = 0; k < steps; k++) {
+vs += (-swing * 0.00022 - vs * 0.006) * (dt / steps);
+swing += vs * (dt / steps);
+}
+swing = Math.max(-0.5, Math.min(0.5, swing));
+x += vx;
+W.ptr.target = 0; // here the lamp is the light, not the pointer
+apply();
+});
+sec.classList.add('wall-ready');
 }

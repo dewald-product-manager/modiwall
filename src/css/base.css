@@ -1,9 +1,3 @@
-@font-face {
-  font-family: Montserrat;
-  src: url(../fonts/montserrat-var.woff2) format('woff2');
-  font-weight: 300 800;
-  font-display: swap;
-}
 /* metric-matched fallback so text does not jump when Montserrat arrives */
 @font-face {
   font-family: 'Montserrat Fallback';

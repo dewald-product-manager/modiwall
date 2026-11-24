@@ -192,45 +192,5 @@
  "press-suncity": {
   "src": "press-suncity.jpg",
   "alt": "African Design Magazine article on the Sun City green wall tree"
- },
- "client-hollard": {
-  "src": "client-hollard.png",
-  "alt": "Hollard",
-  "kind": "logo"
- },
- "client-nedbank-golf": {
-  "src": "client-nedbank-golf.png",
-  "alt": "Nedbank Golf Challenge",
-  "kind": "logo"
- },
- "client-netcare": {
-  "src": "client-netcare.png",
-  "alt": "Netcare",
-  "kind": "logo"
- },
- "client-torrecid": {
-  "src": "client-torrecid.png",
-  "alt": "Torrecid",
-  "kind": "logo"
- },
- "client-old-mutual": {
-  "src": "client-old-mutual.png",
-  "alt": "Old Mutual",
-  "kind": "logo"
- },
- "client-sun-city": {
-  "src": "client-sun-city.png",
-  "alt": "Sun City",
-  "kind": "logo"
- },
- "client-bidvest": {
-  "src": "client-bidvest.png",
-  "alt": "Bidvest TopTurf",
-  "kind": "logo"
- },
- "client-virgin-active": {
-  "src": "client-virgin-active.png",
-  "alt": "Virgin Active",
-  "kind": "logo"
  }
 }

@@ -11,12 +11,13 @@
  ["Is it guaranteed?", "Yes, by the people who designed and made it. The terms are set out in writing with your quotation."]
 ]
 } -->
+<div class="loader" aria-hidden="true">{{> loader}}</div>
 <div class="hero-pin" data-pin>
-<section class="hero" data-hero aria-label="Hang a garden">
+<section class="hero" data-hero aria-label="Grown for one address">
   <div class="hero__copy" data-copy>
     <h1 class="hero__h">
-      <span class="hero__big"><span class="hero__line"><span>Hang</span></span> <span class="hero__line"><span>a garden.</span></span></span>
-      <span class="hero__small">The living wall for private homes, estates and the buildings people remember.</span>
+      <span class="hero__big"><span class="hero__line"><span>Grown for</span></span> <span class="hero__line"><span>one address.</span></span></span>
+      <span class="hero__small">A living wall, designed, made and planted for a single place. Yours.</span>
     </h1>
     <div class="hero__acts">
       <a class="btn btn--lime" href="/get-a-quote.html">Commission a wall</a>
@@ -33,26 +34,39 @@
 
 <section class="say" aria-label="Why a living wall">
   <div class="say__pin">
-    <p class="say__p" data-scrub>You chose the stone, the timber, the light. Every surface in the house was considered. And still, nothing on the walls is alive.</p>
+    <p class="say__p" data-scrub>You chose the stone, the timber, the light. Everything in the room was bought. This is the one thing that was grown.</p>
   </div>
 </section>
 
 <section class="rooms" data-rooms aria-labelledby="rooms-h">
   <div class="rooms__pin">
     <div class="rooms__track" data-track>
-      <div class="rooms__head"><h2 id="rooms-h">At home</h2><p class="lede">A garden beside the bath. A column the height of the stair. A pool edged in leaves.</p></div>
+      <div class="rooms__head"><h2 id="rooms-h">At home</h2><p class="lede">Beside the bath. The full height of the stair. Along the pool, where a boundary used to be.</p></div>
       <ul>
-        <li class="room room--wide"><a href="/img/bathroom-1920.avif" data-lightbox>{{img bathroom | (min-width:800px) 90vh, 190vw}}</a><p>The bathroom</p></li>
-        <li class="room room--tall"><a href="/img/pendants-1280.avif" data-lightbox>{{img pendants | (min-width:800px) 46vh, 110vw}}</a><p>The double volume</p></li>
-        <li class="room room--wide"><a href="/img/pool-1280.avif" data-lightbox>{{img pool | (min-width:800px) 90vh, 190vw}}</a><p>The pool</p></li>
-        <li class="room"><a href="/img/stairs-1920.avif" data-lightbox>{{img stairs | (min-width:800px) 62vh, 190vw}}</a><p>The staircase</p></li>
-        <li class="room room--tall"><a href="/img/sofa-1920.avif" data-lightbox>{{img sofa | (min-width:800px) 46vh, 110vw}}</a><p>The living room</p></li>
-        <li class="room room--wide"><a href="/img/lounge-art-1920.avif" data-lightbox>{{img lounge-art | (min-width:800px) 90vh, 190vw}}</a><p>The lounge</p></li>
-        <li class="room room--tall"><a href="/img/skylight-1280.avif" data-lightbox>{{img skylight | (min-width:800px) 46vh, 110vw}}</a><p>The courtyard</p></li>
-        <li class="room"><a href="/img/home-table-1920.avif" data-lightbox>{{img home-table | (min-width:800px) 62vh, 190vw}}</a><p>The dining room</p></li>
+        <li class="room room--wide"><a href="/img/bathroom-1920.avif" data-lightbox data-cursor="View">{{img bathroom | (min-width:800px) 90vh, 190vw}}</a><p>The bathroom</p></li>
+        <li class="room room--tall"><a href="/img/pendants-1280.avif" data-lightbox data-cursor="View">{{img pendants | (min-width:800px) 46vh, 110vw}}</a><p>The double volume</p></li>
+        <li class="room room--wide"><a href="/img/pool-1280.avif" data-lightbox data-cursor="View">{{img pool | (min-width:800px) 90vh, 190vw}}</a><p>The pool</p></li>
+        <li class="room"><a href="/img/stairs-1920.avif" data-lightbox data-cursor="View">{{img stairs | (min-width:800px) 62vh, 190vw}}</a><p>The staircase</p></li>
+        <li class="room room--tall"><a href="/img/sofa-1920.avif" data-lightbox data-cursor="View">{{img sofa | (min-width:800px) 46vh, 110vw}}</a><p>The living room</p></li>
+        <li class="room room--wide"><a href="/img/lounge-art-1920.avif" data-lightbox data-cursor="View">{{img lounge-art | (min-width:800px) 90vh, 190vw}}</a><p>The lounge</p></li>
+        <li class="room room--tall"><a href="/img/skylight-1280.avif" data-lightbox data-cursor="View">{{img skylight | (min-width:800px) 46vh, 110vw}}</a><p>The courtyard</p></li>
+        <li class="room"><a href="/img/home-table-1920.avif" data-lightbox data-cursor="View">{{img home-table | (min-width:800px) 62vh, 190vw}}</a><p>The dining room</p></li>
       </ul>
       <div class="rooms__end"><strong>Which wall in your house is still bare?</strong><a class="btn btn--lime" href="/visualise.html">See it on your wall</a><a class="link" href="/vertical-garden.html#home">More private walls</a></div>
     </div>
+  </div>
+</section>
+
+<section class="night" data-night aria-labelledby="night-h">
+  <div class="night__room" aria-hidden="true"></div>
+  <div class="night__stage" data-stage></div>
+  <canvas class="night__canvas" data-wall aria-hidden="true"></canvas>
+  <div class="night__edge" aria-hidden="true"></div>
+  <div class="lamp" data-lamp data-cursor="Light" aria-hidden="true"><div class="lamp__halo"></div><svg viewBox="0 0 144 400" preserveAspectRatio="xMidYMax meet"><path d="M72 -600V300" stroke="#0a1512" stroke-width="2.500"/><path d="M72 -600V300" stroke="#b08d57" stroke-width="1" opacity=".5"/><path d="M62 296h20l4 18H58z" fill="#b08d57"/><path d="M58 314h28c20 8 40 30 48 64H10c8-34 28-56 48-64z" fill="#0d1a16"/><path d="M58 314h28c6 2 11 6 16 10-20-5-40-4-58 2 4-5 9-9 14-12z" fill="#22352d"/><path d="M10 378h124c0 5-28 9-62 9s-62-4-62-9z" fill="#3a2f1c"/><ellipse class="lamp__bulb" cx="72" cy="381" rx="46" ry="6" fill="#ffe6b0"/></svg></div>
+  <div class="night__t">
+    <h2 id="night-h">Come home to it.</h2>
+    <p class="lede">One warm lamp, and the wall is the room. Pull the lamp along to see what it finds.</p>
+    <button class="switch" type="button" data-switch aria-pressed="false"><i aria-hidden="true"></i><span class="a">Turn on the light</span><span class="b">Turn off the light</span></button>
   </div>
 </section>
 
@@ -73,11 +87,12 @@
 </section>
 
 <section class="sec house" aria-labelledby="house-h">
+  <svg class="house__mark lg" viewBox="235 100 1526 1140" aria-hidden="true">{{> mark-paths}}</svg>
   <div class="wrap">
     <h2 class="vh" id="house-h">One house, one guarantee</h2>
     <ol class="vows">
       <li><h3>Designed by us.</h3><p>Drawn for one address, around its light, its water and the way you use the room.</p></li>
-      <li><h3>Made by us.</h3><p>A patented system in recycled polymer, moulded in Cape Town. You cannot buy it from anyone else.</p></li>
+      <li><h3>Made by us.</h3><p>It began with two friends, a garage and a 3D printer. The system has held a South African patent since 2016, and is moulded in Cape Town.</p></li>
       <li><h3>Planted by us.</h3><p>Species chosen for your light first and your interior second, set by hand.</p></li>
       <li><h3>Guaranteed by us.</h3><p>No subcontractors to chase and no parts to match. The people who answer for it are the people who made it.</p></li>
     </ol>

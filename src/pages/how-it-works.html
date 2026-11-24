@@ -3,29 +3,54 @@
 "description": "Inside the patented Modiwall living wall: interlocking panels with hidden water channels, a grid, a vessel for every plant and water that circulates by itself.",
 "crumb": "The system"
 } -->
-<section class="open">
-  <div class="open__t">
+<section class="ph">
+  <div class="ph__img">{{eager stone-stripes | (min-width:800px) 66vw, 100vw}}</div>
+  <div class="ph__t">
     <h1>The system</h1>
-    <p class="lede">Patented, and made by no one else. Since 2012 it has been designed, moulded and perfected in South Africa as one complete wall.</p>
+    <p class="lede">A South African patent since 2016. One panel, one grid, one vessel, and water that looks after itself.</p>
     <div class="open__acts"><a class="btn btn--lime" href="/get-a-quote.html">Commission a wall</a><a class="link" href="/visualise.html">See it on your wall</a></div>
   </div>
-  <div class="open__img">{{eager stone-stripes | (min-width:800px) 52vw, 100vw}}</div>
+  <div class="strip ph__strip" data-strip aria-hidden="true"><div class="strip__stage" data-stage></div><canvas class="strip__canvas" data-wall></canvas></div>
 </section>
-<div class="gap"></div>
 
-<section class="sys" data-system aria-labelledby="sys-h">
+<section class="sys" data-system data-detail aria-labelledby="sys-h">
   <div class="sys__pin">
     <div>
       <h2 id="sys-h">There is only one.</h2>
       <ol class="sys__steps" data-steps>
-        <li class="on"><h3>The panel</h3><div class="more"><p>Patented, and the reason it works. Panels lock into one another and carry water through channels you will never see.</p></div></li>
-        <li><h3>The grid</h3><div class="more"><p>Fixed over the panel, it holds every plant in its own place.</p></div></li>
-        <li><h3>The vessel</h3><div class="more"><p>Each plant has its own. If one tires, we lift it out and its neighbours never know.</p></div></li>
-        <li><h3>The water</h3><div class="more"><p>The wall waters itself, then gathers the water back to use again.</p></div></li>
-        <li><h3>The wall</h3><div class="more"><p>As wide and as high as the room deserves. Flat, curved or on a slant.</p></div></li>
+        <li class="on"><h3>The panel</h3><div class="more"><p>500 × 500 mm, lined with vertical water channels. The tube along its foot feeds the panel below, and its edges slide together, male into female.</p></div></li>
+        <li><h3>The grid</h3><div class="more"><p>Fixed at four corners over the channels. Its slots set twenty vessels in four rows of five.</p></div></li>
+        <li><h3>The vessel</h3><div class="more"><p>Almost one litre of growing medium. It hooks through the grid by hand, and lifts out the same way.</p></div></li>
+        <li><h3>The water</h3><div class="more"><p>A digital timer starts the pump. Water climbs the ring main, enters along the top edge, falls from panel to panel and returns to the reservoir.</p></div></li>
+        <li><h3>The wall</h3><div class="more"><p>Four panels make a square metre and carry eighty plants. Panels extend in any direction, flat, curved or slanted.</p></div></li>
       </ol>
     </div>
     <div class="rig" aria-hidden="true"><div class="rig__cam" data-rig></div></div>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="cut-h">
+  <div class="wrap">
+    <div class="head"><h2 id="cut-h">Cut through the wall</h2><p class="lede">Where one panel meets the next, seen from the side.</p></div>
+    <div class="section-cut">
+      <svg viewBox="0 0 640 620" role="img" aria-label="Section through two panels: water leaves the foot tube of the upper panel, runs down the channel of the lower panel behind the grid, and passes the open back of each vessel">
+        <rect x="40" y="0" width="34" height="620" fill="#e3e8e0"/><path class="ink" d="M74 0V620" stroke-width="3"/>
+        <path class="solid" d="M92 0h12v262h-12zM92 336h12v284h-12z"/>
+        <path class="solid" d="M92 250h26c26 0 40 16 40 38s-14 38-40 38h-8v14h-18z"/><circle class="void" cx="122" cy="288" r="22"/><path class="void" d="M114 306h14v40h-14z"/>
+        <path class="solid" d="M140 0h9v246h-9zM140 350h9v270h-9z"/>
+        <path class="drip" d="M122 0V276M122 300V620"/>
+        <g><path class="solid" d="M149 78h20l8 -6h96l-26 130h-70l-16 -70h-12z" opacity=".94"/><path class="soil" d="M181 84h82l-4 20h-82z"/><path class="solid" d="M112 96h40v12h-28v22h-12z"/><path class="ink leafline" d="M222 84C196 60 170 40 178 8c34 6 48 36 48 74C232 40 262 14 300 22c2 34-30 58-70 62C262 70 300 74 322 104c-34 18-72 4-96-18zM222 84C214 66 198 42 178 8M226 82C246 62 272 42 300 22M230 84C258 84 292 92 322 104"/></g>
+        <g transform="translate(0 340)"><path class="solid" d="M149 78h20l8 -6h96l-26 130h-70l-16 -70h-12z" opacity=".94"/><path class="soil" d="M181 84h82l-4 20h-82z"/><path class="solid" d="M112 96h40v12h-28v22h-12z"/><path class="ink leafline" d="M222 84C196 60 170 40 178 8c34 6 48 36 48 74C232 40 262 14 300 22c2 34-30 58-70 62C262 70 300 74 322 104c-34 18-72 4-96-18zM222 84C214 66 198 42 178 8M226 82C246 62 272 42 300 22M230 84C258 84 292 92 322 104"/></g>
+        <g><circle class="dot" cx="122" cy="288" r="5"/><path class="lead" d="M122 288H380"/><text x="390" y="294">1  Foot tube of the panel above</text><circle class="dot" cx="122" cy="200" r="5"/><path class="lead" d="M122 200L360 178H380"/><text x="390" y="184">2  Water channel</text><circle class="dot" cx="145" cy="220" r="5"/><path class="lead" d="M145 220L360 232H380"/><text x="390" y="238">3  Front grid</text><circle class="dot" cx="118" cy="440" r="5"/><path class="lead" d="M118 440L360 404H380"/><text x="390" y="410">4  Hook</text><circle class="dot" cx="240" cy="500" r="5"/><path class="lead" d="M240 500H380"/><text x="390" y="506">5  Vessel</text></g>
+      </svg>
+      <ol>
+        <li><b>It feeds itself downwards.</b><span>The foot tube of each panel seats in the head of the next.</span></li>
+        <li><b>It stays inside.</b><span>Water travels behind the grid, in closed-backed channels.</span></li>
+        <li><b>It is held flat.</b><span>The grid fixes over the channels at its corners.</span></li>
+        <li><b>It drinks.</b><span>Each vessel hooks through the grid, beside the water.</span></li>
+        <li><b>It lifts out.</b><span>One vessel can be changed without disturbing another.</span></li>
+      </ol>
+    </div>
   </div>
 </section>
 
@@ -43,6 +68,7 @@
 <section class="sec" aria-labelledby="spec-h">
   <div class="wrap">
     <div class="head"><h2 id="spec-h">For the specification</h2><p class="lede">Drawings and data are available to architects on request.</p></div>
+    <div class="spec"><div><b>500</b><span>millimetres square, each panel</span></div><div><b>20</b><span>vessels to a panel</span></div><div><b>80</b><span>plants to a square metre</span></div><div><b>1 ℓ</b><span>of growing medium, almost, in each vessel</span></div></div>
     <div class="rows">
       <div><h3>Module</h3><p>500 × 500 mm panel. Four panels to the square metre, extended in any direction.</p></div>
       <div><h3>Planting</h3><p>20 clip-in pots per panel, about 80 plants per square metre.</p></div>
