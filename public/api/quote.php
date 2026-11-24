@@ -2,21 +2,25 @@
 /**
  * Modiwall quote form handler. Plain PHP 7.4+, no libraries.
  *
- * Defences: POST only, same-origin check, honeypot, minimum fill time, per-IP rate
- * limit, strict length and format checks, header-injection safe, no user input in
- * the From header, nothing written to the web root, no details leaked in errors.
+ * Defences: POST only, same-origin check (Origin and Sec-Fetch-Site), honeypot, minimum
+ * fill time, link-spam filter, per-IP and site-wide rate limits, strict length and format
+ * checks, header-injection safe, no user input in the From header, nothing written to
+ * the web root, no details leaked in errors.
  */
 declare(strict_types=1);
 
 const MAIL_TO   = 'info@modiwall.com';
 const MAIL_FROM = 'website@modiwall.com'; // must be a mailbox or alias on this domain
 const HOSTS     = ['www.modiwall.com', 'modiwall.com'];
-const MAX_PER_HOUR = 5;
+const MAX_PER_HOUR = 5;     // from one visitor
+const MAX_SITE_HOUR = 40;   // from everyone together, so a botnet cannot flood the inbox
+const MAX_LINKS = 2;        // real enquiries rarely carry web links; spam always does
 
 ini_set('display_errors', '0');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
+header('X-Robots-Tag: noindex, nofollow');
 
 $wantsJson = strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
 
@@ -56,14 +60,17 @@ if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 20000) {
     finish(413, false, 'That message is too long.');
 }
 
-// Browsers send Origin on POST. Refuse anything from another site.
+// Browsers send Origin on POST. Refuse anything from another site, or over plain http.
 $origin = $_SERVER['HTTP_ORIGIN'] ?? ($_SERVER['HTTP_REFERER'] ?? '');
 $host = strtolower((string) parse_url($origin, PHP_URL_HOST));
-$allowed = HOSTS;
-if (PHP_SAPI === 'cli-server') {
-    $allowed[] = 'localhost'; // php -S, local testing only
+$scheme = strtolower((string) parse_url($origin, PHP_URL_SCHEME));
+$local = PHP_SAPI === 'cli-server' && $host === 'localhost'; // php -S, local testing only
+if (!$local && (!in_array($host, HOSTS, true) || $scheme !== 'https')) {
+    finish(403, false, 'Your request was not sent. Reload the page and try again.');
 }
-if (!in_array($host, $allowed, true)) {
+// Modern browsers also say where the request came from, and that cannot be set by a page.
+$site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
+if ($site !== '' && $site !== 'same-origin') {
     finish(403, false, 'Your request was not sent. Reload the page and try again.');
 }
 
@@ -107,23 +114,43 @@ if ($area !== '' && (!is_numeric($area) || (float) $area < 0 || (float) $area > 
 if (($_POST['consent'] ?? '') !== 'yes') {
     finish(422, false, 'Tick the consent box so we may reply to you.');
 }
+// Link spam: say "sent" and drop it, as for the honeypot.
+if (preg_match_all('~https?://|www\.|\[url~i', "$name $place $message") > MAX_LINKS) {
+    finish(200, true);
+}
 
-// Rate limit. Only a salted hash of the IP is stored, outside the web root.
-$salt = hash('sha256', __FILE__ . php_uname('n'));
-$file = sys_get_temp_dir() . '/mw_' . substr(hash_hmac('sha256', $_SERVER['REMOTE_ADDR'] ?? '', $salt), 0, 32);
-$fh = @fopen($file, 'c+');
-if ($fh && flock($fh, LOCK_EX)) {
+/**
+ * Count one request against a limit per hour. Only a salted hash of the key is stored,
+ * outside the web root, readable by this account alone. False when the limit is reached.
+ */
+function within(string $key, int $max): bool
+{
+    $salt = hash('sha256', __FILE__ . php_uname('n'));
+    $file = sys_get_temp_dir() . '/mw_' . substr(hash_hmac('sha256', $key, $salt), 0, 32);
+    $old = umask(0077);
+    $fh = @fopen($file, 'c+');
+    umask($old);
+    if (!$fh || !flock($fh, LOCK_EX)) {
+        return true; // never turn a customer away because the temp folder is unwell
+    }
     $now = time();
     $hits = array_filter(array_map('intval', explode(',', (string) stream_get_contents($fh))), static fn ($t) => $t > $now - 3600);
-    if (count($hits) >= MAX_PER_HOUR) {
-        fclose($fh);
-        finish(429, false, 'You have sent several requests this hour. Please call +27 76 874 0299.');
+    $ok = count($hits) < $max;
+    if ($ok) {
+        $hits[] = $now;
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, implode(',', $hits));
     }
-    $hits[] = $now;
-    ftruncate($fh, 0);
-    rewind($fh);
-    fwrite($fh, implode(',', $hits));
     fclose($fh);
+    return $ok;
+}
+
+if (!within('ip:' . ($_SERVER['REMOTE_ADDR'] ?? ''), MAX_PER_HOUR)) {
+    finish(429, false, 'You have sent several requests this hour. Please call +27 76 874 0299.');
+}
+if (!within('site', MAX_SITE_HOUR)) {
+    finish(429, false, 'We are receiving a great many requests just now. Please call +27 76 874 0299 or email info@modiwall.com.');
 }
 
 $body = implode("\n", [

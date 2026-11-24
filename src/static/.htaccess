@@ -5,6 +5,7 @@ ErrorDocument 404 /404.html
 ErrorDocument 403 /404.html
 AddDefaultCharset utf-8
 AddType image/avif .avif
+AddType image/webp .webp
 AddType font/woff2 .woff2
 AddType application/manifest+json .webmanifest
 
@@ -26,9 +27,16 @@ RewriteRule ^privacy-policy-2\.html$ /privacy-policy.html [R=301,L]
 RewriteRule ^distributoors/?$ /contact-us.html [R=301,L]
 RewriteRule ^feed\.(xml|json)$ - [G,L]
 
-# ---- nothing hidden is served ----
+# ---- reading only, except the quote form ----
+RewriteCond %{REQUEST_URI} !=/api/quote.php
+RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$
+RewriteRule ^ - [R=405,L]
+
+# ---- nothing hidden is served, and no script runs but the form handler ----
 RewriteRule (^|/)\.(?!well-known/) - [F,L]
-<FilesMatch "\.(bak|old|orig|log|sql|ini|sh|md|mjs|py)$">
+RewriteCond %{REQUEST_URI} !=/api/quote.php
+RewriteRule \.(php\d?|phtml|phar|cgi|pl)(/|$) - [F,L]
+<FilesMatch "\.(bak|old|orig|log|sql|ini|sh|md|mjs|py|json)$">
   Require all denied
 </FilesMatch>
 
@@ -37,27 +45,33 @@ RewriteRule (^|/)\.(?!well-known/) - [F,L]
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set Permissions-Policy "accelerometer=(self), camera=(), geolocation=(), gyroscope=(self), microphone=(), payment=(), usb=(), interest-cohort=()"
+  Header always set Permissions-Policy "accelerometer=(self), gyroscope=(self), magnetometer=(), camera=(), microphone=(), geolocation=(), display-capture=(), payment=(), usb=(), browsing-topics=()"
   Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set Cross-Origin-Resource-Policy "same-site"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
   Header always unset X-Powered-By
   <FilesMatch "\.html$">
-    Header set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; manifest-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    # keep in step with the meta tag in src/partials/shell.html; this one adds what a meta tag cannot
+    Header set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; manifest-src 'self'; require-trusted-types-for 'script'; trusted-types modiwall; frame-ancestors 'none'; upgrade-insecure-requests"
     Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  # an SVG opened on its own is a document: let it draw, never run anything
+  <FilesMatch "\.svg$">
+    Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'none'"
   </FilesMatch>
   # css and js carry ?v=hash, fonts never change
   <FilesMatch "\.(css|js|woff2)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   # photos keep their name when replaced, so refresh them monthly
-  <FilesMatch "\.(avif|jpg|png|svg|ico)$">
+  <FilesMatch "\.(avif|webp|jpg|png|svg|ico)$">
     Header set Cache-Control "public, max-age=2592000, stale-while-revalidate=604800"
   </FilesMatch>
 </IfModule>
 
 <IfModule mod_brotli.c>
-  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json image/svg+xml application/xml application/manifest+json
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json image/svg+xml image/x-icon application/xml application/manifest+json text/plain
 </IfModule>
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml application/xml application/manifest+json
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml image/x-icon application/xml application/manifest+json text/plain
 </IfModule>

@@ -1,4 +1,6 @@
 /* Modiwall site behaviour. No dependencies, no third-party requests. */
+import { html } from './html.js';
+
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const root = document.documentElement;
@@ -285,7 +287,7 @@ if (shots.length) {
   const box = document.createElement('dialog');
   box.className = 'lightbox';
   box.setAttribute('aria-label', 'Project photo');
-  box.innerHTML = `<img class="lightbox__img" alt=""><div class="lightbox__bar"><p class="lightbox__cap" aria-live="polite"></p><button class="round" type="button" data-step="-1" aria-label="Previous photo">${icon('M15 5l-7 7 7 7')}</button><button class="round" type="button" data-step="1" aria-label="Next photo">${icon('M9 5l7 7-7 7')}</button></div><button class="round lightbox__x" type="button" data-close aria-label="Close photo">${icon('M6 6l12 12M18 6L6 18')}</button>`;
+  box.innerHTML = html(`<img class="lightbox__img" alt=""><div class="lightbox__bar"><p class="lightbox__cap" aria-live="polite"></p><button class="round" type="button" data-step="-1" aria-label="Previous photo">${icon('M15 5l-7 7 7 7')}</button><button class="round" type="button" data-step="1" aria-label="Next photo">${icon('M9 5l7 7-7 7')}</button></div><button class="round lightbox__x" type="button" data-close aria-label="Close photo">${icon('M6 6l12 12M18 6L6 18')}</button>`);
   document.body.append(box);
   const img = $('img', box);
   const cap = $('.lightbox__cap', box);

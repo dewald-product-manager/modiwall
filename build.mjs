@@ -5,6 +5,7 @@
      {{eager name | sizes | class}} same, but high priority (above the fold)
      {{js:expression}}             helper output, see `helpers` below            */
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 
 const SITE = 'https://www.modiwall.com';
@@ -25,12 +26,21 @@ mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);
 const minJs = (s) => s.replace(/^\s*\/\*[\s\S]*?\*\/\s*$/gm, '').replace(/^\s*\/\/.*$/gm, '').replace(/^[ \t]+/gm, '').replace(/\n{2,}/g, '\n');
 const ver = { 'css/site.css': hash(css) };
-const jsFiles = readdirSync('src/js').filter((f) => f.endsWith('.js'));
-for (const f of jsFiles) ver[`js/${f}`] = hash(read(`src/js/${f}`));
-for (const f of jsFiles) {
-  const body = minJs(read(`src/js/${f}`)).replace(/(['"])\.\/([a-z-]+\.js)\1/g, (_, q, n) => `${q}./${n}?v=${ver[`js/${n}`]}${q}`);
+// A script's version is the hash of its output, which names the versions of what it imports,
+// so a change to wall.js also renews main.js and no cached copy keeps loading the old one.
+const built = new Set();
+function buildJs(f, chain = []) {
+  if (built.has(f)) return;
+  if (chain.includes(f)) throw new Error(`Import cycle: ${[...chain, f].join(' > ')}`);
+  const body = minJs(read(`src/js/${f}`)).replace(/(['"])\.\/([a-z-]+\.js)\1/g, (_, q, n) => {
+    buildJs(n, [...chain, f]);
+    return `${q}./${n}?v=${ver[`js/${n}`]}${q}`;
+  });
+  ver[`js/${f}`] = hash(body);
   writeFileSync(`${OUT}/js/${f}`, body);
+  built.add(f);
 }
+readdirSync('src/js').filter((f) => f.endsWith('.js')).forEach((f) => buildJs(f));
 
 /* ---- helpers ---- */
 function picture(name, sizes = '100vw', cls = '', eager = false) {
@@ -44,7 +54,12 @@ function picture(name, sizes = '100vw', cls = '', eager = false) {
 }
 const full = (name) => { const im = images[name]; return `/img/${name}-${im.widths.at(-1)}.avif`; };
 
-const gallery = (items) => items.map(([name, place, title, span = '']) => `<li class="tile ${span}" data-place="${place}"><a href="${full(name)}" data-lightbox data-w="${images[name].w}" data-h="${images[name].h}">${picture(name, '(min-width:1100px) 33vw, (min-width:640px) 50vw, 100vw')}<span class="tile__cap">${title}</span></a></li>`).join('\n');
+// a tile's real width (see .tiles in layout.css), so small tiles fetch small files and wide ones stay sharp
+const tileSizes = (span) => {
+  const cols = Number(span.match(/\bw(\d+)\b/)?.[1] ?? 4) / 12;
+  return `(min-width:1100px) min(${(cols * 100).toFixed(1)}vw, ${(cols * 90).toFixed(1)}rem), (min-width:561px) ${/\bwide\b/.test(span) ? 100 : 50}vw, 100vw`;
+};
+const gallery = (items) => items.map(([name, place, title, span = '']) => `<li class="tile ${span}" data-place="${place}"><a href="${full(name)}" data-lightbox data-w="${images[name].w}" data-h="${images[name].h}">${picture(name, tileSizes(span))}<span class="tile__cap">${title}</span></a></li>`).join('\n');
 
 const helpers = {
   gallery,
@@ -70,6 +85,15 @@ const expand = (html, ctx) => html
   .replace(/\{\{(\w+)\}\}/g, (_, k) => ctx[k] ?? '');
 
 /* ---- pages ---- */
+// the date a page's source last changed in git; search engines only trust lastmod when it is honest
+const lastmod = (file) => {
+  try {
+    const d = execFileSync('git', ['log', '-1', '--format=%cs', '--', `src/pages/${file}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? `<lastmod>${d}</lastmod>` : '';
+  } catch {
+    return '';
+  }
+};
 const pages = readdirSync('src/pages').filter((f) => f.endsWith('.html'));
 const sitemap = [];
 for (const file of pages) {
@@ -78,15 +102,22 @@ for (const file of pages) {
   const meta = JSON.parse(m[1]);
   const path = file === 'index.html' ? '/' : `/${file}`;
   const url = SITE + path;
+  // share card: the page's opening photo when tools/images.py has cut one, else the courtyard
+  const lead = raw.match(/\{\{eager\s+([\w-]+)/)?.[1];
+  const share = lead && existsSync(`${OUT}/img/share-${lead}.jpg`)
+    ? { src: `${SITE}/img/share-${lead}.jpg`, alt: images[lead].alt }
+    : { src: `${SITE}/img/og.jpg`, alt: 'Courtyard living wall planted in bands of fern, lime and burgundy foliage' };
   const graph = [ORG, { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: 'Modiwall', inLanguage: 'en-ZA', publisher: { '@id': `${SITE}/#business` } },
-    { '@type': meta.pageType || 'WebPage', '@id': `${url}#page`, url, name: meta.title, description: meta.description, inLanguage: 'en-ZA', isPartOf: { '@id': `${SITE}/#site` }, about: { '@id': `${SITE}/#business` } }];
+    { '@type': meta.pageType || 'WebPage', '@id': `${url}#page`, url, name: meta.title, description: meta.description, inLanguage: 'en-ZA', isPartOf: { '@id': `${SITE}/#site` }, about: { '@id': `${SITE}/#business` },
+      primaryImageOfPage: { '@type': 'ImageObject', url: share.src, width: 1200, height: 630, caption: share.alt } }];
   if (path !== '/') graph.push({ '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: meta.crumb || meta.title, item: url }] });
   if (meta.service) graph.push({ '@type': 'Service', serviceType: meta.service, name: meta.service, provider: { '@id': `${SITE}/#business` }, areaServed: 'South Africa', url });
   if (meta.faq) graph.push({ '@type': 'FAQPage', mainEntity: meta.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a.replace(/<[^>]+>/g, '') } })) });
   const ctx = {
     data: meta, title: esc(meta.title), description: esc(meta.description), url, crumb: meta.crumb || '', bodyClass: meta.bodyClass || '',
     robots: meta.noindex ? 'noindex' : 'index, follow, max-image-preview:large',
-    cssv: ver['css/site.css'], jsv: ver['js/main.js'],
+    shareImg: share.src, shareAlt: esc(share.alt),
+    cssv: ver['css/site.css'], jsv: ver['js/main.js'], htmlv: ver['js/html.js'],
     jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'),
     year: '2026',
   };
@@ -102,7 +133,7 @@ for (const file of pages) {
   writeFileSync(`${OUT}/${file}`, html);
   if (!meta.noindex) {
     const imgs = [...new Set([...body.matchAll(/<img src="(\/img\/(?!plant|client|part)[^"]+)"[^>]*alt="([^"]*)"/g)].map((x) => `<image:image><image:loc>${SITE}${x[1]}</image:loc></image:image>`))];
-    sitemap.push(`<url><loc>${url}</loc>${imgs.join('')}</url>`);
+    sitemap.push(`<url><loc>${url}</loc>${lastmod(file)}${imgs.join('')}</url>`);
   }
 }
 writeFileSync(`${OUT}/sitemap.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${sitemap.join('\n')}\n</urlset>\n`);

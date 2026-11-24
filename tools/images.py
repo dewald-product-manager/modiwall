@@ -6,6 +6,7 @@ Replacing a photo: drop the HD file into src/originals/ with the SAME name, then
 """
 import json
 import os
+import re
 import sys
 from PIL import Image, ImageChops, ImageOps
 
@@ -59,4 +60,15 @@ if not only or "og" in only:  # social share card
     og = Image.open(os.path.join(SRC, "courtyard-bands.jpg"))
     og = ImageOps.fit(ImageOps.exif_transpose(og).convert("RGB"), (1200, 630), Image.LANCZOS)
     og.save(os.path.join(OUT, "og.jpg"), quality=82, optimize=True)
+
+# a share card for every photo that opens a page ({{eager name}}), so a shared link shows that page
+PAGES = os.path.join(ROOT, "src", "pages")
+leads = {n for f in os.listdir(PAGES) if f.endswith(".html")
+         for n in re.findall(r"\{\{eager\s+([\w-]+)", open(os.path.join(PAGES, f), encoding="utf8").read())}
+for key in sorted(leads & set(spec)):
+    if not only or "og" in only or key in only:
+        im = ImageOps.exif_transpose(Image.open(os.path.join(SRC, spec[key]["src"]))).convert("RGB")
+        if "crop" in spec[key]:
+            im = im.crop(spec[key]["crop"])
+        ImageOps.fit(im, (1200, 630), Image.LANCZOS).save(os.path.join(OUT, f"share-{key}.jpg"), quality=80, optimize=True)
 print(len(manifest), "images ready")

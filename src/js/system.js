@@ -1,3 +1,4 @@
+import { html } from './html.js';
 import { foliage } from './wall.js';
 
 /* The system scene: one Modiwall panel pulled apart, put back together, watered, planted,
@@ -34,10 +35,10 @@ export function initSystem(sec) {
   const steps = [...sec.querySelectorAll('[data-steps] li')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pots = [...Array(COLS * ROWS).keys()];
-  const el = (cls, html = '', parent = cam) => {
+  const el = (cls, markup = '', parent = cam) => {
     const d = document.createElement('div');
     d.className = cls;
-    d.innerHTML = html;
+    d.innerHTML = html(markup);
     parent.append(d);
     return d;
   };

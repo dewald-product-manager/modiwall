@@ -15,7 +15,7 @@ Static site in plain HTML, CSS and JavaScript. No frameworks, no third-party req
 ## Work on it
 
     node build.mjs            # build src/ into public/ (Node 18+, no packages to install)
-    node tools/serve.mjs      # preview at http://localhost:4173
+    node tools/serve.mjs      # preview at http://localhost:4173 (PORT=4180 for another port), with the live security headers
 
 ## Replace a photo with an HD version
 
@@ -41,5 +41,13 @@ The form cannot send on Pages (no PHP), and the preview asks search engines not 
 
 ## Security
 
-Strict Content-Security-Policy (no inline scripts or styles), HSTS, no framing, no third parties. The form checks origin,
-has a honeypot, a minimum fill time, a per-visitor limit and header-injection protection. Visualiser photos never leave the device.
+Strict Content-Security-Policy (no inline scripts or styles) with Trusted Types: markup can only be written through
+`src/js/html.js`, so any other `innerHTML` throws. HSTS, no framing, no third parties, and only GET, HEAD and the form's POST
+are accepted. The form checks Origin and Sec-Fetch-Site, has a honeypot, a minimum fill time, a link-spam filter, limits per
+visitor and for the whole site, and header-injection protection. Visualiser photos never leave the device.
+
+HSTS is not on the browser preload list. Add `; preload` to the header and submit at hstspreload.org only once every
+subdomain of modiwall.com (mail, webmail, anything else) serves HTTPS, because it is very slow to undo.
+
+Every page shares its opening photo on social media (`img/share-*.jpg`, made by `python tools/images.py og`); the home page
+uses `img/og.jpg`.

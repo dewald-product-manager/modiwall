@@ -1,4 +1,5 @@
 
+import { html } from './html.js?v=fd61fe77';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const root = document.documentElement;
@@ -123,7 +124,7 @@ c.style.setProperty('--i', i % 4);
 $$('[data-slot], [data-watch]').forEach((el) => io.observe(el));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=a7e8a1e7').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=e3437558').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
@@ -139,8 +140,8 @@ p.append(n, ' ');
 });
 });
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=d52aed25').then((m) => m.initVisualiser(vis));
-if ($('[data-system]')) import('./system.js?v=c6e7ac2e').then((m) => m.initSystem($('[data-system]')));
+if (vis) import('./visualise.js?v=3e062ef1').then((m) => m.initVisualiser(vis));
+if ($('[data-system]')) import('./system.js?v=7880f88f').then((m) => m.initSystem($('[data-system]')));
 const rooms = $('[data-rooms]');
 if (rooms) {
 const track = $('[data-track]', rooms);
@@ -202,7 +203,7 @@ if (strip) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=a7e8a1e7').then((m) => m.stripWall(strip)).catch(() => {});
+import('./wall.js?v=e3437558').then((m) => m.stripWall(strip)).catch(() => {});
 }, { rootMargin: '0px 0px -12% 0px' });
 near.observe(strip);
 }
@@ -247,7 +248,7 @@ const icon = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/
 const box = document.createElement('dialog');
 box.className = 'lightbox';
 box.setAttribute('aria-label', 'Project photo');
-box.innerHTML = `<img class="lightbox__img" alt=""><div class="lightbox__bar"><p class="lightbox__cap" aria-live="polite"></p><button class="round" type="button" data-step="-1" aria-label="Previous photo">${icon('M15 5l-7 7 7 7')}</button><button class="round" type="button" data-step="1" aria-label="Next photo">${icon('M9 5l7 7-7 7')}</button></div><button class="round lightbox__x" type="button" data-close aria-label="Close photo">${icon('M6 6l12 12M18 6L6 18')}</button>`;
+box.innerHTML = html(`<img class="lightbox__img" alt=""><div class="lightbox__bar"><p class="lightbox__cap" aria-live="polite"></p><button class="round" type="button" data-step="-1" aria-label="Previous photo">${icon('M15 5l-7 7 7 7')}</button><button class="round" type="button" data-step="1" aria-label="Next photo">${icon('M9 5l7 7-7 7')}</button></div><button class="round lightbox__x" type="button" data-close aria-label="Close photo">${icon('M6 6l12 12M18 6L6 18')}</button>`);
 document.body.append(box);
 const img = $('img', box);
 const cap = $('.lightbox__cap', box);
@@ -307,7 +308,7 @@ if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
 const form = $('[data-form]');
-if (form) import('./form.js?v=6dd56d65').then((m) => m.initForm(form));
+if (form) import('./form.js?v=046cc202').then((m) => m.initForm(form));
 const dock = $('[data-dock]');
 if (dock && hero) {
 new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero.closest('[data-pin]'));

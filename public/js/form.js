@@ -1,4 +1,5 @@
 
+import { html } from './html.js?v=fd61fe77';
 const RULES = {
 name: (v) => (v.trim().length < 2 ? 'Enter your name.' : ''),
 email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Enter an email address like name@example.co.za.'),
@@ -65,7 +66,7 @@ if (!res.ok || !body.ok) throw new Error(body.error || '');
 const done = document.createElement('div');
 done.className = 'sent';
 done.tabIndex = -1;
-done.innerHTML = '<h2>Commission request sent</h2><p class="lede"></p><a class="link" href="vertical-garden.html">See our living walls</a>';
+done.innerHTML = html('<h2>Commission request sent</h2><p class="lede"></p><a class="link" href="vertical-garden.html">See our living walls</a>');
 done.querySelector('p').textContent = `Thank you, ${data.get('name')}. We will reply to ${data.get('email')}.`;
 form.replaceWith(done);
 done.focus();
