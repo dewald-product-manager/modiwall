@@ -20,7 +20,7 @@ cpSync('src/static', OUT, { recursive: true });
 
 /* ---- css + js ---- */
 const minCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
-const css = minCss(['base', 'layout', 'home', 'pages', 'lux'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
+const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
 mkdirSync(`${OUT}/css`, { recursive: true });
 mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);
@@ -61,14 +61,33 @@ const tileSizes = (span) => {
 };
 const gallery = (items) => items.map(([name, place, title, span = '']) => `<li class="tile ${span}" data-place="${place}"><a href="${full(name)}" data-lightbox data-w="${images[name].w}" data-h="${images[name].h}">${picture(name, tileSizes(span))}<span class="tile__cap">${title}</span></a></li>`).join('\n');
 
+/* ---- journal: pages named journal-*.html carry a "post" in their header ---- */
+const metaOf = (raw) => JSON.parse(raw.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/)[1]);
+const words = (raw) => raw.replace(/^<!--[\s\S]*?-->/, '').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+const posts = readdirSync('src/pages').filter((f) => /^journal-.+\.html$/.test(f)).map((f) => {
+  const raw = read(`src/pages/${f}`);
+  const m = metaOf(raw);
+  return { slug: f.slice(8, -5), url: `/${f}`, words: words(raw), minutes: Math.max(1, Math.round(words(raw) / 220)), description: m.description, ...m.post };
+});
+const postOf = Object.fromEntries(posts.map((p) => [p.slug, p]));
+const longDate = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const storyCard = (p, sizes, big = false) => `<a class="story${big ? ' story--lead' : ''}" href="${p.url}" data-cursor="Read"><span class="story__p">${picture(p.image, sizes)}</span><span class="story__t"><small>${p.topic}, ${p.minutes} min read</small><b>${p.head}</b><span>${p.stand}</span></span></a>`;
+
+const ORDER = ['living-wall-cost-south-africa', 'living-wall-bathroom', 'why-living-walls-fail', 'pool-and-boundary-wall-garden', 'indoor-living-wall-light', 'living-or-artificial-wall', 'do-plants-clean-the-air', 'living-wall-architects-brief', 'two-gold-walls'];
 const helpers = {
+  journal: (lead) => `${storyCard(postOf[lead], '(min-width:900px) 60vw, 100vw', true)}<ul class="stories">${posts.filter((p) => p.slug !== lead).sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)).map((p) => `<li>${storyCard(p, '(min-width:900px) 40vw, 100vw')}</li>`).join('')}</ul>`,
+  stories: (slugs) => `<ul class="stories stories--3">${slugs.map((x) => `<li>${storyCard(postOf[x], '(min-width:900px) 30vw, 100vw')}</li>`).join('')}</ul>`,
   gallery,
   // optical heights, so every client carries the same weight on the page
   clients: () => [['netcare', 'Netcare', 4.9, 600, 479], ['hollard', 'Hollard', 2.9, 600, 159], ['sun-city', 'Sun City', 3.9, 600, 237], ['virgin-active', 'Virgin Active', 4.2, 600, 286], ['old-mutual', 'Old Mutual', 2.35, 600, 132], ['bidvest', 'Bidvest TopTurf', 4.1, 600, 313], ['nedbank-golf', 'Nedbank Golf Challenge', 5.6, 600, 600], ['torrecid', 'Torrecid', 2.9, 600, 176]]
     .map(([f, name, h, w, hh]) => `<li class="cl cl--${f}"><img src="/img/clients/${f}.svg" width="${w}" height="${hh}" alt="${name}" loading="lazy" decoding="async"></li>`).join(''),
-  // the corridor: first frames load at once, the rest as they come near
-  corridor: (items) => items.map(([name, place, title], i) => `<a href="${full(name)}" data-lightbox data-frame data-cursor="View" data-place="${place}" data-title="${esc(title)}" data-ratio="${(images[name].w / images[name].h).toFixed(3)}">${picture(name, '(min-width:800px) 42vw, 86vw', '', i < 2)}<span class="tile__cap">${title}</span></a>`).join('\n'),
-  index: (items) => items.map(([name, place, title], i) => `<li data-place="${place}"><a href="${full(name)}" data-open="${i}" data-peek="/img/${name}-${images[name].widths.includes(800) ? 800 : images[name].widths.at(-1)}.avif"><b>${title}</b><span>${{ home: 'Private home', health: 'Healthcare', work: 'Office', hospitality: 'Hospitality and retail' }[place]}</span></a></li>`).join('\n'),
+  // every wall: hung in the corridor by corridor.js, and laid out on the page below it
+  cards: (items) => items.map(([name, place, title]) => {
+    const im = images[name];
+    const at = (w) => `/img/${name}-${im.widths.includes(w) ? w : im.widths.at(-1)}.avif`;
+    const where = { home: 'Private home', health: 'Healthcare', work: 'Office', hospitality: 'Hospitality and retail' }[place];
+    return `<li data-place="${place}"><a href="${full(name)}" data-lightbox data-frame data-cursor="View" data-title="${esc(title)}" data-where="${where}" data-ratio="${(im.w / im.h).toFixed(3)}" data-hang="${at(800)}" data-hang-l="${at(1280)}"><span class="cards__p">${picture(name, '(min-width:1000px) 30vw, (min-width:560px) 46vw, 92vw')}</span><span class="tile__cap2"><b>${title}</b><span>${where}</span></span></a></li>`;
+  }).join('\n'),
   faq: (list) => list.map(([q, a]) => `<details class="faq"><summary>${q}</summary><div class="faq__a"><div><p>${a}</p></div></div></details>`).join('\n'),
 };
 
@@ -76,8 +95,7 @@ const ORG = {
   '@type': 'HomeAndConstructionBusiness', '@id': `${SITE}/#business`, name: 'Modiwall Vertical Gardens', url: `${SITE}/`,
   logo: `${SITE}/img/icon-512.png`, image: `${SITE}/img/og.jpg`, telephone: '+27768740299', email: 'info@modiwall.com', foundingDate: '2012',
   description: 'Modiwall designs, makes, installs and maintains living vertical gardens and artificial green walls across South Africa.',
-  address: { '@type': 'PostalAddress', streetAddress: 'Pebble Springs, Highveld', addressLocality: 'Centurion', postalCode: '0157', addressRegion: 'Gauteng', addressCountry: 'ZA' },
-  geo: { '@type': 'GeoCoordinates', latitude: -25.8802, longitude: 28.1945 },
+  address: { '@type': 'PostalAddress', addressLocality: 'Centurion', addressRegion: 'Pretoria, Gauteng', addressCountry: 'ZA' },
   areaServed: [{ '@type': 'Country', name: 'South Africa' }, { '@type': 'Continent', name: 'Africa' }],
   knowsAbout: ['vertical gardens', 'living walls', 'green walls', 'artificial green walls', 'biophilic design'],
   sameAs: ['https://www.facebook.com/modiwall', 'https://www.instagram.com/modiwall_gardens/', 'https://www.linkedin.com/company/modiwall-vertical-gardens/', 'https://www.youtube.com/@modiwallverticalgardens3531'],
@@ -108,14 +126,25 @@ for (const file of pages) {
   const path = file === 'index.html' ? '/' : `/${file}`;
   const url = SITE + path;
   // share card: the page's opening photo when tools/images.py has cut one, else the courtyard
-  const lead = raw.match(/\{\{eager\s+([\w-]+)/)?.[1];
+  const lead = meta.post?.image ?? raw.match(/\{\{eager\s+([\w-]+)/)?.[1];
   const share = lead && existsSync(`${OUT}/img/share-${lead}.jpg`)
     ? { src: `${SITE}/img/share-${lead}.jpg`, alt: images[lead].alt }
     : { src: `${SITE}/img/og.jpg`, alt: 'Courtyard living wall planted in bands of fern, lime and burgundy foliage' };
   const graph = [ORG, { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: 'Modiwall', inLanguage: 'en-ZA', publisher: { '@id': `${SITE}/#business` } },
     { '@type': meta.pageType || 'WebPage', '@id': `${url}#page`, url, name: meta.title, description: meta.description, inLanguage: 'en-ZA', isPartOf: { '@id': `${SITE}/#site` }, about: { '@id': `${SITE}/#business` },
       primaryImageOfPage: { '@type': 'ImageObject', url: share.src, width: 1200, height: 630, caption: share.alt } }];
-  if (path !== '/') graph.push({ '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: meta.crumb || meta.title, item: url }] });
+  if (path !== '/') {
+    const trail = [['Home', `${SITE}/`], ...(meta.post ? [['Journal', `${SITE}/journal.html`]] : []), [meta.crumb || meta.title, url]];
+    graph.push({ '@type': 'BreadcrumbList', itemListElement: trail.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) });
+  }
+  if (meta.post) {
+    const p = postOf[file.slice(8, -5)];
+    graph.push({ '@type': 'BlogPosting', '@id': `${url}#post`, headline: p.head, description: meta.description, articleSection: p.topic, inLanguage: 'en-ZA', wordCount: p.words, datePublished: p.date, dateModified: p.mod, mainEntityOfPage: { '@id': `${url}#page` },
+      image: { '@type': 'ImageObject', url: share.src }, publisher: { '@id': `${SITE}/#business` }, isPartOf: { '@type': 'Blog', '@id': `${SITE}/journal.html#page`, name: 'Modiwall Journal' },
+      author: p.author === 'Modiwall' ? { '@id': `${SITE}/#business` } : { '@type': 'Person', name: p.author, worksFor: { '@id': `${SITE}/#business` } },
+      ...(p.sources.length ? { citation: p.sources.map(([name, u]) => ({ '@type': 'CreativeWork', name, url: u })) } : {}) });
+  }
+  if (path === '/journal.html') graph.push({ '@type': 'ItemList', itemListElement: posts.map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + p.url, name: p.head })) });
   if (meta.service) graph.push({ '@type': 'Service', serviceType: meta.service, name: meta.service, provider: { '@id': `${SITE}/#business` }, areaServed: 'South Africa', url });
   if (meta.faq) graph.push({ '@type': 'FAQPage', mainEntity: meta.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a.replace(/<[^>]+>/g, '') } })) });
   const ctx = {
@@ -126,13 +155,21 @@ for (const file of pages) {
     jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'),
     year: '2026',
   };
-  let body = expand(raw.slice(m[0].length), ctx);
+  let source = raw.slice(m[0].length);
+  if (meta.post) {
+    const p = postOf[file.slice(8, -5)];
+    const by = `${p.author === 'Modiwall' ? 'By Modiwall' : `Words by ${p.author}, edited for this journal`}. <time datetime="${p.date}">${longDate(p.date)}</time>. ${p.minutes} minute read.`;
+    const refs = p.sources.length ? `<aside class="art__src" aria-label="Sources"><h2>Sources</h2><ol>${p.sources.map(([n, u]) => `<li><a href="${u}" rel="noopener">${n}</a></li>`).join('')}</ol></aside>` : '';
+    const parts = { topic: p.topic, head: p.head, stand: p.stand, by, lead: picture(p.image, '(min-width:900px) 50vw, 100vw', '', true), sources: refs, more: helpers.stories(p.related) };
+    source = read('src/partials/article.html').replace(/\{\{(topic|head|stand|by|lead|sources|more)\}\}/g, (_, k) => parts[k]).replace('{{BODY}}', () => source.trim().replace('<p>', '<p class="art__first">'));
+  }
+  let body = expand(source, ctx);
   let html = expand(read('src/partials/shell.html'), ctx).replace('<!--BODY-->', () => body);
   html = html.replace(new RegExp(`(<a[^>]*href="${path}")(?=[^>]*data-nav)`, 'g'), '$1 aria-current="page"').replace(/\n\s*\n+/g, '\n');
   // Every page sits in one folder, so relative links work on modiwall.com, GitHub Pages or any subfolder.
   // 404.html can be served from any depth and stays absolute.
   if (file !== '404.html') {
-    html = html.replace(/\b(href|src|action|data-peek)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
+    html = html.replace(/\b(href|src|action|data-peek|data-hang|data-hang-l)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
       .replace(/\bsrcset="([^"]+)"/g, (_, v) => `srcset="${v.replace(/(^|, )\//g, '$1')}"`);
   }
   writeFileSync(`${OUT}/${file}`, html);
@@ -141,6 +178,8 @@ for (const file of pages) {
     sitemap.push(`<url><loc>${url}</loc>${lastmod(file)}${imgs.join('')}</url>`);
   }
 }
+const feed = [...posts].sort((a, b) => b.mod.localeCompare(a.mod));
+writeFileSync(`${OUT}/feed.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Modiwall Journal</title><link>${SITE}/journal.html</link><atom:link href="${SITE}/feed.xml" rel="self" type="application/rss+xml"/><description>Short reads on living walls and vertical gardens in South Africa.</description><language>en-za</language>${feed.map((p) => `<item><title>${esc(p.head)}</title><link>${SITE}${p.url}</link><guid>${SITE}${p.url}</guid><pubDate>${new Date(`${p.date}T08:00:00Z`).toUTCString()}</pubDate><description>${esc(p.description)}</description></item>`).join('')}</channel></rss>\n`);
 writeFileSync(`${OUT}/sitemap.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${sitemap.join('\n')}\n</urlset>\n`);
 
 /* ---- GitHub Pages serves the repository root: send visitors to the built site ---- */

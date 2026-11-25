@@ -9,20 +9,27 @@
     <h1>In good company</h1>
     <p class="lede">Hospitals, insurers, resorts and head offices.</p>
   </div>
-  <div class="strip ph__strip" data-strip aria-hidden="true"><div class="strip__stage" data-stage></div><canvas class="strip__canvas" data-wall></canvas></div>
 </section>
 
-<section class="sec" aria-label="Clients">
-  <div class="wrap"><ul class="logos logos--big" data-slots>{{js:clients()}}</ul></div>
-</section>
-
-<section class="sec band" aria-labelledby="aw-h">
+<section class="lit" data-lit aria-labelledby="lit-h">
+  <div class="lit__glow" data-lit-glow aria-hidden="true"></div>
   <div class="wrap">
-    <div class="head"><h2 id="aw-h">Two gold awards</h2><p class="lede">Both from the South African Landscapers Institute, for walls built with Modiwall by Bidvest TopTurf.</p></div>
-    <div class="awards">
-      <article class="award"><div data-panels>{{img pinehaven | (min-width:800px) 58vw, 100vw}}</div><div class="award__t"><h3>Netcare Pinehaven Hospital, 2016</h3><p>Gold, specialised landscape construction. Built with architect Pieter Oosthuizen of VDO Consulting. The atrium planting relies on indirect natural light.</p></div></article>
-      <article class="award"><div data-panels>{{img sun-city | (min-width:800px) 38vw, 100vw}}</div><div class="award__t"><h3>Sun City Entertainment Centre, 2017</h3><p>Gold, interior plantscaping. A steel tree under a skylight, clad in planted Modiwall panels.</p></div></article>
-    </div>
+    <div class="lit__h"><h2 id="lit-h">Who lives with one</h2><p class="lede">Move the light across the wall.</p></div>
+    <div class="lit__w" data-lit-wall><ul class="logos" aria-label="Clients">{{js:clients()}}</ul><ul class="logos lit__on" aria-hidden="true">{{js:clients().replace(/alt="[^"]*"/g, 'alt=""')}}</ul></div>
+  </div>
+</section>
+
+<section class="sec cases" aria-labelledby="aw-h">
+  <div class="wrap">
+    <div class="head"><h2 id="aw-h">Two walls, two golds</h2><p class="lede">Both awards are from the South African Landscapers Institute, for walls built with Modiwall by Bidvest TopTurf.</p></div>
+    <article class="case">
+      <div class="case__t"><h3>Netcare Pinehaven Hospital</h3><p class="lede">A garden indoors, in a room where people wait. The atrium planting relies on indirect natural light, so every species was chosen for it.</p><dl><div><dt>Award</dt><dd>SALI gold, 2016</dd></div><div><dt>Category</dt><dd>Specialised landscape construction</dd></div><div><dt>Architect</dt><dd>Pieter Oosthuizen, VDO Consulting</dd></div><div><dt>Built by</dt><dd>Bidvest TopTurf, with Modiwall</dd></div><div><dt>Light</dt><dd>Indirect natural light</dd></div></dl></div>
+      <div class="case__g case__g--3"><a class="case__i" href="/img/pinehaven-1920.avif" data-lightbox data-cursor="View">{{img pinehaven | (min-width:900px) 58vw, 100vw}}</a><a class="case__i" href="/img/pinehaven-tall-1788.avif" data-lightbox data-cursor="View">{{img pinehaven-tall | (min-width:900px) 28vw, 100vw}}</a><a class="case__i" href="/img/pinehaven-lounge-1920.avif" data-lightbox data-cursor="View">{{img pinehaven-lounge | (min-width:900px) 28vw, 100vw}}</a></div>
+    </article>
+    <article class="case case--flip">
+      <div class="case__t"><h3>Sun City Entertainment Centre</h3><p class="lede">A steel tree under a skylight, clad in planted panels. The system follows a surface that is anything but flat.</p><dl><div><dt>Award</dt><dd>SALI gold, 2017</dd></div><div><dt>Category</dt><dd>Interior plantscaping</dd></div><div><dt>Built by</dt><dd>Bidvest TopTurf, with Modiwall</dd></div><div><dt>In print</dt><dd>African Design Magazine, 2017</dd></div></dl></div>
+      <div class="case__g case__g--1"><a class="case__i" href="/img/sun-city-640.avif" data-lightbox data-cursor="View">{{img sun-city | (min-width:900px) 58vw, 100vw}}</a></div>
+    </article>
   </div>
 </section>
 
@@ -34,14 +41,13 @@
       <a href="/img/press-suncity-480.avif" data-lightbox data-cursor="Read">{{img press-suncity | (min-width:800px) 36vw, 100vw}}</a>
     </div>
     <ul class="press">
-      <li><a href="https://doi.org/10.38140/as.v31i1.7942" rel="noopener"><span>2024</span><b>Acta Structilia</b><span>University of Pretoria research on living walls, which names Modiwall among South Africa’s locally manufactured systems.</span></a></li>
+      <li><a href="https://journals.ufs.ac.za/index.php/as/article/view/7942" rel="noopener"><span>2024</span><b>Acta Structilia</b><span>University of Pretoria research on living walls, which names Modiwall among South Africa’s locally manufactured systems.</span></a></li>
       <li><div><span>2017</span><b>SALI gold, Sun City</b><span>Interior plantscaping. Built with Modiwall by Bidvest TopTurf.</span></div></li>
       <li><div><span>2017</span><b>African Design Magazine</b><span>Ornamental green “tree” structure in Sun City’s Entertainment Centre.</span></div></li>
       <li><div><span>2016</span><b>South African patent</b><span>Modular wall system for vertical gardens.</span></div></li>
       <li><div><span>2016</span><b>SALI gold, Netcare Pinehaven</b><span>Specialised landscape construction. Built with Modiwall by Bidvest TopTurf.</span></div></li>
       <li><div><span>2016</span><b>African Design Magazine</b><span>Green wall installation at hospital, Netcare Pinehaven.</span></div></li>
-      <li><a href="https://yourneighbourhood.co.za/my-business-neighbourhood-modiwall/" rel="noopener"><span>Profile</span><b>Your Neighbourhood</b><span>How two friends set out to improve the vertical garden.</span></a></li>
-      <li><a href="https://www.homify.co.za/professionals/2095413/modiwall-vertical-gardens" rel="noopener"><span>Profile</span><b>homify</b><span>Eight Modiwall projects, reviewed by clients.</span></a></li>
+        <li><a href="https://www.homify.co.za/professionals/2095413/modiwall-vertical-gardens" rel="noopener"><span>Profile</span><b>homify</b><span>Eight Modiwall projects, reviewed by clients.</span></a></li>
     </ul>
   </div>
 </section>

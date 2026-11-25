@@ -1,14 +1,15 @@
 # Modiwall website
 
-Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefaces are Italiana and Montserrat from Google Fonts, served from this site.
+Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefaces are Italiana (display), Gloock (statements and list titles) and Montserrat (text), from Google Fonts, served from this site.
 
 | Folder | What it holds |
 | --- | --- |
 | `src/pages` | One file per page. The JSON comment at the top sets title, description and structured data. |
 | `src/partials` | Header, footer, logo, closing call to action, visualiser. |
-| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall, `visualise.js` is "See it on your wall", `system.js` is the panel scene, `corridor.js` is the walk through the projects, `boot.js` runs before first paint. |
+| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall, `visualise.js` is "See it on your wall", `system.js` is the real-time 3D system (replace the part meshes there when CAD arrives), `materials.js` is stone, timber, light, `corridor.js` is the walk through the projects, `form.js` is the commission, `seed.js` is the pointer, `boot.js` runs before first paint. |
 | `src/originals` | Master photos. |
-| `src/foliage` | Plant cut-outs from photos of planted Modiwalls, used by the living wall. |
+| `src/wall` | Wall textures joined from photos of planted Modiwalls (`python tools/wall.py` exports them). |
+| `src/foliage` | Older plant cut-outs, kept as masters. |
 | `src/static` | Copied as is: fonts, icons, `.htaccess`, `robots.txt`, the form handler. |
 | `public` | The built site. **Upload the contents of this folder.** |
 
@@ -26,7 +27,13 @@ Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefa
 Gallery links point at the largest size of each photo automatically. The links in the "At home" section of
 `src/pages/index.html` name a size (for example `bathroom-1920.avif`); check them after replacing those photos.
 
-Plants on the living wall: replace a cut-out in `src/foliage/` (transparent PNG), then `python tools/foliage.py`.
+Plants on the living wall: replace a texture in `src/wall/`, then `python tools/wall.py`.
+
+## Add a journal story
+
+Copy any `src/pages/journal-*.html`. The header holds the title, description, headline, topic, photo, date, author, sources and
+three related stories; the body is plain HTML. Add its slug to `ORDER` in `build.mjs`. The index, feed (`feed.xml`), sitemap,
+breadcrumbs and article data are made by the build.
 
 ## Preview on GitHub Pages
 

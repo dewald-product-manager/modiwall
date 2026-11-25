@@ -117,6 +117,7 @@ e.target.classList.add('in');
 io.unobserve(e.target);
 }
 }, { rootMargin: '0px 0px -8% 0px', threshold: 0.01 });
+$$('[data-watchall]').forEach((g) => [...g.children].forEach((c) => { c.dataset.watch = ''; }));
 $$('[data-slots]').forEach((g) => [...g.children].forEach((c, i) => {
 c.dataset.slot = '';
 c.style.setProperty('--i', i % 4);
@@ -124,24 +125,21 @@ c.style.setProperty('--i', i % 4);
 $$('[data-slot], [data-watch]').forEach((el) => io.observe(el));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=d891c108').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=426d4046').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
-if (!reduced) $$('[data-scrub]').forEach((p) => {
-const words = p.textContent.trim().split(/\s+/);
-p.textContent = '';
-words.forEach((w, i) => {
-const n = document.createElement('span');
-n.className = 'k';
-n.style.setProperty('--i', i);
-n.textContent = w;
-p.append(n, ' ');
-});
-});
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=8bd50bf9').then((m) => m.initVisualiser(vis));
-if ($('[data-system]')) import('./system.js?v=38f80086').then((m) => m.initSystem($('[data-system]')));
+if (vis) import('./visualise.js?v=471af281').then((m) => m.initVisualiser(vis));
+const system = $('[data-system]');
+if (system) {
+const near = new IntersectionObserver(([e]) => {
+if (!e.isIntersecting) return;
+near.disconnect();
+import('./system.js?v=4754fe48').then((m) => m.initSystem(system));
+}, { rootMargin: '150% 0px' });
+near.observe(system);
+}
 const rooms = $('[data-rooms]');
 if (rooms) {
 const track = $('[data-track]', rooms);
@@ -186,7 +184,7 @@ x = tx = e.clientX;
 y = ty = e.clientY;
 });
 peek.addEventListener('pointermove', (e) => {
-tx = e.clientX;
+tx = Math.max(e.clientX, innerWidth * 0.62); // never over the words
 ty = e.clientY;
 const a = e.target.closest('[data-peek]');
 card.classList.toggle('on', !!a);
@@ -202,7 +200,7 @@ $$('[data-strip]').forEach((strip) => {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=d891c108').then((m) => m.stripWall(strip)).catch(() => strip.remove());
+import('./wall.js?v=426d4046').then((m) => m.stripWall(strip)).catch(() => strip.remove());
 }, { rootMargin: '0px 0px -8% 0px' });
 near.observe(strip);
 });
@@ -211,7 +209,7 @@ if (night) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=d891c108').then((m) => m.nightWall(night)).catch(() => night.classList.add('no-webgl'));
+import('./wall.js?v=426d4046').then((m) => m.nightWall(night)).catch(() => night.classList.add('no-webgl'));
 }, { rootMargin: '60% 0px' });
 near.observe(night);
 }
@@ -219,13 +217,17 @@ $$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
 m.classList.toggle('in', e.isIntersecting);
 m.classList.toggle('lg-go', e.isIntersecting && !reduced);
 }, { threshold: 0.35 }).observe(m));
-if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-const disc = document.createElement('div');
-disc.className = 'cur';
-disc.setAttribute('aria-hidden', 'true');
-const label = document.createElement('b');
-disc.append(document.createElement('i'), label);
-document.body.append(disc);
+import('./seed.js?v=6aa0ff01').then((m) => m.initSeed());
+const mat = $('[data-mat]');
+if (mat) {
+const near = new IntersectionObserver(([e]) => {
+if (!e.isIntersecting) return;
+near.disconnect();
+import('./materials.js?v=61496bba').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+}, { rootMargin: '70% 0px' });
+near.observe(mat);
+}
+if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('[data-depth], .ph').forEach((sec) => {
 let x = 0;
 let y = 0;
 let tx = 0;
@@ -233,30 +235,103 @@ let ty = 0;
 let raf = 0;
 let then = 0;
 const run = (t) => {
-const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 90);
+const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 240);
 then = t;
 x += (tx - x) * k;
 y += (ty - y) * k;
-disc.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-raf = disc.classList.contains('on') || Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(run) : 0;
+sec.style.setProperty('--px', x.toFixed(4));
+sec.style.setProperty('--py', y.toFixed(4));
+raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.002 ? requestAnimationFrame(run) : 0;
 };
-addEventListener('pointermove', (e) => {
-const hit = e.target.closest?.('[data-cursor]');
-tx = e.clientX;
-ty = e.clientY;
-if (hit && !disc.classList.contains('on')) {
-x = tx;
-y = ty;
-}
-if (hit) label.textContent = hit.dataset.cursor;
-disc.classList.toggle('on', !!hit && !e.buttons);
-if (hit && !raf) {
+sec.addEventListener('pointermove', (e) => {
+tx = e.clientX / innerWidth - 0.5;
+ty = e.clientY / innerHeight - 0.5;
+if (!raf) {
 then = 0;
 raf = requestAnimationFrame(run);
 }
 }, { passive: true });
-document.addEventListener('pointerleave', () => disc.classList.remove('on'));
+});
+const chapters = $$('[data-ch]');
+if (chapters.length && !reduced) {
+let live = false;
+const inner = chapters.map((c) => c.firstElementChild);
+const run = () => {
+if (!live) return;
+const vh = innerHeight;
+const tops = chapters.map((c) => c.getBoundingClientRect().top);
+chapters.forEach((c, i) => {
+const over = i + 1 < chapters.length ? Math.min(1, Math.max(0, 1 - tops[i + 1] / vh)) : 0;
+const come = Math.min(1, Math.max(0, 1 - tops[i] / vh));
+const key = `${over.toFixed(3)}${come.toFixed(3)}`;
+if (c.dataset.k === key) return;
+c.dataset.k = key;
+inner[i].style.setProperty('--over', over.toFixed(3));
+inner[i].style.setProperty('--come', come.toFixed(3));
+});
+requestAnimationFrame(run);
+};
+new IntersectionObserver(([e]) => {
+const was = live;
+live = e.isIntersecting;
+if (live && !was) requestAnimationFrame(run);
+}).observe($('[data-chapters]'));
+root.classList.add('has-ch');
 }
+$$('[data-lit]').forEach((sec) => {
+const wall = $('[data-lit-wall]', sec);
+const glow = $('[data-lit-glow]', sec);
+let box = null;
+let x = 0.2;
+let y = 0.4;
+let tx = x;
+let ty = y;
+let held = 0;
+let live = false;
+let then = 0;
+const run = (t) => {
+if (!live) return;
+const dt = Math.min(50, t - then || 16);
+then = t;
+if (t - held > 1600) {
+tx = 0.5 + Math.sin(t / 3100) * 0.42;
+ty = 0.5 + Math.sin(t / 1900) * 0.34;
+}
+const k = 1 - Math.exp(-dt / (t - held > 1600 ? 520 : 150));
+x += (tx - x) * k;
+y += (ty - y) * k;
+wall.style.setProperty('--mx', `${(x * 100).toFixed(2)}%`);
+wall.style.setProperty('--my', `${(y * 100).toFixed(2)}%`);
+if (box) glow.style.transform = `translate3d(${(box.x + x * box.w).toFixed(0)}px,${(box.y + y * box.h).toFixed(0)}px,0)`;
+requestAnimationFrame(run);
+};
+const measure = () => {
+const a = sec.getBoundingClientRect();
+const b = wall.getBoundingClientRect();
+box = { x: b.left - a.left, y: b.top - a.top, w: b.width, h: b.height };
+};
+if (reduced) {
+wall.style.setProperty('--mx', '50%');
+wall.style.setProperty('--my', '50%');
+sec.classList.add('is-bright');
+return;
+}
+sec.addEventListener('pointermove', (e) => {
+const b = wall.getBoundingClientRect();
+tx = (e.clientX - b.left) / b.width;
+ty = (e.clientY - b.top) / b.height;
+held = performance.now();
+}, { passive: true });
+new ResizeObserver(measure).observe(wall);
+new IntersectionObserver(([e]) => {
+const was = live;
+live = e.isIntersecting;
+if (live && !was) {
+measure();
+requestAnimationFrame(run);
+}
+}).observe(sec);
+});
 $$('details.faq').forEach((d) => {
 const body = $('.faq__a', d);
 const ease = { duration: reduced ? 0 : 380, easing: 'cubic-bezier(.2,.8,.2,1)' };
@@ -272,16 +347,11 @@ body.animate({ height: ['0px', `${body.offsetHeight}px`] }, ease);
 });
 const filters = $('[data-filters]');
 const hall = $('[data-hall-page]');
-if (hall) import('./corridor.js?v=97b5ec13').then((m) => {
-const walk = m.initCorridor(hall);
-const rows = $$('.index li');
-const frames = $$('[data-frame]', hall);
+if (hall) import('./corridor.js?v=9a303249').then(async (m) => {
+const frames = $$('[data-frame]');
+const rows = $$('.cards li');
 const status = $('[data-filter-status]');
-rows.forEach((li, i) => $('a', li).addEventListener('click', (e) => {
-if (e.metaKey || e.ctrlKey) return;
-e.preventDefault();
-frames[i].click();
-}));
+const walk = await m.initCorridor(hall, frames, (a) => a.click());
 const pick = (b) => {
 $$('button', filters).forEach((x) => x.setAttribute('aria-pressed', x === b));
 rows.forEach((li) => { li.hidden = b.value !== 'all' && li.dataset.place !== b.value; });
@@ -290,6 +360,20 @@ status.textContent = `${rows.filter((li) => !li.hidden).length} walls shown`;
 };
 filters.addEventListener('click', (e) => e.target.closest('button') && pick(e.target.closest('button')));
 if (/^#(health|work|hospitality|home)$/.test(location.hash)) pick($(`[value=${location.hash.slice(1)}]`, filters));
+const sound = $('[data-sound]');
+let play;
+sound.addEventListener('click', () => {
+play ??= m.ambience();
+const on = sound.getAttribute('aria-pressed') !== 'true';
+sound.setAttribute('aria-pressed', on);
+play(on);
+});
+new IntersectionObserver(([e]) => {
+if (!e.isIntersecting && sound.getAttribute('aria-pressed') === 'true') {
+sound.setAttribute('aria-pressed', 'false');
+play?.(false);
+}
+}).observe(hall);
 });
 const shots = $$('a[data-lightbox]');
 if (shots.length) {
@@ -308,7 +392,7 @@ at = (i + list.length) % list.length;
 const a = list[at];
 img.src = a.href;
 img.alt = $('img', a).alt;
-cap.textContent = $('.tile__cap', a)?.textContent ?? img.alt;
+cap.textContent = a.dataset.title ?? $('.tile__cap', a)?.textContent ?? img.alt;
 img.classList.remove('swap');
 void img.offsetWidth;
 img.classList.add('swap');
@@ -357,7 +441,7 @@ if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
 const form = $('[data-form]');
-if (form) import('./form.js?v=046cc202').then((m) => m.initForm(form));
+if (form) import('./form.js?v=f24b9826').then((m) => m.initForm(form));
 const dock = $('[data-dock]');
 if (dock && hero) {
 new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero.closest('[data-pin]'));

@@ -193,8 +193,8 @@ export async function initVisualiser(root) {
   let dusk = false;
   function evening() {
     const { W } = frame;
-    W.amb = dusk ? 0.2 : 1;
-    W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: dusk ? 1.15 : 0 };
+    W.amb = dusk ? 0.16 : 1;
+    W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: dusk ? 1.1 : 0 };
   }
   root.querySelector('[data-vis-evening]').addEventListener('click', (e) => {
     dusk = !dusk;

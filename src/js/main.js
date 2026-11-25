@@ -135,6 +135,7 @@ const io = new IntersectionObserver((es) => {
     io.unobserve(e.target);
   }
 }, { rootMargin: '0px 0px -8% 0px', threshold: 0.01 });
+$$('[data-watchall]').forEach((g) => [...g.children].forEach((c) => { c.dataset.watch = ''; }));
 $$('[data-slots]').forEach((g) => [...g.children].forEach((c, i) => {
   c.dataset.slot = '';
   c.style.setProperty('--i', i % 4);
@@ -149,25 +150,20 @@ if (hero) {
   else requestAnimationFrame(() => setTimeout(start, 0));
 }
 
-/* ---- text that lights up word by word (CSS drives it; this only marks the words) ---- */
-if (!reduced) $$('[data-scrub]').forEach((p) => {
-  const words = p.textContent.trim().split(/\s+/);
-  p.textContent = '';
-  words.forEach((w, i) => {
-    const n = document.createElement('span');
-    n.className = 'k';
-    n.style.setProperty('--i', i);
-    n.textContent = w;
-    p.append(n, ' ');
-  });
-});
-
 /* ---- visualiser ---- */
 const vis = $('[data-vis]');
 if (vis) import('./visualise.js').then((m) => m.initVisualiser(vis));
 
 /* ---- scroll scenes ---- */
-if ($('[data-system]')) import('./system.js').then((m) => m.initSystem($('[data-system]')));
+const system = $('[data-system]');
+if (system) {
+  const near = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    near.disconnect();
+    import('./system.js').then((m) => m.initSystem(system));
+  }, { rootMargin: '150% 0px' });
+  near.observe(system);
+}
 
 /* ---- rooms: keep keyboard focus and the sideways track together ---- */
 const rooms = $('[data-rooms]');
@@ -216,7 +212,7 @@ if (peek && !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches
     y = ty = e.clientY;
   });
   peek.addEventListener('pointermove', (e) => {
-    tx = e.clientX;
+    tx = Math.max(e.clientX, innerWidth * 0.62); // never over the words
     ty = e.clientY;
     const a = e.target.closest('[data-peek]');
     card.classList.toggle('on', !!a);
@@ -229,7 +225,7 @@ if (peek && !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches
   peek.addEventListener('pointerleave', () => card.classList.remove('on'));
 }
 
-/* ---- living strips along page openings and closings, built only when near ---- */
+/* ---- living strips along page closings, built only when near ---- */
 $$('[data-strip]').forEach((strip) => {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
@@ -256,14 +252,22 @@ $$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
   m.classList.toggle('lg-go', e.isIntersecting && !reduced);
 }, { threshold: 0.35 }).observe(m));
 
-/* ---- pointer: a disc that names what a click will do ---- */
-if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-  const disc = document.createElement('div');
-  disc.className = 'cur';
-  disc.setAttribute('aria-hidden', 'true');
-  const label = document.createElement('b');
-  disc.append(document.createElement('i'), label);
-  document.body.append(disc);
+/* ---- the pointer is a seed ---- */
+import('./seed.js').then((m) => m.initSeed());
+
+/* ---- stone, timber, light ---- */
+const mat = $('[data-mat]');
+if (mat) {
+  const near = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    near.disconnect();
+    import('./materials.js').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+  }, { rootMargin: '70% 0px' });
+  near.observe(mat);
+}
+
+/* ---- depth: page openings answer the pointer in layers ---- */
+if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('[data-depth], .ph').forEach((sec) => {
   let x = 0;
   let y = 0;
   let tx = 0;
@@ -271,30 +275,107 @@ if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
   let raf = 0;
   let then = 0;
   const run = (t) => {
-    const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 90);
+    const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 240);
     then = t;
     x += (tx - x) * k;
     y += (ty - y) * k;
-    disc.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-    raf = disc.classList.contains('on') || Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(run) : 0;
+    sec.style.setProperty('--px', x.toFixed(4));
+    sec.style.setProperty('--py', y.toFixed(4));
+    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.002 ? requestAnimationFrame(run) : 0;
   };
-  addEventListener('pointermove', (e) => {
-    const hit = e.target.closest?.('[data-cursor]');
-    tx = e.clientX;
-    ty = e.clientY;
-    if (hit && !disc.classList.contains('on')) {
-      x = tx;
-      y = ty;
-    }
-    if (hit) label.textContent = hit.dataset.cursor;
-    disc.classList.toggle('on', !!hit && !e.buttons);
-    if (hit && !raf) {
+  sec.addEventListener('pointermove', (e) => {
+    tx = e.clientX / innerWidth - 0.5;
+    ty = e.clientY / innerHeight - 0.5;
+    if (!raf) {
       then = 0;
       raf = requestAnimationFrame(run);
     }
   }, { passive: true });
-  document.addEventListener('pointerleave', () => disc.classList.remove('on'));
+});
+
+/* ---- one house: chapters laid over one another, the one beneath falling back ---- */
+const chapters = $$('[data-ch]');
+if (chapters.length && !reduced) {
+  let live = false;
+  const inner = chapters.map((c) => c.firstElementChild);
+  const run = () => {
+    if (!live) return;
+    const vh = innerHeight;
+    const tops = chapters.map((c) => c.getBoundingClientRect().top);
+    chapters.forEach((c, i) => {
+      const over = i + 1 < chapters.length ? Math.min(1, Math.max(0, 1 - tops[i + 1] / vh)) : 0;
+      const come = Math.min(1, Math.max(0, 1 - tops[i] / vh));
+      const key = `${over.toFixed(3)}${come.toFixed(3)}`;
+      if (c.dataset.k === key) return;
+      c.dataset.k = key;
+      inner[i].style.setProperty('--over', over.toFixed(3));
+      inner[i].style.setProperty('--come', come.toFixed(3));
+    });
+    requestAnimationFrame(run);
+  };
+  new IntersectionObserver(([e]) => {
+    const was = live;
+    live = e.isIntersecting;
+    if (live && !was) requestAnimationFrame(run);
+  }).observe($('[data-chapters]'));
+  root.classList.add('has-ch');
 }
+
+/* ---- client names, found by lamplight: follows the pointer, wanders when left alone ---- */
+$$('[data-lit]').forEach((sec) => {
+  const wall = $('[data-lit-wall]', sec);
+  const glow = $('[data-lit-glow]', sec);
+  let box = null;
+  let x = 0.2;
+  let y = 0.4;
+  let tx = x;
+  let ty = y;
+  let held = 0;
+  let live = false;
+  let then = 0;
+  const run = (t) => {
+    if (!live) return;
+    const dt = Math.min(50, t - then || 16);
+    then = t;
+    if (t - held > 1600) {
+      tx = 0.5 + Math.sin(t / 3100) * 0.42;
+      ty = 0.5 + Math.sin(t / 1900) * 0.34;
+    }
+    const k = 1 - Math.exp(-dt / (t - held > 1600 ? 520 : 150));
+    x += (tx - x) * k;
+    y += (ty - y) * k;
+    wall.style.setProperty('--mx', `${(x * 100).toFixed(2)}%`);
+    wall.style.setProperty('--my', `${(y * 100).toFixed(2)}%`);
+    if (box) glow.style.transform = `translate3d(${(box.x + x * box.w).toFixed(0)}px,${(box.y + y * box.h).toFixed(0)}px,0)`;
+    requestAnimationFrame(run);
+  };
+  const measure = () => {
+    const a = sec.getBoundingClientRect();
+    const b = wall.getBoundingClientRect();
+    box = { x: b.left - a.left, y: b.top - a.top, w: b.width, h: b.height };
+  };
+  if (reduced) {
+    wall.style.setProperty('--mx', '50%');
+    wall.style.setProperty('--my', '50%');
+    sec.classList.add('is-bright');
+    return;
+  }
+  sec.addEventListener('pointermove', (e) => {
+    const b = wall.getBoundingClientRect();
+    tx = (e.clientX - b.left) / b.width;
+    ty = (e.clientY - b.top) / b.height;
+    held = performance.now();
+  }, { passive: true });
+  new ResizeObserver(measure).observe(wall);
+  new IntersectionObserver(([e]) => {
+    const was = live;
+    live = e.isIntersecting;
+    if (live && !was) {
+      measure();
+      requestAnimationFrame(run);
+    }
+  }).observe(sec);
+});
 
 /* ---- questions: animated open and close ---- */
 $$('details.faq').forEach((d) => {
@@ -311,19 +392,14 @@ $$('details.faq').forEach((d) => {
   });
 });
 
-/* ---- the corridor of projects, its filters and its index ---- */
+/* ---- the walk through the walls, its filters and its sound ---- */
 const filters = $('[data-filters]');
 const hall = $('[data-hall-page]');
-if (hall) import('./corridor.js').then((m) => {
-  const walk = m.initCorridor(hall);
-  const rows = $$('.index li');
-  const frames = $$('[data-frame]', hall);
+if (hall) import('./corridor.js').then(async (m) => {
+  const frames = $$('[data-frame]');
+  const rows = $$('.cards li');
   const status = $('[data-filter-status]');
-  rows.forEach((li, i) => $('a', li).addEventListener('click', (e) => {
-    if (e.metaKey || e.ctrlKey) return;
-    e.preventDefault();
-    frames[i].click();
-  }));
+  const walk = await m.initCorridor(hall, frames, (a) => a.click());
   const pick = (b) => {
     $$('button', filters).forEach((x) => x.setAttribute('aria-pressed', x === b));
     rows.forEach((li) => { li.hidden = b.value !== 'all' && li.dataset.place !== b.value; });
@@ -332,6 +408,20 @@ if (hall) import('./corridor.js').then((m) => {
   };
   filters.addEventListener('click', (e) => e.target.closest('button') && pick(e.target.closest('button')));
   if (/^#(health|work|hospitality|home)$/.test(location.hash)) pick($(`[value=${location.hash.slice(1)}]`, filters));
+  const sound = $('[data-sound]');
+  let play;
+  sound.addEventListener('click', () => {
+    play ??= m.ambience();
+    const on = sound.getAttribute('aria-pressed') !== 'true';
+    sound.setAttribute('aria-pressed', on);
+    play(on);
+  });
+  new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting && sound.getAttribute('aria-pressed') === 'true') {
+      sound.setAttribute('aria-pressed', 'false');
+      play?.(false);
+    }
+  }).observe(hall);
 });
 
 /* ---- lightbox ---- */
@@ -352,7 +442,7 @@ if (shots.length) {
     const a = list[at];
     img.src = a.href;
     img.alt = $('img', a).alt;
-    cap.textContent = $('.tile__cap', a)?.textContent ?? img.alt;
+    cap.textContent = a.dataset.title ?? $('.tile__cap', a)?.textContent ?? img.alt;
     img.classList.remove('swap');
     void img.offsetWidth;
     img.classList.add('swap');

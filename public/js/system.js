@@ -1,234 +1,863 @@
-import { html } from './html.js?v=fd61fe77';
-import { foliage } from './wall.js?v=d891c108';
+
 const COLS = 5;
 const ROWS = 4;
-const wrap = (body, box = '0 0 500 500') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box}">${body}</svg>`;
-const note = (x1, y1, x2, y2, a, b = '') => `<g class="note"><path d="M${x1} ${y1}L${x2} ${y2}"/><circle cx="${x1}" cy="${y1}" r="5"/><text x="${x2 + (x2 < x1 ? -10 : 10)}" y="${y2 + 5}" text-anchor="${x2 < x1 ? 'end' : 'start'}">${a}${b ? `<tspan x="${x2 + (x2 < x1 ? -10 : 10)}" dy="24">${b}</tspan>` : ''}</text></g>`;
-const dim = (x1, x2, y, t) => `<g class="note"><path d="M${x1} ${y - 9}V${y + 9}M${x2} ${y - 9}V${y + 9}M${x1} ${y}H${x2}"/><text x="${(x1 + x2) / 2}" y="${y - 14}" text-anchor="middle">${t}</text></g>`;
-function backPanel(labels) {
-let s = '<rect width="500" height="500" rx="4" fill="#0c1211"/><rect x="9" y="9" width="482" height="482" rx="3" fill="#1b2422"/><rect x="18" y="18" width="464" height="464" fill="#0f1514"/>';
-for (let i = 0; i < 23; i++) s += `<rect x="${20 + i * 20.7}" y="18" width="3.4" height="464" fill="#3a4643"/><rect x="${23.400 + i * 20.7}" y="18" width="5" height="464" fill="#070b0a"/>`;
-s += '<rect x="14" y="-11" width="472" height="18" rx="8" fill="#1f2927"/><rect x="14" y="-9" width="472" height="5" rx="2" fill="#46534f"/><rect x="14" y="-2" width="472" height="7" fill="#070b0a"/>';
-s += '<rect x="22" y="494" width="456" height="19" rx="9.500" fill="#2a3532"/><rect x="22" y="497" width="456" height="4" rx="2" fill="#5a6863"/>';
-for (let i = 0; i < 22; i++) s += `<rect x="${30 + i * 20.7}" y="508" width="6" height="13" rx="1.500" fill="#1b2422"/>`;
-s += '<rect x="-13" y="18" width="15" height="464" rx="7" fill="#1f2927"/><rect x="-9" y="20" width="4" height="460" rx="2" fill="#46534f"/><rect x="496" y="14" width="17" height="472" rx="8" fill="#2a3532"/><rect x="500" y="16" width="4" height="468" rx="2" fill="#5a6863"/>';
-for (const [x, y] of [[26, 26], [474, 26], [26, 474], [474, 474], [250, 474], [250, 26]]) s += `<circle cx="${x}" cy="${y}" r="6.500" fill="#26302d" stroke="#55625e" stroke-width="1.500"/><circle cx="${x}" cy="${y}" r="2.400" fill="#050807"/>`;
-if (labels) s += dim(0, 500, -58, '500 mm') + note(505, 120, 570, 92, 'Male side rail', 'slides into the next') + note(140, 300, -70, 270, 'Water', 'channels') + note(420, 503, 570, 470, 'Foot tube', 'feeds the panel below');
-return s;
-}
-function frontGrid(labels) {
-const N = 16;
-const M = 18;
-const slot = (c, r) => [3, 7, 11, 15].includes(r) && c % 3 === (r % 2 ? 1 : 2);
-let s = '<rect width="500" height="500" rx="10" fill="#202a27"/>';
-let cut = '';
-for (let r = 0; r < M; r++) for (let c = 0; c < N; c++) {
-const x = 18 + c * 29.1;
-const y = 16 + r * 26.1;
-if (slot(c, r)) cut += `M${x} ${y}h22v18h-22z`;
-else s += `<rect x="${x}" y="${y}" width="22" height="18" rx="1.500" fill="#141c1a"/><rect x="${x}" y="${y}" width="22" height="2" fill="#38443f"/>`;
-}
-s = `<mask id="g"><rect width="500" height="500" rx="10" fill="#fff"/><path d="${cut}" fill="#000"/></mask><g mask="url(#g)">${s}</g><rect x="1" y="1" width="498" height="498" rx="9" fill="none" stroke="#55625e" stroke-width="2"/>`;
-for (const [x, y] of [[10, 10], [490, 10], [10, 490], [490, 490]]) s += `<circle cx="${x}" cy="${y}" r="7" fill="#8b9793"/><path d="M${x - 4} ${y}h8M${x} ${y - 4}v8" stroke="#1b2422" stroke-width="1.800"/>`;
-if (labels) s += note(490, 10, 572, -18, 'Fixed at', 'four corners') + note(120, 190, -70, 170, 'Slots for', 'the vessels');
-return s;
-}
-const potAt = (i) => ({ x: 55 + (i % COLS) * 97.5, y: 40 + Math.floor(i / COLS) * 118 });
-const RING = '<rect x="-44" y="-56" width="588" height="18" rx="9" fill="#0c1211"/><path d="M-35 548V-47M535 548V-47" stroke="#0c1211" stroke-width="18" stroke-linecap="round"/><path class="flow flow--up" d="M-35 560V-47H250"/><path class="flow flow--up" d="M535 560V-47H250"/><rect x="-62" y="536" width="624" height="72" rx="5" fill="#0c1211"/><rect x="-50" y="556" width="600" height="42" rx="2" fill="#1d4f40"/><path d="M-50 566Q-25 560 0 566T50 566T100 566T150 566T200 566T250 566T300 566T350 566T400 566T450 566T500 566T550 566V598H-50Z" fill="#2c6b57"/><g><rect x="214" y="548" width="72" height="46" rx="6" fill="#3a4643"/><circle cx="250" cy="571" r="14" fill="#141c1a"/><circle class="pump" cx="250" cy="571" r="8" fill="none" stroke="#a0e515" stroke-width="3" stroke-dasharray="8 6"/></g><g><rect x="590" y="430" width="64" height="84" rx="8" fill="#141c1a"/><rect x="599" y="441" width="46" height="24" rx="2" fill="#a0e515"/><text x="622" y="459" text-anchor="middle" font-size="17" fill="#0c382c">02:45</text><path d="M622 514V560H562" fill="none" stroke="#141c1a" stroke-width="5"/></g>';
-const WATER_NOTES = note(-35, 220, -110, 190, 'Ring main') + note(250, 571, 330, 660, 'Pump, in the reservoir') + note(645, 452, 668, 400, 'Digital', 'timer') + note(120, -47, 60, -104, 'Feeds from the top');
+const PI = Math.PI;
 const clamp = (v) => Math.min(1, Math.max(0, v));
+const smooth = (v) => v * v * (3 - 2 * v);
 const ease = (v) => 1 - (1 - v) ** 3;
 const span = (p, a, b) => ease(clamp((p - a) / (b - a)));
+let seed = 11;
+const rnd = (a = 0, b = 1) => {
+seed = (seed * 1664525 + 1013904223) >>> 0;
+return a + (seed / 4294967296) * (b - a);
+};
+class Mesh {
+constructor() {
+this.v = [];
+this.i = [];
+}
+vert(x, y, z, nx, ny, nz, u = 0, w = 0) {
+this.v.push(x, y, z, nx, ny, nz, u, w);
+return this.v.length / 8 - 1;
+}
+quad(a, b, c, d) { this.i.push(a, b, c, a, c, d); }
+box(cx, cy, cz, sx, sy, sz, r = 0.02) {
+const h = [sx / 2, sy / 2, sz / 2];
+const b = Math.min(r, ...h.map((x) => x * 0.9));
+const at = (s, ax) => {
+const p = s.map((k, n) => k * (n === ax ? h[n] : h[n] - b));
+const n = [0, 0, 0];
+n[ax] = s[ax];
+return this.vert(cx + p[0], cy + p[1], cz + p[2], ...n);
+};
+const id = {};
+for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) for (let ax = 0; ax < 3; ax++) id[`${x}${y}${z}${ax}`] = at([x, y, z], ax);
+const g = (x, y, z, ax) => id[`${x}${y}${z}${ax}`];
+for (const s of [-1, 1]) {
+this.quad(g(s, -1, -1, 0), g(s, 1, -1, 0), g(s, 1, 1, 0), g(s, -1, 1, 0));
+this.quad(g(-1, s, -1, 1), g(1, s, -1, 1), g(1, s, 1, 1), g(-1, s, 1, 1));
+this.quad(g(-1, -1, s, 2), g(1, -1, s, 2), g(1, 1, s, 2), g(-1, 1, s, 2));
+for (const t of [-1, 1]) {
+this.quad(g(s, t, -1, 0), g(s, t, 1, 0), g(s, t, 1, 1), g(s, t, -1, 1));
+this.quad(g(s, -1, t, 0), g(s, 1, t, 0), g(s, 1, t, 2), g(s, -1, t, 2));
+this.quad(g(-1, s, t, 1), g(1, s, t, 1), g(1, s, t, 2), g(-1, s, t, 2));
+for (const w of [-1, 1]) this.i.push(g(s, t, w, 0), g(s, t, w, 1), g(s, t, w, 2));
+}
+}
+return this;
+}
+tube(axis, a, b, p, q, r, a0 = 0, a1 = 2 * PI, n = 20) {
+const base = this.v.length / 8;
+for (const [e, t] of [[0, a], [1, b]]) for (let k = 0; k <= n; k++) {
+const th = a0 + ((a1 - a0) * k) / n;
+const c = Math.cos(th);
+const s = Math.sin(th);
+if (axis === 'y') this.vert(p + c * r, t, q + s * r, c, 0, s, k / n, e * Math.abs(b - a));
+else this.vert(t, p + c * r, q + s * r, 0, c, s, k / n, e * Math.abs(b - a));
+}
+for (let k = 0; k < n; k++) this.quad(base + k, base + k + 1, base + n + 2 + k, base + n + 1 + k);
+return this;
+}
+disc(axis, t, p, q, r, n = 18) {
+const c0 = axis === 'y' ? this.vert(p, t, q, 0, 1, 0) : axis === 'x' ? this.vert(t, p, q, 1, 0, 0) : this.vert(p, q, t, 0, 0, 1);
+for (let k = 0; k <= n; k++) {
+const c = Math.cos((k / n) * 2 * PI) * r;
+const s = Math.sin((k / n) * 2 * PI) * r;
+if (axis === 'y') this.vert(p + c, t, q + s, 0, 1, 0);
+else if (axis === 'x') this.vert(t, p + c, q + s, 1, 0, 0);
+else this.vert(p + c, q + s, t, 0, 0, 1);
+if (k) this.i.push(c0, c0 + k, c0 + k + 1);
+}
+return this;
+}
+}
+function panelMesh() {
+const m = new Mesh();
+m.box(0, 0, 0.03, 4.86, 4.86, 0.06, 0.02);
+for (let i = 0; i < 24; i++) m.box(-2.26 + i * 0.1965, 0, 0.15, 0.028, 4.5, 0.2, 0.01); // ribs: the water channels
+for (const s of [-1, 1]) {
+m.box(s * 2.36, 0, 0.15, 0.1, 4.82, 0.28, 0.025);
+m.box(0, s * 2.36, 0.15, 4.82, 0.1, 0.28, 0.025);
+}
+m.tube('x', -2.3, 2.3, 2.56, 0.1, 0.18, 0.85, 2 * PI - 0.85, 24);
+m.tube('y', -2.35, 2.35, -2.56, 0.1, 0.18, -PI + 0.85, PI - 0.85, 24);
+m.tube('y', -2.42, 2.42, 2.57, 0.1, 0.145, 0, 2 * PI, 22).disc('y', 2.42, 2.57, 0.1, 0.145).disc('y', -2.42, 2.57, 0.1, 0.145);
+m.tube('x', -2.36, 2.36, -2.56, 0.1, 0.125, 0, 2 * PI, 20).disc('x', 2.36, -2.56, 0.1, 0.125).disc('x', -2.36, -2.56, 0.1, 0.125);
+for (let i = 0; i < 24; i++) m.tube('x', -2.28 + i * 0.1965, -2.255 + i * 0.1965, -2.56, 0.1, 0.17, 0, 2 * PI, 16).disc('x', -2.28 + i * 0.1965, -2.56, 0.1, 0.17, 16).disc('x', -2.255 + i * 0.1965, -2.56, 0.1, 0.17, 16);
+return m;
+}
+const slotAt = (c, r) => [3, 7, 11, 15].includes(r) && c % 3 === (r % 2 ? 1 : 2);
+function gridMesh() {
+const m = new Mesh();
+const W = 4.9;
+const N = 16;
+const R = 18;
+for (let c = 0; c <= N; c++) m.box(-W / 2 + (c * W) / N, 0, 0, c % N ? 0.085 : 0.12, W, 0.075, 0.016);
+for (let r = 0; r <= R; r++) m.box(0, W / 2 - (r * W) / R, 0, W, r % R ? 0.085 : 0.12, 0.07, 0.016);
+for (let c = 0; c < N; c++) for (let r = 0; r < R; r++) if (!slotAt(c, r)) m.box(-W / 2 + ((c + 0.5) * W) / N, W / 2 - ((r + 0.5) * W) / R, -0.018, 0.25, 0.22, 0.03, 0.012);
+return m;
+}
+function screwsMesh() {
+const m = new Mesh();
+for (const x of [-2.36, 2.36]) for (const y of [-2.36, 2.36]) {
+m.box(x, y, 0.045, 0.02, 0.1, 0.02, 0.004).box(x, y, 0.045, 0.1, 0.02, 0.02, 0.004);
+m.disc('z', 0.042, x, y, 0.085, 18);
+}
+return m;
+}
+const RIM = [];
+for (let k = 0; k < 40; k++) {
+const th = (k / 40) * 2 * PI;
+const d = [Math.cos(th), Math.sin(th)];
+let best = [0, 0];
+let bd = -9;
+for (const c of [[-0.34, 0.13], [0.34, 0.13], [0, -0.2]]) {
+const dot = c[0] * d[0] + c[1] * d[1];
+if (dot > bd) {
+bd = dot;
+best = c;
+}
+}
+const x = best[0] + d[0] * 0.14;
+RIM.push([x, best[1] + d[1] * 0.14 + (d[1] > 0.2 ? 0.07 * (1 - (x / 0.48) ** 2) : 0), d[0], d[1]]);
+}
+const waist = (t) => 1 - 0.37 * smooth(clamp((t - 0.04) / 0.78)) - 0.03 * t;
+function vesselMesh(step = 1, rings = 11) {
+const m = new Mesh();
+const pts = RIM.filter((_, k) => k % step === 0);
+const n = pts.length;
+const wall = (k0, t0, t1, count, inset, flip) => {
+const base = m.v.length / 8;
+for (let j = 0; j <= count; j++) {
+const t = t0 + ((t1 - t0) * j) / count;
+const w = waist(t) * k0;
+for (let k = 0; k <= n; k++) {
+const [x, z, nx, nz] = pts[k % n];
+m.vert(x * w, -t * 1.16, z * w * (1 - t * 0.12), nx * flip, 0.3 * flip * (1 - t), nz * flip, x / 0.96 + 0.5, t + inset);
+}
+}
+for (let j = 0; j < count; j++) for (let k = 0; k < n; k++) m.quad(base + j * (n + 1) + k, base + j * (n + 1) + k + 1, base + (j + 1) * (n + 1) + k + 1, base + (j + 1) * (n + 1) + k);
+};
+wall(1, 0, 1, rings, 0, 1);
+wall(0.935, 0, 0.2, 2, 5, -1);
+const b = m.v.length / 8;
+for (let k = 0; k <= n; k++) {
+const [x, z] = pts[k % n];
+m.vert(x, 0, z, x * 0.6, 0.8, z * 0.6, 0, 5);
+m.vert(x * 0.935, 0.004, z * 0.935, -x * 0.4, 0.9, -z * 0.4, 0, 5);
+}
+for (let k = 0; k < n; k++) m.quad(b + k * 2, b + k * 2 + 1, b + k * 2 + 3, b + k * 2 + 2);
+if (step === 1) m.box(0, -0.84, -0.2, 0.16, 0.05, 0.2, 0.02).box(0, -0.74, -0.3, 0.16, 0.22, 0.045, 0.02);
+return m;
+}
+function soilMesh() {
+const m = new Mesh();
+const c = m.vert(0, -0.1, 0, 0, 1, 0, 0.5, 0.5);
+RIM.forEach(([x, z], k) => {
+m.vert(x * 0.9, -0.15, z * 0.9, 0, 1, 0, x * 2, z * 2);
+m.i.push(c, c + 1 + k, c + 1 + ((k + 1) % RIM.length));
+});
+return m;
+}
+function plumbing() {
+const m = new Mesh();
+m.tube('y', -2.75, 2.86, -2.98, 0, 0.09).tube('y', -2.75, 2.86, 2.98, 0, 0.09).tube('x', -2.98, 2.98, 2.94, 0, 0.09);
+for (const x of [-2.98, 2.98]) m.box(x, 2.94, 0, 0.27, 0.27, 0.27, 0.11).box(x, 0, -0.04, 0.3, 0.1, 0.22, 0.03).box(x, -2.72, 0, 0.26, 0.12, 0.26, 0.05);
+for (let i = -2; i <= 2; i++) m.tube('y', 2.66, 2.9, i * 1.05, 0.02, 0.045, 0, 2 * PI, 12);
+m.box(0, -3.16, 0.16, 6.5, 0.74, 0.92, 0.05).box(0, -2.78, 0.16, 6.62, 0.07, 1.02, 0.03);
+m.box(3.95, -1.55, -0.16, 0.66, 0.94, 0.3, 0.07).tube('y', -2.9, -2.02, 3.95, -0.16, 0.035, 0, 2 * PI, 10);
+return m;
+}
+const flat = (x0, y0, x1, y1, z, m = new Mesh()) => {
+const a = m.vert(x0, y0, z, 0, 0, 1, 0, 0);
+m.vert(x1, y0, z, 0, 0, 1, 1, 0);
+m.vert(x1, y1, z, 0, 0, 1, 1, 1);
+m.vert(x0, y1, z, 0, 0, 1, 0, 1);
+m.quad(a, a + 1, a + 2, a + 3);
+return m;
+};
+function streams() {
+const m = new Mesh();
+for (let i = 0; i < 23; i++) flat(-2.24 + i * 0.1965, -2.3, -2.085 + i * 0.1965, 2.3, 0.09, m);
+return m;
+}
+function surface(m, nu, nv, f) {
+const base = m.v.length / 8;
+const at = (u, v) => f(u * 2 - 1, v);
+for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+const u = i / nu;
+const v = j / nv;
+const p = at(u, v);
+const e = 0.01;
+const a = at(Math.min(1, u + e), v);
+const b = at(Math.max(0, u - e), v);
+const c = at(u, Math.min(1, v + e));
+const d = at(u, Math.max(0, v - e));
+const U = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const V = [c[0] - d[0], c[1] - d[1], c[2] - d[2]];
+const n = [U[1] * V[2] - U[2] * V[1], U[2] * V[0] - U[0] * V[2], U[0] * V[1] - U[1] * V[0]];
+const l = Math.hypot(...n) || 1;
+m.vert(p[0], p[1], p[2], n[0] / l, n[1] / l, Math.abs(n[2] / l) < 1e-4 && l === 1 ? 1 : n[2] / l, u, v);
+}
+for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) m.quad(base + j * (nu + 1) + i, base + j * (nu + 1) + i + 1, base + (j + 1) * (nu + 1) + i + 1, base + (j + 1) * (nu + 1) + i);
+return m;
+}
+const stalk = (m, len, w) => surface(m, 2, 4, (u, v) => [u * w, 0.02 - v * len * 0.25 + 0.06 * Math.sin(v * 3), -v * len - 0.01 - Math.abs(u) * w]);
+function heartLeaf(far) {
+const m = new Mesh();
+surface(m, far ? 4 : 8, far ? 4 : 9, (u, v) => {
+const w = 0.5 * Math.sin(PI * Math.min(1, v * 0.93 + 0.07) ** 0.58) ** 0.75 * (1 - 0.18 * v);
+const x = u * w;
+const back = 0.17 * (1 - v) ** 4 * Math.min(1, Math.abs(u) * 2.2);
+return [x, v * 1.08 - back, 0.2 * Math.abs(x) - 0.3 * v * v + 0.02 * Math.sin(v * 9 + u * 3) * Math.abs(u) - 0.18 * x * x];
+});
+return far ? m : stalk(m, 0.75, 0.018);
+}
+function monsteraLeaf(far) {
+const m = new Mesh();
+surface(m, far ? 6 : 12, far ? 6 : 12, (u, v) => {
+const w = 0.56 * Math.sin(PI * Math.min(1, v * 0.9 + 0.1) ** 0.62) ** 0.62;
+const x = u * w;
+const back = 0.2 * (1 - v) ** 3 * Math.min(1, Math.abs(u) * 2);
+return [x, v * 1.05 - back, 0.16 * Math.abs(x) - 0.26 * v * v - 0.3 * x * x + 0.015 * Math.sin(v * 20) * Math.abs(u)];
+});
+return stalk(m, 0.8, 0.02);
+}
+function frond(far) {
+const m = new Mesh();
+const spine = (v) => [0, Math.sin(v * 1.5) * 0.74, -0.62 * v ** 2.1];
+surface(m, 1, far ? 4 : 8, (u, v) => { const s = spine(v); return [u * 0.008 * (1.2 - v), s[1], s[2] + 0.002]; });
+const N = far ? 13 : 24;
+for (let i = 1; i <= N; i++) {
+const v = i / (N + 1);
+const [, y, z] = spine(v);
+const len = 0.135 * Math.sin(PI * v ** 0.72) ** 0.6 + 0.012;
+const dip = -0.05 - rnd(0, 0.03);
+for (const s of [-1, 1]) surface(m, 1, far ? 1 : 2, (a, b) => {
+const w = (far ? 0.046 : 0.023) * Math.sin(PI * (0.14 + b * 0.86)) ** 0.6;
+return [s * b * len, y + b * len * 0.3 + a * w, z + dip * b * b * 2 + Math.abs(a) * 0.004];
+});
+}
+return m;
+}
+function ribbon(far) {
+const m = new Mesh();
+return surface(m, far ? 2 : 4, far ? 6 : 12, (u, v) => {
+const w = 0.04 * Math.sin(PI * (0.2 + v * 0.8)) ** 0.5;
+return [u * w, Math.sin(v * 1.75) * 0.68, -0.72 * v ** 2.2 + Math.abs(u) * w * 0.5];
+});
+}
+const VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in vec2 aUv;
+layout(location=3) in vec4 iA; layout(location=4) in vec4 iQ; layout(location=5) in vec4 iX;
+uniform mat4 uVP, uM, uL; uniform float uT, uGrow, uKind, uDrop; uniform vec2 uGust;
+out vec3 vP, vN; out vec2 vUv; out vec4 vX; out vec4 vS; out float vOcc;
+vec3 turn(vec4 q, vec3 v){ return v + 2. * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
+void main(){
+vec3 p = aP, n = aN; float g = 1.;
+vOcc = 1.;
+if (uKind > 9.5) {                         // a leaf: opens from the base, moves a little in the air
+g = smoothstep(0., 1., uGrow * 1.7 - iX.x * .7);
+float curl = (1. - g) * 2.2; p.z += p.y * p.y * curl * .4; p.x *= mix(.25, 1., g);
+float sw = sin(uT * (1.1 + iX.y * .5) + iX.y * 40.) * .022 + uGust.x * .05 * sin(uT * 2.3 + iX.y * 9.);
+p.z += sw * p.y * 1.6; p.x += sw * .6 * p.y;
+p *= iA.w * g;
+vOcc = iX.w;
+} else if (uKind > 3.5 && uKind < 5.5) {   // vessels arrive one by one and hook on
+float k = clamp(uDrop * 1.55 - iX.x * .55, 0., 1.); k = 1. - pow(1. - k, 3.);
+g = step(.001, k); p *= g;
+float a = (1. - k) * -.7; p = vec3(p.x, p.y * cos(a) - p.z * sin(a), p.y * sin(a) + p.z * cos(a)); n = vec3(n.x, n.y * cos(a) - n.z * sin(a), n.y * sin(a) + n.z * cos(a));
+p += vec3(0., 1.1, 2.6) * (1. - k);
+}
+p = turn(iQ, p) + iA.xyz; n = turn(iQ, n);
+vec4 w = uM * vec4(p, 1.);
+vP = w.xyz; vN = mat3(uM) * n; vUv = aUv; vX = iX;
+vS = uL * vec4(vP + normalize(vN) * .05, 1.);
+gl_Position = uVP * w;
+}`;
+const FS = `#version 300 es
+precision highp float; precision highp sampler2DShadow;
+in vec3 vP, vN; in vec2 vUv; in vec4 vX; in vec4 vS; in float vOcc;
+uniform vec3 uEye, uSun; uniform float uKind, uT, uWet, uFade, uPx; uniform sampler2DShadow uSh; uniform sampler2D uTx;
+out vec4 o;
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+float panel(vec3 d, vec3 c, vec3 ux, vec2 size, float soft){
+float t = dot(d, c); if (t < .02) return 0.;
+vec3 uy = cross(c, ux); vec2 q = abs(vec2(dot(d, ux), dot(d, uy)) / t) - size;
+return smoothstep(soft, -soft, max(q.x, q.y));
+}
+vec3 studio(vec3 d, float r){
+float s = .05 + r * 1.1;
+vec3 c = mix(vec3(.02, .035, .03), vec3(.2, .235, .225), smoothstep(-.6, 1., d.y));
+c += vec3(1., .97, .92) * 4.6 * panel(d, normalize(vec3(-.62, .6, .62)), normalize(vec3(.7, 0., .7)), vec2(.62, .5), s);
+c += vec3(.9, 1., .96) * 2.5 * panel(d, normalize(vec3(.93, .12, .34)), normalize(vec3(-.34, 0., .93)), vec2(.1, .9), s * .7);
+c += vec3(1.) * 1.3 * panel(d, normalize(vec3(.1, .97, .2)), vec3(1., 0., 0.), vec2(.9, .24), s);
+return c;
+}
+float shade(){
+vec3 q = vS.xyz / vS.w * .5 + .5; if (q.z > 1. || max(abs(q.x - .5), abs(q.y - .5)) > .5) return 1.;
+float a = hash(gl_FragCoord.xy) * 6.283, s = 0.; mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
+for (int i = 0; i < 6; i++) { float k = float(i); vec2 j = m * vec2(cos(k * 2.4), sin(k * 2.4)) * sqrt((k + .5) / 6.) * 2.6 * uPx; s += texture(uSh, vec3(q.xy + j, q.z - .0011)); }
+return s / 6.;
+}
+vec3 aces(vec3 x){ return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }
+void main(){
+vec3 V = normalize(uEye - vP), N = normalize(vN); if (!gl_FrontFacing) N = -N;
+if (dot(N, V) < 0. && uKind > 9.5) N = -N;
+vec3 alb = vec3(.016); float rough = .44, f0 = .045, trans = 0., occ = 1.; vec3 tcol = vec3(0.), emit = vec3(0.);
+if (uKind < .5) {                                   // limewashed wall
+float t = noise(vP.xy * 1.1 + noise(vP.xy * .5) * 2.) * .6 + noise(vP.xy * 5.) * .25 + noise(vP.xy * 31.) * .1;
+alb = mix(vec3(.019, .05, .04), vec3(.034, .078, .062), t); rough = .95; f0 = .02;
+N = normalize(N + vec3(noise(vP.xy * 9.) - .5, noise(vP.xy * 9. + 7.) - .5, 0.) * .12);
+} else if (uKind < 1.5) {                           // moulded polypropylene, a fine spark-eroded texture
+float gr = smoothstep(26., 9., distance(uEye, vP)); vec3 g = vP * 85.; N = normalize(N + (vec3(noise(g.xy), noise(g.yz + 3.), noise(g.zx + 9.)) - .5) * .035 * gr);
+alb = vec3(.013, .0145, .014);
+} else if (uKind < 2.5) { alb = vec3(.5, .52, .51); rough = .3; f0 = .6; } // steel
+else if (uKind < 3.5) {                             // water in the channels
+float s = noise(vec2(vUv.x * 5., vUv.y * 16. + uT * 3.4)) * .6 + noise(vec2(vUv.x * 9. + 4., vUv.y * 38. + uT * 6.)) * .4;
+float head = smoothstep(0., .08, uWet * 1.25 - (1. - vUv.y));
+N = normalize(vec3((s - .5) * 1.5, (noise(vec2(vUv.x * 4., vUv.y * 26. + uT * 4.6)) - .5) * .7, 1.));
+vec3 R = reflect(-V, N); float fr = .04 + .96 * pow(1. - max(dot(N, V), 0.), 5.);
+vec3 c = studio(R, .06) * (fr + .1) + vec3(.1, .22, .2) * .16 * s;
+float a = head * smoothstep(.34, .6, s) * .85 * smoothstep(0., .16, vUv.x) * smoothstep(1., .84, vUv.x);
+o = vec4(pow(aces(c * 1.1), vec3(.4545)) * a, a * .65); return;
+} else if (uKind < 4.5) {                           // vessel, with the mark pressed into its face
+float gr = smoothstep(26., 9., distance(uEye, vP)); vec3 g = vP * 85.; N = normalize(N + (vec3(noise(g.xy), noise(g.yz + 3.), noise(g.zx + 9.)) - .5) * .03 * gr);
+alb = vec3(.013, .0145, .014); rough = .36;
+if (vUv.y < 1.01 && vUv.x > .27 && vUv.x < .73 && vUv.y > .2 && vUv.y < .5 && N.z > 0.) {
+vec2 t = vec2((vUv.x - .27) / .46 * .5, (vUv.y - .2) / .3), e = vec2(.005, .01); float lb = .6;
+vec2 dg = vec2(texture(uTx, t + vec2(e.x, 0.), lb).r - texture(uTx, t - vec2(e.x, 0.), lb).r, texture(uTx, t + vec2(0., e.y), lb).r - texture(uTx, t - vec2(0., e.y), lb).r);
+N = normalize(N + vec3(-dg.x, dg.y, 0.) * .5 * smoothstep(34., 12., distance(uEye, vP)));
+}
+if (vUv.y > 4.9) occ = smoothstep(5.22, 4.98, vUv.y) * .9 + .1;
+} else if (uKind < 5.5) {                           // growing medium
+float t = noise(vP.xz * 24.) * .5 + noise(vP.xz * 70.) * .5; alb = mix(vec3(.02, .013, .008), vec3(.085, .056, .036), t * t); rough = .95; occ = .7;
+N = normalize(N + (vec3(noise(vP.xz * 40.), 0., noise(vP.zx * 44.)) - .5) * .9);
+} else if (uKind < 6.5) {                           // timer display
+float lcd = texture(uTx, vec2(.5 + vUv.x * .5, 1. - vUv.y)).r;
+alb = vec3(.02); emit = mix(vec3(.34, .72, .012), vec3(.02, .07, .02), lcd) * .9; rough = .2;
+} else if (uKind < 7.5) {                           // pipes, with the water passing inside
+alb = vec3(.013, .0145, .014); rough = .34;
+float f = fract(vUv.y * .9 - uT * .75); emit = vec3(.34, .74, .015) * smoothstep(.5, .0, abs(f - .5) * 2.4) * pow(max(dot(N, V), 0.), 3.) * uWet * .34;
+} else {
+float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), s = vX.y;
+float back = gl_FrontFacing ? 0. : 1.;
+trans = .42; rough = .46; f0 = .04;
+if (uKind < 11.5) {                               // heart-leaf philodendron, green (10) and lime (11)
+float lat = abs(fract((v + au * .34) * 7.5 + s) - .5), vein = smoothstep(.06, .0, abs(u) - .012) , side = smoothstep(.1, .02, lat) * smoothstep(1., .2, au);
+vec3 a = uKind < 10.5 ? mix(vec3(.016, .07, .014), vec3(.04, .135, .022), s) : mix(vec3(.075, .17, .012), vec3(.2, .3, .022), s * s);
+vec3 hi = uKind < 10.5 ? vec3(.11, .25, .05) : vec3(.34, .44, .08);
+float m = noise(vec2(u * 3. + s * 50., v * 4.));
+alb = a * (.75 + .5 * m); alb = mix(alb, hi, vein * .55 + side * .16);
+alb = mix(alb, hi * .9, smoothstep(.78, 1., au) * .16);
+N = normalize(N + cross(N, vec3(0., 0., 1.)) * 0. + vec3(sign(u) * side * .16, (lat - .25) * .32, 0.) * (1. - back));
+tcol = uKind < 10.5 ? vec3(.16, .36, .02) : vec3(.36, .5, .03);
+if (s > .9 && uKind < 10.5) alb *= vec3(1.9, 1.5, 1.2);
+} else if (uKind < 12.5) {                        // sword fern
+alb = mix(vec3(.05, .15, .02), vec3(.14, .28, .04), s * .6 + noise(vP.xy * 6.) * .4); tcol = vec3(.24, .46, .04); rough = .6;
+} else if (uKind < 13.5) {                        // variegated spider plant
+float st = smoothstep(.34, .5, au + noise(vec2(u * 2., v * 30.)) * .08);
+alb = mix(vec3(.62, .66, .4), mix(vec3(.035, .16, .025), vec3(.07, .24, .04), s), st); alb *= .86 + .2 * noise(vec2(u * 22., v * 3.)); tcol = vec3(.4, .6, .12); rough = .42;
+} else {                                          // delicious monster: the splits are cut here
+float row = (v - .04 + au * .22) * 6.4, f = fract(row) - .5; float id = floor(row);
+float open = smoothstep(.36, .5, au) * step(.6, row) * step(row, 6.2);
+if (open > 0. && abs(f) < .16 * smoothstep(.34, .72, au) && v < .95) discard;
+float holes = length(vec2((au - .22) * 2.3, f * 1.1)); if (row > 1.4 && row < 4.6 && holes < .13 + .04 * hash(vec2(id, s))) discard;
+float vein = smoothstep(.035, .0, abs(u) - .01), side = smoothstep(.09, .0, abs(abs(f) - .5)) * smoothstep(1., .1, au);
+alb = mix(vec3(.012, .054, .015), vec3(.026, .092, .022), noise(vec2(u * 2. + s * 9., v * 3.)));
+alb = mix(alb, vec3(.16, .3, .09), vein * .7 + side * .16); tcol = vec3(.1, .28, .03); rough = .44; f0 = .042;
+N = normalize(N + vec3(0., f * .34, 0.) * (1. - back));
+}
+alb = mix(alb, alb * 1.25 + .012, back); rough += back * .22;
+occ = mix(.16, 1., vOcc);
+}
+float sh = shade();
+float ndl = dot(N, uSun), ndv = max(dot(N, V), .02);
+vec3 sun = vec3(1., .95, .86) * 3.3;
+vec2 pool = (vP.xy - vec2(.2, .3)) / vec2(6.2, 5.4); float spot = exp(-dot(pool, pool) * uFade);
+vec3 H = normalize(uSun + V); float a2 = rough * rough * rough * rough, nh = max(dot(N, H), 0.);
+float D = a2 / (3.14159 * pow(nh * nh * (a2 - 1.) + 1., 2.)); float k = (rough + 1.) * (rough + 1.) / 8.;
+float G = 1. / ((max(ndl, .0) * (1. - k) + k) * (ndv * (1. - k) + k));
+float F = f0 + (1. - f0) * pow(1. - max(dot(H, V), 0.), 5.);
+if (uKind > 9.5) { float dz = smoothstep(.5, 2.1, vP.z); occ *= mix(.5, 1., dz); }
+vec3 c = alb / 3.14159 * max(ndl, 0.) * sun * sh * spot + sun * D * G * F * (uKind > 9.5 ? .16 : .25) * max(ndl, 0.) * sh * spot;
+c += trans * alb * .0 + trans * tcol * (pow(max(dot(-N, uSun), 0.), 1.2) * .34 + pow(max(dot(-V, uSun), 0.), 4.) * .2) * sun * (.25 + .75 * sh) * spot / 3.14159;
+vec3 amb = mix(vec3(.05, .09, .075), vec3(.46, .52, .5), N.y * .5 + .5) + vec3(.2, .2, .18) * max(dot(N, normalize(vec3(-.5, .4, .7))), 0.);
+c += alb * amb * occ * (.35 + .65 * spot);
+vec3 R = reflect(-V, N); vec4 q = rough * vec4(-1., -.0275, -.572, .022) + vec4(1., .0425, 1.04, -.04);
+float x = min(q.x * q.x, exp2(-9.28 * ndv)) * q.x + q.y; vec2 ab = vec2(-1.04, 1.04) * x + q.zw;
+c += studio(R, rough) * (f0 * ab.x + ab.y) * occ * (.3 + .7 * sh) * (.25 + .75 * spot) * (uKind < .5 ? .25 : 1.) * (uKind > 13.5 ? .13 : uKind > 9.5 ? .28 : 1.25);
+c += emit;
+c = aces(c * 1.28);
+o = vec4(pow(c, vec3(.4545)) + (hash(gl_FragCoord.xy + 3.) - .5) / 200., 1.);
+}`;
+const SFS = `#version 300 es
+precision highp float; in vec2 vUv; in vec4 vX; uniform float uKind;
+void main(){ if (uKind > 13.5) { float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), row = (v - .04 + au * .22) * 6.4, f = fract(row) - .5; if (au > .4 && row > .6 && row < 6.2 && v < .95 && abs(f) < .14) discard; } }`;
+const mul = (a, b) => {
+const o = new Float32Array(16);
+for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) o[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k];
+return o;
+};
+const move = (x, y, z) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
+const norm = (v) => { const l = Math.hypot(...v) || 1; return v.map((x) => x / l); };
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const look = (eye, at) => {
+const z = norm([eye[0] - at[0], eye[1] - at[1], eye[2] - at[2]]);
+const x = norm(cross([0, 1, 0], z));
+const y = cross(z, x);
+return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
+};
+const persp = (fov, asp, n, f, sx, sy) => {
+const k = 1 / Math.tan(fov / 2);
+return new Float32Array([k / asp, 0, 0, 0, 0, k, 0, 0, -sx, -sy, (f + n) / (n - f), -1, 0, 0, (2 * f * n) / (n - f), 0]);
+};
+const ortho = (s, n, f) => new Float32Array([1 / s, 0, 0, 0, 0, 1 / s, 0, 0, 0, 0, -2 / (f - n), 0, 0, 0, -(f + n) / (f - n), 1]);
+const aim = (d, up) => {
+const y = norm(d);
+const k = dot(up, y);
+const z = norm(up.map((v, i) => v - y[i] * k));
+const x = cross(y, z);
+const t = x[0] + y[1] + z[2];
+if (t > 0) {
+const s = Math.sqrt(t + 1) * 2;
+return [(y[2] - z[1]) / s, (z[0] - x[2]) / s, (x[1] - y[0]) / s, s / 4];
+}
+if (x[0] > y[1] && x[0] > z[2]) {
+const s = Math.sqrt(1 + x[0] - y[1] - z[2]) * 2;
+return [s / 4, (y[0] + x[1]) / s, (z[0] + x[2]) / s, (y[2] - z[1]) / s];
+}
+if (y[1] > z[2]) {
+const s = Math.sqrt(1 + y[1] - x[0] - z[2]) * 2;
+return [(y[0] + x[1]) / s, s / 4, (z[1] + y[2]) / s, (z[0] - x[2]) / s];
+}
+const s = Math.sqrt(1 + z[2] - x[0] - y[1]) * 2;
+return [(z[0] + x[2]) / s, (z[1] + y[2]) / s, s / 4, (x[1] - y[0]) / s];
+};
+const potAt = (i) => [-1.95 + (i % COLS) * 0.975, 2.02 - Math.floor(i / COLS) * 1.18];
+const kindFor = (x, y) => {
+const f = Math.sin(x * 0.62 + y * 0.45) + Math.sin(x * 0.31 - y * 0.83 + 2) * 0.9;
+if (Math.sin(x * 1.7 + y * 2.9) > 0.965 && Math.sin(x * 0.9 - y) > -0.2) return 14;
+return f > 0.8 ? 11 : f > -0.15 ? 10 : f > -0.65 ? 13 : 12;
+};
+function plant(out, kind, x, y, z, order, full = 1) {
+const add = (k, p, s, d, up, occ) => (out[k] ??= []).push(...p, s, ...aim(d, up), clamp(order + rnd(-0.03, 0.06)), rnd(), 0, occ);
+if (kind === 10 || kind === 11) {
+for (let n = 0; n < 22 * full; n++) {
+const a = rnd(-1.5, 1.5);
+const h = rnd(-1.02, 0.5);
+const r = rnd(0.3, 0.9) * (1 - Math.abs(h) * 0.2);
+const p = [x + Math.sin(a) * r * 0.78, y + h, z + 0.12 + Math.cos(a) * r * 0.62];
+add(kind, p, rnd(0.46, 0.84), [Math.sin(a) * 0.55 + rnd(-0.35, 0.35), -0.95 + rnd(-0.1, 0.45), 0.36 + rnd(-0.1, 0.35)], [Math.sin(a) * 0.5 + rnd(-0.35, 0.35), 0.5 + rnd(-0.2, 0.2), 0.85], clamp(0.25 + r * 0.85));
+}
+} else if (kind === 14) {
+for (let n = 0; n < 4; n++) {
+const a = -0.95 + n * 0.62 + rnd(-0.15, 0.15);
+add(14, [x + Math.sin(a) * 0.7, y + 0.35 + rnd(-0.5, 0.4), z + 0.75 + rnd(0, 0.4)], rnd(1.35, 1.85), [Math.sin(a) * 0.75, -0.75 + rnd(-0.1, 0.3), 0.42], [Math.sin(a) * 0.4, 0.55, 0.85], rnd(0.75, 1));
+}
+for (let n = 0; n < 8; n++) add(10, [x + rnd(-0.5, 0.5), y + rnd(-0.6, 0.4), z + rnd(0.1, 0.4)], rnd(0.5, 0.75), [rnd(-0.5, 0.5), -0.9, 0.35], [rnd(-0.3, 0.3), 0.5, 0.85], 0.35);
+} else {
+const fern = kind === 12;
+for (let n = 0; n < 9; n++) add(10, [x + rnd(-0.46, 0.46), y + rnd(-1.05, 0.2), z + rnd(0, 0.28)], rnd(0.5, 0.74), [rnd(-0.5, 0.5), -0.9, 0.3], [rnd(-0.35, 0.35), 0.5, 0.85], rnd(0.2, 0.45));
+for (let n = 0; n < (fern ? 24 : 36) * full; n++) {
+const a = rnd(-1.75, 1.75);
+const lift = rnd(-0.65, 0.95);
+add(kind, [x + rnd(-0.16, 0.16), y - 0.06 + rnd(-0.06, 0.06), z + rnd(-0.1, 0.12)], fern ? rnd(1.25, 1.95) : rnd(1.2, 2.05), [Math.sin(a) * 0.85, 0.15 + lift * 0.9, 0.35 + Math.cos(a) * 0.65], [0, 1, 0.12], clamp(0.55 + lift * 0.4 + rnd(-0.12, 0.2)));
+}
+}
+}
 export function initSystem(sec) {
-const cam = sec.querySelector('[data-rig]');
-const tech = sec.hasAttribute('data-detail'); // the system page labels every part
+const host = sec.querySelector('.rig');
+const pin = sec.querySelector('.sys__pin');
 const steps = [...sec.querySelectorAll('[data-steps] li')];
+const tech = sec.hasAttribute('data-detail');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const pots = [...Array(COLS * ROWS).keys()];
-const el = (cls, markup = '', parent = cam) => {
-const d = document.createElement('div');
-d.className = cls;
-d.innerHTML = html(markup);
-parent.append(d);
-return d;
-};
-const pic = (src, parent, cls, box) => {
-const i = new Image();
-i.src = src;
-i.alt = '';
-i.className = cls;
-Object.assign(i.style, box);
-parent.append(i);
-return i;
-};
-const pc = (v) => `${(v / 5).toFixed(2)}%`;
-const wall = el('rig__layer rig__wall');
-const ring = el('rig__layer', wrap(RING + (tech ? `<g class="notes" data-notes>${WATER_NOTES}</g>` : '')));
-const nextR = el('rig__layer', wrap(backPanel()));
-const nextT = el('rig__layer', wrap(backPanel()));
-const back = el('rig__layer', wrap(backPanel(tech).replace(/<g class="note">/g, '<g class="note note--a">') + pots.concat([20, 21]).map((i) => `<path class="flow" d="M${33.500 + i * 20.7} 14V486"/>`).join('')));
-const grid = el('rig__layer', wrap(frontGrid(tech).replace(/<g class="note">/g, '<g class="note note--b">')));
-const potLayer = el('rig__layer');
-const plantLayer = el('rig__layer');
-const potEls = pots.map((i) => {
-const { x, y } = potAt(i);
-return pic(new URL('../img/pot.webp', import.meta.url).href, potLayer, 'rig__it', { left: pc(x - 46), top: pc(y - 22), width: '18.4%' });
+const AT = [0, 0.18, 0.36, 0.58, 0.8, 1.001];
+const canvas = document.createElement('canvas');
+canvas.className = 'sys__canvas';
+canvas.dataset.cursor = 'Turn';
+canvas.setAttribute('aria-hidden', 'true');
+const gl = canvas.getContext('webgl2', { alpha: false, antialias: true, powerPreference: 'high-performance' });
+const progress = (p) => steps.forEach((li, i) => {
+const on = p >= AT[i] && p < AT[i + 1];
+if (li.classList.contains('on') !== on) li.classList.toggle('on', on);
+li.style.setProperty('--p', clamp((p - AT[i]) / (Math.min(1, AT[i + 1]) - AT[i])).toFixed(3));
 });
-const tile = (box) => {
-const cv = document.createElement('canvas');
-cv.className = 'rig__it';
-Object.assign(cv.style, box, { opacity: 0 });
-return cv;
-};
-const plantEls = pots.map((i) => {
-const { x, y } = potAt(i);
-const cv = tile({ left: pc(x - 105), top: pc(y - 116), width: '42%', height: '42%' });
-cv.style.transformOrigin = '50% 40%';
-plantLayer.append(cv);
-return cv;
-});
-const more = el('rig__layer');
-const around = [];
-for (let r = -1; r <= 1; r++) for (let c = -1; c <= 1; c++) if (r || c) around.push({ r, c });
-const moreEls = around.map(({ r, c }) => {
-const cv = tile({ left: `${c * 100 - 20}%`, top: `${r * 100 - 26}%`, width: '140%', height: '146%' });
-more.append(cv);
-return cv;
-});
-const KIND = [0, 2, 14, 3, 12, 7, 10, 18];
-const kindOf = (i) => KIND[Math.floor((Math.sin((i % COLS) * 1.1 + Math.floor(i / COLS) * 1.6) + 1) * 3.99)];
-foliage().then((img) => {
-const dpr = Math.min(2, devicePixelRatio || 1);
-const stamp = (x, k, cx, cy, size, rot, bright) => {
-x.save();
-x.translate(cx, cy - size * 0.62);
-x.rotate(Math.PI + rot); // cells are stored hanging point down
-x.filter = `brightness(${bright})`;
-x.drawImage(img, (k % 5) * 256, Math.floor(k / 5) * 256, 256, 256, -size / 2, -size, size, size);
-x.restore();
-};
-plantEls.forEach((cv, i) => {
-const w = Math.round(cam.offsetWidth * 0.42 * dpr);
-cv.width = cv.height = w;
-const x = cv.getContext('2d');
-const k = kindOf(i);
-stamp(x, k, w * 0.46, w * 0.66, w * 0.68, 0.5, 0.55);
-stamp(x, k, w * 0.54, w * 0.68, w * 0.7, -0.5, 0.72);
-stamp(x, k, w * 0.5, w * 0.72, w * 0.78, 0.05, 1.05);
-});
-const w = Math.round(cam.offsetWidth * 1.4 * 0.55 * dpr);
-const h = Math.round((w * 730) / 700);
-const u1 = w / 700;
-moreEls.forEach((cv, n) => setTimeout(() => {
-cv.width = w;
-cv.height = h;
-const x = cv.getContext('2d');
-x.fillStyle = '#0f1714';
-x.fillRect(104 * u1, 140 * u1, 492 * u1, 470 * u1);
-for (let layer = 0; layer < 2; layer++) {
-for (let i = COLS * ROWS - 1; i >= 0; i--) {
-const { x: px, y: py } = potAt(i);
-const t = Math.sin((i + n * 5 + layer * 3) * 12.9) * 0.5;
-stamp(x, kindOf(i + n * 3), (100 + px) * u1, (190 + py) * u1, 205 * u1, t, layer ? 1.02 : 0.5);
-}
-}
-}, 60 + n * 45));
-});
-const order = pots.map((i) => (i % COLS) * 0.06 + Math.floor(i / COLS) * 0.09);
-const last = new Map(); // skip writes that change nothing
-const put = (node, prop, value) => {
-const key = `${prop}${value}`;
-const seen = last.get(node) ?? {};
-if (seen[prop] === key) return;
-seen[prop] = key;
-last.set(node, seen);
-if (prop.startsWith('--')) node.style.setProperty(prop, value);
-else node.style[prop] = value;
-};
-const AT = [0, 0.18, 0.36, 0.58, 0.78, 1.001];
-let u = 1;
-const measure = () => { u = cam.offsetWidth / 500; };
-function render(p) {
-const a = span(p, 0.02, 0.16);
-const b = span(p, 0.18, 0.34);
-const water = span(p, 0.58, 0.66);
-const end = span(p, 0.8, 0.97);
-const join = span(p, 0.06, 0.17) * (1 - span(p, 0.18, 0.24)); // neighbours visit, show how they lock, and leave
-const z = (node, v) => put(node, 'transform', `translate3d(0,0,${(v * u).toFixed(1)}px)`);
-z(wall, -40 - (1 - a) * 40);
-z(ring, -20 - (1 - a) * 20);
-z(back, (1 - a) * 170);
-const away = (1 - span(p, 0.06, 0.15)) * 130;
-put(nextR, 'transform', `translate3d(${((516 + away) * u).toFixed(1)}px,0,${((1 - a) * 170 * u).toFixed(1)}px)`);
-put(nextT, 'transform', `translate3d(0,${((-518 - away) * u).toFixed(1)}px,${((1 - a) * 170 * u).toFixed(1)}px)`);
-put(nextR, 'opacity', (join * 0.9).toFixed(2));
-put(nextT, 'opacity', (join * 0.9).toFixed(2));
-put(cam, '--na', (span(p, 0.01, 0.05) * (1 - span(p, 0.16, 0.2))).toFixed(2));
-put(cam, '--nb', (span(p, 0.2, 0.26) * (1 - span(p, 0.36, 0.4))).toFixed(2));
-put(cam, '--nw', (span(p, 0.58, 0.63) * (1 - span(p, 0.77, 0.8))).toFixed(2));
-z(grid, 26 + (1 - b) * 260);
-z(potLayer, 52);
-z(plantLayer, 84);
-z(more, 30);
-put(plantLayer, 'opacity', '1');
-put(grid, 'opacity', (0.25 + 0.75 * span(p, 0.08, 0.2)).toFixed(2));
-put(ring, 'opacity', (1 - span(p, 0.8, 0.86)).toFixed(2));
-put(wall, 'opacity', (1 - span(p, 0.8, 0.9)).toFixed(2));
-potEls.forEach((n, i) => {
-const k = span(p, 0.35 + order[i] * 0.34, 0.44 + order[i] * 0.34);
-put(n, 'opacity', clamp(k * 3).toFixed(2));
-put(n, 'transform', `translate3d(${((1 - k) * 170 * u).toFixed(1)}px,${((1 - k) * -40 * u).toFixed(1)}px,${((1 - k) * 60 * u).toFixed(1)}px)`);
-});
-plantEls.forEach((n, i) => {
-const k = span(p, 0.6 + order[i] * 0.22, 0.68 + order[i] * 0.22);
-put(n, 'opacity', clamp(k * 4).toFixed(2));
-put(n, 'transform', `translateY(${((1 - k) * 10).toFixed(1)}%) scale(${(0.35 + 0.65 * k).toFixed(3)})`);
-});
-moreEls.forEach((n, i) => {
-const { r, c } = around[i];
-const k = span(p, 0.79 + i * 0.011, 0.9 + i * 0.011);
-put(n, 'opacity', clamp(k * 2.5).toFixed(2));
-put(n, 'transform', `translate3d(${((1 - k) * (c || 0.6) * 260 * u).toFixed(1)}px,${((1 - k) * r * 220 * u).toFixed(1)}px,0)`);
-});
-put(cam, 'transform', `rotateX(${(-20 + p * 12 + end * 4).toFixed(1)}deg) rotateY(${(-46 + p * 26 - end * 6).toFixed(1)}deg) scale(${(1 - end * 0.5).toFixed(3)})`);
-put(cam, '--water', water.toFixed(2));
-sec.classList.toggle('is-wet', water > 0.01 && end < 0.5);
-steps.forEach((li, i) => {
-li.classList.toggle('on', p >= AT[i] && p < AT[i + 1]);
-put(li, '--p', clamp((p - AT[i]) / (Math.min(1, AT[i + 1]) - AT[i])).toFixed(3));
-});
-}
-measure();
-if (reduced) {
-render(0.77);
+if (!gl) {
+sec.classList.add('no-webgl');
 steps.forEach((li) => li.classList.add('on'));
 return;
 }
+pin.before(canvas);
+pin.parentElement.style.setProperty('--live', 1);
+const link = (fs) => {
+const p = gl.createProgram();
+for (const [t, s] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+const sh = gl.createShader(t);
+gl.shaderSource(sh, s);
+gl.compileShader(sh);
+gl.attachShader(p, sh);
+}
+gl.linkProgram(p);
+return p;
+};
+const progs = [link(FS), link(SFS)];
+const ext = gl.getExtension('KHR_parallel_shader_compile');
+const uniforms = (p) => {
+if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`system shader: ${gl.getAttachedShaders(p).map((s) => gl.getShaderInfoLog(s)).join(' ')}`);
+const u = {};
+for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) {
+const n = gl.getActiveUniform(p, i).name;
+u[n] = gl.getUniformLocation(p, n);
+}
+return u;
+};
+const ONE = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0, 1]);
+const upload = (mesh, inst = ONE) => {
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh.v), gl.STATIC_DRAW);
+[[0, 3, 0], [1, 3, 12], [2, 2, 24]].forEach(([l, n, o]) => {
+gl.enableVertexAttribArray(l);
+gl.vertexAttribPointer(l, n, gl.FLOAT, false, 32, o);
+});
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.i), gl.STATIC_DRAW);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+const d = new Float32Array(inst);
+gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW);
+[3, 4, 5].forEach((l, n) => {
+gl.enableVertexAttribArray(l);
+gl.vertexAttribPointer(l, 4, gl.FLOAT, false, 48, n * 16);
+gl.vertexAttribDivisor(l, 1);
+});
+gl.bindVertexArray(null);
+return { vao, n: mesh.i.length, count: d.length / 12 };
+};
+const tilt = 0.24;
+const pots = [...Array(COLS * ROWS).keys()];
+const order = pots.map((i) => ((i % COLS) * 0.05 + Math.floor(i / COLS) * 0.22) / 0.9);
+const q = [Math.sin(tilt / 2), 0, 0, Math.cos(tilt / 2)];
+const potInst = new Float32Array(pots.flatMap((i) => [potAt(i)[0], potAt(i)[1], 0.82, 1, ...q, order[i], 0.5, 0, 1]));
+const wallMesh = flat(-40, -30, 40, 30, -0.42);
+const parts = {
+wall: upload(wallMesh), panel: upload(panelMesh()), grid: upload(gridMesh()), screws: upload(screwsMesh()), vessel: upload(vesselMesh(), potInst), vesselFar: upload(vesselMesh(2, 4), potInst), soil: upload(soilMesh(), potInst),
+pipes: upload(plumbing()), lcd: upload(flat(3.72, -1.5, 4.18, -1.22, 0.005)), streams: upload(streams()),
+};
+const make = (far) => {
+const h = heartLeaf(far);
+return { 10: h, 11: h, 12: frond(far), 13: ribbon(far), 14: monsteraLeaf(far) };
+};
+const near = make(false);
+const away = make(true);
+const full = innerWidth < 800 ? 0.62 : 0.76;
+const around = [];
+for (let r = -1; r <= 1; r++) for (let c = -1; c <= 1; c++) around.push({ r, c, far: !!(r || c) });
+around.forEach((a, n) => {
+const out = {};
+for (const i of pots) {
+const [x, y] = potAt(i);
+plant(out, kindFor(x + a.c * 5.15, y - a.r * 5.15), x, y, 0.9, a.far ? rnd(0, 0.4) : order[i], a.far ? full : 1);
+}
+a.plants = Object.entries(out).map(([k, d]) => ({ kind: Number(k), ...upload((a.far ? away : near)[k], d) }));
+a.delay = n * 0.06;
+});
+const sheet = document.createElement('canvas');
+sheet.width = 1024;
+sheet.height = 512;
+const x2 = sheet.getContext('2d');
+x2.fillRect(0, 0, 1024, 512);
+x2.save();
+x2.filter = 'blur(3px)';
+x2.translate(48, 40);
+x2.scale(0.262, 0.335);
+x2.translate(-235, -100);
+x2.strokeStyle = x2.fillStyle = '#fff';
+document.querySelectorAll('.foot__mark path').forEach((p) => {
+const path = new Path2D(p.getAttribute('d'));
+if (p.getAttribute('stroke-width')) {
+x2.lineWidth = p.getAttribute('stroke-width');
+x2.lineCap = 'round';
+x2.stroke(path);
+} else x2.fill(path);
+});
+x2.restore();
+x2.fillStyle = '#fff';
+x2.font = '600 184px monospace';
+x2.textAlign = 'center';
+x2.fillText('02:45', 768, 320);
+gl.activeTexture(gl.TEXTURE1);
+gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sheet);
+gl.generateMipmap(gl.TEXTURE_2D);
+const SIZE = innerWidth < 800 ? 1024 : 2048;
+gl.activeTexture(gl.TEXTURE0);
+const depth = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, depth);
+gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, SIZE, SIZE);
+for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+const fbo = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0);
+gl.drawBuffers([gl.NONE]);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+const notes = [];
+if (tech) {
+const box = document.createElement('div');
+box.className = 'sys__notes';
+for (const [text, at, dx, dy, a, b] of [
+['500 mm', [-0.6, 2.8, 0.2], 0, -54, 0.05, 0.17], ['Water channels', [0.6, 0.4, 0.3], -150, 60, 0.06, 0.17], ['Male rail, slides into the next', [2.72, 1.2, 0.2], 96, -30, 0.07, 0.17], ['Foot tube, feeds the panel below', [0.9, -2.66, 0.3], 120, 64, 0.08, 0.17],
+['Fixed at four corners', [2.36, 2.36, 0.5], 96, -34, 0.24, 0.35], ['Slots for the vessels', [-1.4, 1.1, 0.5], -130, -50, 0.25, 0.35],
+['Hooks on by hand', [0, -0.3, 1.2], 190, 40, 0.48, 0.57], ['Almost one litre', [-1.95, 1.4, 1.4], -110, 30, 0.49, 0.57],
+['Ring main', [-2.98, 1.2, 0.1], -90, -30, 0.61, 0.73], ['Feeds from the top', [0.5, 2.94, 0.1], 110, -50, 0.62, 0.73], ['Pump, in the reservoir', [0.8, -3.2, 0.6], 130, 56, 0.63, 0.73], ['Digital timer', [4.1, -1.3, 0.1], 60, -70, 0.64, 0.73],
+]) {
+const n = document.createElement('div');
+const i = document.createElement('i');
+const t = document.createElement('span');
+t.textContent = text;
+n.append(i, t);
+box.append(n);
+notes.push({ n, i, t, at, dx, dy, a, b });
+}
+pin.before(box);
+}
+const SUN = norm([-0.52, 0.66, 0.78]);
+const keys = [[0, -0.66, 0.34, 15.5, 0], [0.1, -0.5, 0.24, 14.4, 0], [0.18, -0.4, 0.2, 14.2, 0], [0.27, -0.62, 0.16, 15, 0], [0.36, -0.34, 0.1, 13.4, 0.1], [0.5, -0.5, 0.24, 13.2, 0.1], [0.58, -0.3, 0.12, 14.6, -0.2], [0.645, -0.86, 0.16, 16.4, -0.2], [0.72, -0.8, 0.12, 16.2, -0.2], [0.8, -0.3, 0.07, 15.2, 0], [0.93, -0.26, 0.03, 34, 0], [1, -0.12, 0.02, 35, 0]];
+const cam = (p) => {
+let i = 0;
+while (i < keys.length - 2 && p > keys[i + 1][0]) i++;
+const k = smooth(clamp((p - keys[i][0]) / (keys[i + 1][0] - keys[i][0])));
+return keys[i].map((v, n) => v + (keys[i + 1][n] - v) * k);
+};
+let U;
+let SU;
+let dpr = Math.min(innerWidth < 800 ? 1.6 : 1.75, devicePixelRatio || 1);
+const turn = { x: 0, y: 0, tx: 0, ty: 0, gust: 0 };
+const I = move(0, 0, 0);
+function scene(p, t, u, sun) {
+const draw = (part, kind, m = I, grow = 1, drop = 1) => {
+gl.uniform1f(u.uKind, kind);
+gl.uniformMatrix4fv(u.uM, false, m);
+gl.uniform1f(u.uGrow, grow);
+gl.uniform1f(u.uDrop, drop);
+gl.bindVertexArray(part.vao);
+gl.drawElementsInstanced(gl.TRIANGLES, part.n, gl.UNSIGNED_INT, 0, part.count);
+};
+const a = span(p, 0.0, 0.1);
+const b = span(p, 0.17, 0.32);
+const vess = clamp((p - 0.36) / 0.19);
+const part = span(p, 0.58, 0.645) * (1 - span(p, 0.7, 0.79)); // opened, to show the water
+const grow = clamp((p - 0.68) / 0.13);
+const visit = span(p, 0.05, 0.13) * (1 - span(p, 0.16, 0.22));
+const end = clamp((p - 0.79) / 0.15);
+if (!sun) draw(parts.wall, 0);
+const base = move(0, 0, (1 - a) * 2.4);
+draw(parts.panel, 1, base);
+if (visit > 0.01) {
+draw(parts.panel, 1, move(5.13 + (1 - visit) * 4, 0, (1 - a) * 2.4));
+draw(parts.panel, 1, move(0, 5.13 + (1 - visit) * 4, (1 - a) * 2.4));
+}
+const gz = 0.34 + (1 - b) * 5 + part * 1.9;
+if (b > 0.005) {
+const g = move(0, (1 - b) * 0.6, gz);
+draw(parts.grid, 1, g);
+draw(parts.screws, 2, g);
+}
+const off = move(0, 0, part * 1.9);
+if (vess > 0) {
+draw(parts.vessel, 4, off, 1, vess);
+draw(parts.soil, 5, off, 1, vess);
+}
+const pipes = span(p, 0.555, 0.62);
+if (pipes > 0.005 && p < 0.97) {
+const pm = move(0, (1 - pipes) * -5 - span(p, 0.9, 0.97) * 1.6, 0);
+draw(parts.pipes, 7, pm);
+if (!sun) draw(parts.lcd, 6, pm);
+}
+if (grow > 0) for (const pl of around[4].plants) draw(pl, pl.kind, off, grow);
+if (end > 0) around.forEach((n) => {
+if (!n.far) return;
+const k = ease(clamp(end * 1.6 - n.delay));
+if (k <= 0.002) return;
+const m = move(n.c * 5.13 + n.c * (1 - k) * 5, -n.r * 5.13 - n.r * (1 - k) * 5, (1 - k) * 3);
+draw(parts.panel, 1, m);
+if (!sun) draw(parts.vesselFar, 4, m);
+for (const pl of n.plants) draw(pl, pl.kind, m, clamp(k * 1.25 - 0.1));
+});
+return { part, off };
+}
+let VP = I;
+let tick = 0;
+let drawnAt = -1;
+let lightM = I;
+function render(p, t) {
+const w = Math.round(canvas.clientWidth * dpr);
+const h = Math.round(canvas.clientHeight * dpr);
+if (!w || !h) return;
+if (canvas.width !== w || canvas.height !== h) {
+canvas.width = w;
+canvas.height = h;
+}
+const asp = w / h;
+const tall = asp < 0.95;
+const [, yaw, pitch, d0, ty] = cam(p);
+const dist = d0 * (tall ? Math.max(1.2, 0.95 / asp) : Math.max(1, 1.5 / asp));
+const ya = yaw + turn.x;
+const pi = Math.max(-0.5, Math.min(0.9, pitch + turn.y));
+const eye = [Math.sin(ya) * Math.cos(pi) * dist, ty + Math.sin(pi) * dist, Math.cos(ya) * Math.cos(pi) * dist + 0.4];
+VP = mul(persp(0.49, asp, 1, 120, tall ? 0 : 0.36, tall ? -0.3 : -0.02), look(eye, [0, ty, 0.4]));
+const wide = 4.6 + span(p, 0.79, 0.9) * 6.4;
+const L = mul(ortho(wide, 1, 60), look(SUN.map((v) => v * 26), [0.6, -0.3, 0]));
+gl.enable(gl.DEPTH_TEST);
+gl.disable(gl.BLEND);
+const set = (prog, u, vp) => {
+gl.useProgram(prog);
+gl.uniformMatrix4fv(u.uVP, false, vp);
+gl.uniform1f(u.uT, t);
+gl.uniform2f(u.uGust, turn.gust, 0);
+};
+tick++;
+const fresh = Math.abs(p - drawnAt) > 0.0002 ? tick % (p > 0.82 ? 2 : 1) === 0 : tick % 4 === 0;
+if (fresh || drawnAt < 0) {
+drawnAt = p;
+lightM = L;
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+gl.viewport(0, 0, SIZE, SIZE);
+gl.clear(gl.DEPTH_BUFFER_BIT);
+gl.enable(gl.POLYGON_OFFSET_FILL);
+gl.polygonOffset(2.2, 5);
+set(progs[1], SU, L);
+gl.activeTexture(gl.TEXTURE0);
+gl.bindTexture(gl.TEXTURE_2D, null);
+scene(p, t, SU, true);
+gl.disable(gl.POLYGON_OFFSET_FILL);
+}
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+gl.viewport(0, 0, w, h);
+gl.clearColor(0.02, 0.1, 0.075, 1);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+gl.bindTexture(gl.TEXTURE_2D, depth);
+set(progs[0], U, VP);
+gl.uniformMatrix4fv(U.uL, false, lightM);
+gl.uniform3fv(U.uEye, eye);
+gl.uniform3fv(U.uSun, SUN);
+gl.uniform1i(U.uSh, 0);
+gl.uniform1i(U.uTx, 1);
+gl.uniform1f(U.uPx, 1 / SIZE);
+gl.uniform1f(U.uFade, 1 - span(p, 0.79, 0.92) * 0.82);
+const wet = span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82));
+gl.uniform1f(U.uWet, wet);
+scene(p, t, U, false);
+if (wet > 0.01) {
+gl.enable(gl.BLEND);
+gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+gl.depthMask(false);
+gl.uniform1f(U.uKind, 3);
+gl.uniformMatrix4fv(U.uM, false, I);
+gl.bindVertexArray(parts.streams.vao);
+gl.drawElementsInstanced(gl.TRIANGLES, parts.streams.n, gl.UNSIGNED_INT, 0, 1);
+gl.depthMask(true);
+}
+for (const o of notes) {
+const k = clamp((p - o.a) / 0.02) * (1 - clamp((p - o.b) / 0.015));
+if (k < 0.01) {
+if (o.n.style.visibility !== 'hidden') o.n.style.visibility = 'hidden';
+continue;
+}
+const c = [0, 1, 3].map((r) => VP[r] * o.at[0] + VP[4 + r] * o.at[1] + VP[8 + r] * o.at[2] + VP[12 + r]);
+const x = ((c[0] / c[2]) * 0.5 + 0.5) * canvas.clientWidth;
+const y = (0.5 - (c[1] / c[2]) * 0.5) * canvas.clientHeight;
+o.n.style.visibility = 'visible';
+o.n.style.opacity = k.toFixed(2);
+o.n.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+if (!o.set) {
+o.set = true;
+o.i.style.width = `${Math.hypot(o.dx, o.dy)}px`;
+o.i.style.rotate = `${Math.atan2(o.dy, o.dx)}rad`;
+o.t.style.translate = `${o.dx < 0 ? 'calc(-100% + ' + (o.dx - 8) + 'px)' : `${o.dx + 8}px`} calc(-50% + ${o.dy}px)`;
+}
+}
+}
+let from = null;
+canvas.addEventListener('pointerdown', (e) => {
+from = { x: e.clientX, y: e.clientY, tx: turn.tx, ty: turn.ty };
+canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e) => {
+if (!from) return;
+turn.tx = Math.max(-1.1, Math.min(1.5, from.tx - (e.clientX - from.x) / 260));
+turn.ty = e.pointerType === 'mouse' ? Math.max(-0.4, Math.min(0.6, from.ty + (e.clientY - from.y) / 340)) : 0;
+turn.gust = 1;
+});
+for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, () => { from = null; });
 let live = false;
 let cur = -1;
 let then = 0;
+let slow = 9;
+let was = 0;
+const t0 = performance.now();
 function loop(now) {
 if (!live) return;
-const r = sec.getBoundingClientRect();
-const t = clamp(-r.top / (r.height - innerHeight));
 const dt = Math.min(60, now - then || 16);
 then = now;
-const next = cur < 0 ? t : cur + (t - cur) * (1 - Math.exp(-dt / 95));
-if (Math.abs(next - cur) > 0.0003) {
-cur = next;
-render(cur);
+slow = slow * 0.95 + dt * 0.05;
+if (slow > 21 && dpr > 0.85) {
+dpr -= 0.2;
+slow = 12;
 }
+const r = sec.getBoundingClientRect();
+const p = clamp(-r.top / Math.max(1, r.height - innerHeight));
+cur = cur < 0 ? p : cur + (p - cur) * (1 - Math.exp(-dt / 130));
+if (!from && Math.abs(p - was) > 0.0005) {
+turn.tx *= 0.94;
+turn.ty *= 0.94;
+}
+was = p;
+const k = 1 - Math.exp(-dt / 160);
+turn.x += (turn.tx - turn.x) * k;
+turn.y += (turn.ty - turn.y) * k;
+turn.gust *= 0.985;
+progress(cur);
+render(cur, (now - t0) / 1000);
 requestAnimationFrame(loop);
 }
-render(0);
-addEventListener('resize', () => {
-measure();
-last.clear();
-render(Math.max(0, cur));
-});
+const start = () => {
+try {
+U = uniforms(progs[0]);
+SU = uniforms(progs[1]);
+} catch (e) {
+sec.classList.add('no-webgl');
+canvas.remove();
+steps.forEach((li) => li.classList.add('on'));
+console.warn(e.message);
+return;
+}
+sec.classList.add('is-real');
+if (reduced) {
+const still = () => render(0.82, 4);
+still();
+new ResizeObserver(still).observe(canvas);
+steps.forEach((li) => li.classList.add('on'));
+return;
+}
 new IntersectionObserver(([e]) => {
-const was = live;
+const before = live;
 live = e.isIntersecting;
-if (live && !was) requestAnimationFrame(loop);
+if (live && !before) {
+then = 0;
+requestAnimationFrame(loop);
+}
 }).observe(sec);
+};
+const wait = () => (!ext || progs.every((p) => gl.getProgramParameter(p, ext.COMPLETION_STATUS_KHR)) ? start() : setTimeout(wait, 12));
+wait();
+canvas.addEventListener('webglcontextlost', () => {
+live = false;
+canvas.remove();
+sec.classList.add('no-webgl');
+});
 }

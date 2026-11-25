@@ -32,9 +32,18 @@
 </section>
 </div>
 
-<section class="say" aria-label="Why a living wall">
-  <div class="say__pin">
-    <p class="say__p" data-scrub>You chose the stone, the timber, the light. Everything in the room was bought. This is the one thing that was grown.</p>
+<section class="mat" data-mat aria-label="What a living wall is">
+  <div class="mat__pin">
+    <canvas class="mat__c" data-mat-canvas aria-hidden="true"></canvas>
+    <canvas class="mat__c mat__grow" data-grow aria-hidden="true"></canvas>
+    <div class="mat__shade" data-shade aria-hidden="true"></div>
+    <div class="mat__say">
+      <p data-line class="ink"><span>You chose the stone.</span></p>
+      <p data-line><span>The timber.</span></p>
+      <p data-line><span>The light.</span></p>
+      <p data-line><span>All of it was bought.</span></p>
+      <p data-line class="grown"><span>This was grown.</span></p>
+    </div>
   </div>
 </section>
 
@@ -71,7 +80,7 @@
 </section>
 
 <section class="sys" data-system aria-labelledby="sys-h">
-  <div class="sys__pin">
+  <div class="sys__stage" data-stage3><div class="sys__pin">
     <div>
       <h2 id="sys-h">There is only one.</h2>
       <ol class="sys__steps" data-steps>
@@ -82,38 +91,60 @@
         <li><h3>The wall</h3><div class="more"><p>As wide and as high as the room deserves. Flat, curved or on a slant.</p></div></li>
       </ol>
     </div>
-    <div class="rig" aria-hidden="true"><div class="rig__cam" data-rig></div></div>
-  </div>
+    <div class="rig" aria-hidden="true"></div>
+  </div></div>
 </section>
 
-<section class="sec house" aria-labelledby="house-h">
-  <svg class="house__mark lg" viewBox="235 100 1526 1140" aria-hidden="true">{{> mark-paths}}</svg>
-  <div class="wrap">
-    <h2 class="vh" id="house-h">One house, one guarantee</h2>
-    <ol class="vows">
-      <li><h3>Designed by us.</h3><p>Drawn for one address, around its light, its water and the way you use the room.</p></li>
-      <li><h3>Made by us.</h3><p>It began with two friends, a garage and a 3D printer. The system has held a South African patent since 2016, and is moulded in Cape Town.</p></li>
-      <li><h3>Planted by us.</h3><p>Species chosen for your light first and your interior second, set by hand.</p></li>
-      <li><h3>Guaranteed by us.</h3><p>No subcontractors to chase and no parts to match. The people who answer for it are the people who made it.</p></li>
-    </ol>
-  </div>
+<section class="house" data-chapters aria-labelledby="house-h">
+  <h2 class="vh" id="house-h">One house, one guarantee</h2>
+  <ol class="chs">
+    <li class="ch ch--a" data-ch><div class="ch__in">
+      <div class="ch__t"><h3>Designed by us.</h3><p>Drawn for one address, around its light, its water and the way you use the room.</p><dl><div><dt>Light</dt><dd>Daylight first. Grow lights only where there is too little.</dd></div><div><dt>Water</dt><dd>A hidden reservoir, a pump and a timer, planned into the room.</dd></div><div><dt>Surface</dt><dd>Flat, curved or on a slant, indoors or out.</dd></div></dl></div>
+      <div class="ch__img"><div class="ch__par">{{img skylight | (min-width:900px) 52vw, 100vw}}</div></div>
+    </div></li>
+    <li class="ch ch--b" data-ch><div class="ch__in">
+      <div class="ch__t"><h3>Made by us.</h3><p>It began with two friends, a garage and a 3D printer. The system has held a South African patent since 2016, and is moulded in Cape Town.</p><dl><div><dt>Panel</dt><dd>500 × 500 mm. Edges slide together, male into female.</dd></div><div><dt>Vessels</dt><dd>Twenty to a panel, each lifting out by hand.</dd></div><div><dt>Material</dt><dd>Recycled polypropylene, injection moulded.</dd></div></dl></div>
+      <div class="ch__img"><div class="ch__par">{{img part-panel | (min-width:900px) 52vw, 100vw}}</div></div>
+    </div></li>
+    <li class="ch ch--c" data-ch><div class="ch__in">
+      <div class="ch__t"><h3>Planted by us.</h3><p>Species chosen for your light first and your interior second, set by hand.</p><dl><div><dt>Density</dt><dd>About eighty plants to the square metre.</dd></div><div><dt>Roots</dt><dd>Every plant alone in its own vessel.</dd></div><div><dt>Choice</dt><dd>Forest species for shade, sun lovers for the terrace.</dd></div></dl></div>
+      <div class="ch__img"><div class="ch__par">{{img monstera | (min-width:900px) 52vw, 100vw}}</div></div>
+    </div></li>
+    <li class="ch ch--d" data-ch><div class="ch__in">
+      <div class="ch__t"><h3>Guaranteed by us.</h3><p>No subcontractors to chase and no parts to match. The people who answer for it are the people who made it.</p><dl><div><dt>Visits</dt><dd>Weekly or monthly, by our own team.</dd></div><div><dt>Plants</dt><dd>One vessel is changed. Its neighbours stay rooted.</dd></div><div><dt>Terms</dt><dd>Set out in writing with your quotation.</dd></div></dl></div>
+      <div class="ch__img"><div class="ch__par">{{img maintenance | (min-width:900px) 52vw, 100vw}}</div></div>
+    </div></li>
+  </ol>
 </section>
 
 <section class="sec" aria-labelledby="aw-h">
   <div class="wrap">
-    <div class="head"><h2 id="aw-h">At work</h2><p class="lede">Two South African Landscapers Institute gold awards, for walls built with Modiwall by Bidvest TopTurf.</p></div>
+    <div class="head"><h2 id="aw-h">On the record</h2><p class="lede">Two South African Landscapers Institute golds, for walls built with Modiwall by Bidvest TopTurf.</p></div>
     <div class="awards">
       <article class="award"><div data-panels>{{img pinehaven | (min-width:800px) 58vw, 100vw}}</div><div class="award__t"><h3>Netcare Pinehaven Hospital</h3><p>Gold, 2016. An atrium wall that lives on daylight alone.</p></div></article>
       <article class="award"><div data-panels>{{img sun-city | (min-width:800px) 38vw, 100vw}}</div><div class="award__t"><h3>Sun City</h3><p>Gold, 2017. A steel tree, clad in living panels.</p></div></article>
     </div>
-    <ul class="logos work__logos" data-slots aria-label="Clients">{{js:clients()}}</ul>
+    <ol class="rec">
+      <li><a href="/clients.html#press"><span class="rec__y">2016</span><b>South African patent</b><span>For a modular wall system for vertical gardens.</span></a></li>
+      <li><a href="/clients.html#press"><span class="rec__y">2016</span><b>Gold, Netcare Pinehaven</b><span>South African Landscapers Institute, specialised landscape construction.</span></a></li>
+      <li><a href="/clients.html#press"><span class="rec__y">2017</span><b>Gold, Sun City</b><span>South African Landscapers Institute, interior plantscaping.</span></a></li>
+      <li><a href="/clients.html#press"><span class="rec__y">2024</span><b>Acta Structilia</b><span>University of Pretoria research names Modiwall among South Africa’s locally made living walls.</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="lit" data-lit aria-labelledby="lit-h">
+  <div class="lit__glow" data-lit-glow aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="lit__h"><h2 id="lit-h">In good company</h2><p class="lede">Hospitals, resorts, insurers and head offices already live with a Modiwall.</p></div>
+    <div class="lit__w" data-lit-wall><ul class="logos" aria-label="Clients">{{js:clients()}}</ul><ul class="logos lit__on" aria-hidden="true">{{js:clients().replace(/alt="[^"]*"/g, 'alt=""')}}</ul></div>
   </div>
 </section>
 
 <section class="sec fail" aria-labelledby="fail-h">
   <div class="wrap">
     <div class="head"><h2 id="fail-h">Why other living walls fail</h2></div>
-    <div class="rows">
+    <div class="rows" data-watchall>
       <div><h3>The water stops</h3><p class="lede">Ours circulates. Every panel feeds the one below it, and nothing depends on someone remembering.</p></div>
       <div><h3>The plants were wrong</h3><p class="lede">We read the light before we choose a leaf. At Netcare Pinehaven that meant forest species, happy in an atrium.</p></div>
       <div><h3>One gap spreads</h3><p class="lede">Every plant stands alone in its vessel, so one can be replaced without disturbing the rest.</p></div>
@@ -131,6 +162,10 @@
       <a href="/get-a-quote.html?role=business" data-peek="/img/atrium-800.avif"><h3>Business and corporate</h3><p>Receptions, atriums and hospitality, with one company responsible for all of it.</p></a>
     </div>
   </div>
+</section>
+
+<section class="sec jr__more" aria-labelledby="jr-h">
+  <div class="wrap"><div class="head"><h2 id="jr-h">From the journal</h2><a class="link" href="/journal.html">All stories</a></div>{{js:stories(['living-wall-bathroom', 'living-wall-cost-south-africa', 'why-living-walls-fail'])}}</div>
 </section>
 
 <section class="sec" aria-labelledby="faq-h">

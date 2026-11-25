@@ -3,44 +3,66 @@
 "description": "Tell us the size of your wall, how much light it gets and where it is. Modiwall will quote for a living or artificial green wall anywhere in South Africa.",
 "crumb": "Commission a wall"
 } -->
-<section class="wrap quote">
-  <div class="quote__side">
-    <h1>Commission a wall</h1>
-    <p class="lede">A rough size and a place is enough. We reply with questions, ideas and a figure.</p>
-    <div class="quote__pic">{{img pendants | 26rem}}</div>
-    <p>Rather talk? <a class="link" href="tel:+27768740299">+27 76 874 0299</a></p>
+<section class="com" data-commission data-at="0">
+  <div class="com__main">
+    <div class="com__top"><h1>Commission a wall</h1><p class="lede">Five short questions. Skip any you cannot answer.</p></div>
+    <form class="form" data-form action="/api/quote.php" method="post" accept-charset="utf-8">
+      <div>
+        <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">What would you like to live with?</legend>
+          <div class="picks">
+            <label class="pick"><input type="radio" name="wall" value="living">{{img courtyard-bands | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>A living wall</b><span>Grown, watered and tended.</span></span></label>
+            <label class="pick"><input type="radio" name="wall" value="artificial">{{img art-mixed | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>An artificial wall</b><span>Where no plant could live.</span></span></label>
+            <label class="pick"><input type="radio" name="wall" value="unsure">{{img skylight | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Advise me</b><span>We read the light and tell you.</span></span></label>
+          </div>
+        </fieldset>
+        <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">Where will it be?</legend>
+          <div class="picks">
+            <label class="pick"><input type="radio" name="where" value="indoors">{{img stairs | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Indoors</b><span>A room, a stair, an atrium.</span></span></label>
+            <label class="pick"><input type="radio" name="where" value="outdoors">{{img pool | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Outdoors</b><span>A patio, a pool, an entrance.</span></span></label>
+            <label class="pick"><input type="radio" name="where" value="both">{{img slats | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Between the two</b><span>Courtyards and covered terraces.</span></span></label>
+          </div>
+        </fieldset>
+        <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">How big is the wall?</legend>
+          <div class="sizes">
+            <div class="slide"><label for="w">Width</label><output for="w" data-w>3 m</output><input id="w" name="w" type="range" min="1" max="12" step="0.5" value="3"></div>
+            <div class="slide"><label for="h">Height</label><output for="h" data-h>2.5 m</output><input id="h" name="h" type="range" min="1" max="5" step="0.5" value="2.5"></div>
+            <div class="f"><label for="area">Or the area, in square metres</label><input id="area" name="area" type="number" inputmode="decimal" min="0.25" max="2000" step="0.25" value="7.5"></div>
+          </div>
+        </fieldset>
+        <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">Whose wall is it, and where?</legend>
+          <div class="chips">
+            <label><input type="radio" name="role" value="home" checked><span>Homeowner</span></label>
+            <label><input type="radio" name="role" value="estate"><span>Estate</span></label>
+            <label><input type="radio" name="role" value="architect"><span>Architect or designer</span></label>
+            <label><input type="radio" name="role" value="business"><span>Business</span></label>
+            <label><input type="radio" name="role" value="developer"><span>Developer</span></label>
+            <label><input type="radio" name="role" value="other"><span>Other</span></label>
+          </div>
+          <div class="f"><label for="place">Town or suburb</label><input id="place" name="place" autocomplete="address-level2" maxlength="80"></div>
+          <div class="f"><label for="message">Anything we should know?</label><textarea id="message" name="message" maxlength="3000" aria-describedby="m-hint"></textarea><small id="m-hint">Light, deadline, access, or a wall that already needs care.</small></div>
+        </fieldset>
+        <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">Where shall we send our reply?</legend>
+          <div class="form__row">
+            <div class="f"><label for="name">Name</label><input id="name" name="name" autocomplete="name" maxlength="80" required aria-describedby="e-name"><span class="f__e" id="e-name" data-e="name"></span></div>
+            <div class="f"><label for="email">Email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" required aria-describedby="e-email"><span class="f__e" id="e-email" data-e="email"></span></div>
+            <div class="f"><label for="phone">Phone, if you prefer a call</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" aria-describedby="e-phone"><span class="f__e" id="e-phone" data-e="phone"></span></div>
+          </div>
+          <div class="f"><label class="check"><input type="checkbox" name="consent" value="yes" required aria-describedby="e-consent"><span>Modiwall may use these details to reply to me. See the <a href="/privacy-policy.html">privacy policy</a>.</span></label><span class="f__e" id="e-consent" data-e="consent"></span></div>
+        </fieldset>
+        <div class="trap" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      </div>
+      <div class="com__nav">
+        <button class="plain" type="button" data-back hidden>Back</button>
+        <button class="btn" type="button" data-next>Continue</button>
+        <button class="btn" type="submit">Send commission request</button>
+        <p class="com__count" data-count aria-live="polite"></p>
+        <p class="form__msg" role="alert" data-msg></p>
+      </div>
+    </form>
   </div>
-  <form class="form" data-form action="/api/quote.php" method="post" accept-charset="utf-8">
-    <fieldset class="f"><legend>What kind of wall?</legend>
-      <div class="chips">
-        <label><input type="radio" name="wall" value="living"><span>Living</span></label>
-        <label><input type="radio" name="wall" value="artificial"><span>Artificial</span></label>
-        <label><input type="radio" name="wall" value="unsure"><span>Advise me</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="f"><legend>Where will it be?</legend>
-      <div class="chips">
-        <label><input type="radio" name="where" value="indoors"><span>Indoors</span></label>
-        <label><input type="radio" name="where" value="outdoors"><span>Outdoors</span></label>
-        <label><input type="radio" name="where" value="both"><span>Both</span></label>
-      </div>
-    </fieldset>
-    <div class="f"><label for="area">Roughly how big?</label>
-      <div class="range"><input id="area" name="area" type="range" min="1" max="60" step="0.5" value="6"><output for="area" data-area>6 m²</output></div>
-      <input type="hidden" name="exact" value="">
-    </div>
-    <div class="form__row">
-      <div class="f"><label for="name">Name</label><input id="name" name="name" autocomplete="name" maxlength="80" required aria-describedby="e-name"><span class="f__e" id="e-name" data-e="name"></span></div>
-      <div class="f"><label for="email">Email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" required aria-describedby="e-email"><span class="f__e" id="e-email" data-e="email"></span></div>
-      <div class="f"><label for="phone">Phone (optional)</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" aria-describedby="e-phone"><span class="f__e" id="e-phone" data-e="phone"></span></div>
-      <div class="f"><label for="place">Town or suburb (optional)</label><input id="place" name="place" autocomplete="address-level2" maxlength="80"></div>
-    </div>
-    <div class="f"><label for="role">You are a</label>
-      <select id="role" name="role"><option value="home">Homeowner</option><option value="estate">Estate or body corporate</option><option value="architect">Architect or designer</option><option value="business">Business or corporate</option><option value="developer">Developer</option><option value="other">Something else</option></select>
-    </div>
-    <div class="f"><label for="message">Anything we should know? (optional)</label><textarea id="message" name="message" maxlength="3000" aria-describedby="m-hint"></textarea><small id="m-hint">Light, deadline, access, or an existing wall that needs care.</small></div>
-    <div class="trap" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
-    <div class="f"><label class="check"><input type="checkbox" name="consent" value="yes" required aria-describedby="e-consent"><span>Modiwall may use these details to reply to me. See the <a href="/privacy-policy.html">privacy policy</a>.</span></label><span class="f__e" id="e-consent" data-e="consent"></span></div>
-    <div class="form__foot"><button class="btn btn--lime" type="submit">Send commission request</button><p class="form__msg" role="alert" data-msg></p></div>
-  </form>
+  <aside class="com__side" aria-hidden="true">
+    <p class="com__say" data-sentence>A wall, about 7.5 square metres.</p>
+    <div class="com__art" data-art><div class="com__floor"></div><div class="com__wall"></div><div class="com__door"></div><p class="com__area" data-area>7.5 m²</p>
+      <svg class="com__sprig" viewBox="1210 465 330 600"><path class="lg-stem" d="M1337 826C1349 842 1353 868 1354 900C1355 950 1345 1000 1326 1046L1330 1060L1400 1060L1397 1046C1384 1014 1379 988 1379 962C1379 934 1385 912 1395 888C1402 872 1414 864 1428 858L1380 868L1374 874C1373 858 1375 840 1377 820C1381 784 1387 748 1399 712L1377 708C1369 742 1363 776 1359 806C1358 814 1357 820 1356 820C1354 812 1354 806 1352 796Z"/><path class="lg-l1" d="M1462 476C1465 472 1472 471 1474 478C1481 516 1486 550 1482 590C1477 632 1452 664 1424 686C1412 695 1404 704 1399 714L1375 710C1372 690 1366 672 1363 650C1356 598 1374 554 1412 522C1432 506 1450 492 1462 476Z"/><path class="lg-l2" d="M1219 678C1217 671 1222 668 1230 668C1278 672 1314 702 1334 748C1344 771 1350 796 1354 820L1337 828C1322 814 1304 806 1284 796C1238 774 1230 724 1219 678Z"/><path class="lg-l3" d="M1533 703C1536 697 1531 694 1522 695C1468 702 1424 728 1400 776C1385 806 1380 838 1379 866L1395 886C1404 872 1418 862 1438 853C1500 826 1520 770 1533 703Z"/></svg></div>
+  </aside>
 </section>

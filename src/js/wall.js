@@ -1,221 +1,102 @@
-/* Modiwall living wall: real plant photographs, instanced in WebGL2. No libraries.
-   createWall() draws a grid of 500 mm panels; heroWall, stripWall and frameWall put it to work. */
+/* Modiwall living wall: one continuous photographic surface, joined from photos of real planted Modiwalls.
+   The photo's own light gives its depth, and depth drives everything: wind, parallax, the lamp, and a leaf-shaped
+   edge wherever the planting stops. One quad per wall; no libraries. */
 
-const MAX_CELLS = 200;
-const PLANTS = 3; // plants across and down each panel, as they look once grown in
-const SEGMENTS = 4;
+const MAX_CELLS = 220;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const STYLE_NAMES = ['forest', 'fern', 'jungle'];
 
-const LEAF_VS = `#version 300 es
-precision highp float;
+const VS = `#version 300 es
 layout(location=0) in vec2 aQ;
-layout(location=1) in vec4 aA; // x, y (modules), angle, length (modules)
-layout(location=2) in vec4 aB; // sprite, cell, phase, delay
-layout(location=3) in vec4 aC; // shade, width, mirror, bend
-uniform vec2 uRes, uOrigin, uShift;
-uniform float uM, uT, uGust, uTilt;
-uniform vec3 uPtr;
+void main(){ gl_Position = vec4(aQ * 2. - 1., 0., 1.); }`;
+
+const FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes, uOrigin, uGrid, uTexSize, uPar;
+uniform float uDpr, uM, uT, uGust, uTilt, uK, uAmb;
+uniform vec3 uPtr, uTint;
 uniform vec3 uRip[4];
-uniform vec2 uPar;
 uniform vec4 uLamp; // x, y, reach, on
-uniform vec2 uCell[${MAX_CELLS}];
-out vec2 vUv; out float vShade, vGlow, vLamp, vY;
+uniform sampler2D uTex, uCells;
+out vec4 o;
+float lum(vec2 uv, float l){ return dot(textureLod(uTex, uv, l).rgb, vec3(.3, .59, .11)); }
+float depth(vec2 uv){ return clamp((lum(uv, 2.6) * .45 + lum(uv, 4.) * .55) * 2., 0., 1.); }
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
 void main(){
-  vec2 c = uCell[int(aB.y + .5)];
-  float g = c.x < 0. ? 0. : clamp((uT - c.x - aB.w) / 1.7, 0., 1.);
-  float k = 1. - g;
-  g = g <= 0. ? 0. : 1. - k*k*k*k*(1. - 1.15*g);
-  if (c.y > 0.) g *= 1. - smoothstep(0., .5, uT - c.y);
-  float y = aQ.y;
-  float wind = sin(uT*.9 + aB.z) * .022
-    + sin(uT*.45 - aA.x*1.1 + aA.y*.5) * .04 * (.6 + .4*sin(uT*.21 + aA.x*.3));
-  wind = wind * (1. + uGust) + uGust * .03 * sin(uT * 2.4 + aB.z * 2. + aA.y) + uTilt;
-  float ang = aA.z * mix(.5, 1., g) + wind;
-  float bend = aC.w + wind * 1.4;
-  float a1 = ang + bend * y * .5;
-  float a2 = ang + bend * y;
-  float len = aA.w * uM * g;
-  vec2 p = uOrigin + aA.xy * uM + vec2(sin(a1), -cos(a1)) * len * y;
-  p += vec2(cos(a2), sin(a2)) * aQ.x * len * aC.y;
-  vec2 d = p - uPtr.xy;
-  float f = exp(-dot(d, d) / (uM * uM * .7)) * uPtr.z;
-  p += normalize(d + .001) * f * len * y * .3;
-  float glow = exp(-dot(d, d) / (uM * uM * 3.4)) * uPtr.z * .3;
+  vec2 px = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;
+  vec2 q = (px - uOrigin) / uM;
+  // planting state: r how far grown, g panel in place
+  vec4 cell = texture(uCells, q / uGrid);
+  vec2 in2 = step(vec2(-.5), q) * step(q, uGrid + .5);
+  float inside = in2.x * in2.y;
+  vec2 fade = smoothstep(vec2(-.55), vec2(.35), q) * smoothstep(vec2(-.55), vec2(.35), uGrid - q);
+  float grown = cell.r * inside * fade.x * fade.y;
+
+  vec2 base = px * uK / uTexSize;
+  float d0 = depth(base);
+  // wind: slow swells across the wall, small independent tremble per plant
+  float plant = noise(px * uK / 46.);
+  vec2 w = vec2(sin(uT*.62 - px.x*.006 + px.y*.0032) * (.6 + .4*sin(uT*.23 + px.x*.002)), .35 * sin(uT*.5 + px.y*.008)) * 2.1;
+  w += vec2(sin(uT*1.5 + plant*18.), cos(uT*1.23 + plant*23.)) * (.7 + uGust * 2.4);
+  w.x += uTilt * 46. + uGust * 3. * sin(uT*3.1 + px.y*.012);
+  vec2 pd = px - uPtr.xy;
+  float pf = exp(-dot(pd, pd) / (uM * uM * .8)) * uPtr.z;
+  w += normalize(pd + .01) * pf * 9.;
+  float glow = exp(-dot(pd, pd) / (uM * uM * 3.4)) * uPtr.z * .34;
   for (int i = 0; i < 4; i++) {
     float age = uT - uRip[i].z;
-    if (uRip[i].z > 0. && age < 2.6) {
-      vec2 q = p - uRip[i].xy;
-      float w = (length(q) - age * uM * 2.4) / (uM * .6);
-      w = exp(-w * w) * (1. - age / 2.6);
-      p += normalize(q + .001) * w * len * y * .28;
-      glow += w * .22;
+    if (uRip[i].z > 0. && age < 2.8) {
+      vec2 r = px - uRip[i].xy; float k = (length(r) - age * uM * 2.3) / (uM * .55);
+      k = exp(-k*k) * (1. - age / 2.8);
+      w += normalize(r + .01) * k * 10.; glow += k * .2;
     }
   }
-  float beam = (p.x * .62 + p.y * .78 - mod(uT * uM * .42, uRes.x + uRes.y + uM * 8.) + uM * 4.) / (uM * 2.6);
-  glow += exp(-beam * beam) * .24;
-  p += uShift + uPar * (aC.x - .62); // nearer leaves slide further
-  vec2 ld = p - uLamp.xy;
-  float facing = .72 + .46 * dot(normalize(vec2(aQ.x * aC.z * 2.2, y - .45) + .001), normalize(ld));
-  vLamp = uLamp.w * facing / (1. + dot(ld, ld) / (uLamp.z * uLamp.z));
-  vY = y;
-  vGlow = glow;
-  vShade = aC.x;
-  vec2 cell = vec2(mod(aB.x, 5.), floor(aB.x / 5.));
-  vUv = (cell + vec2(.5 + aQ.x * aC.z * .99, 1. - y * .985 - .008)) / vec2(5., 4.);
-  gl_Position = vec4(p.x / uRes.x * 2. - 1., 1. - p.y / uRes.y * 2., 0., 1.);
+  vec2 disp = (w * (.25 + d0) + uPar * 34. * (d0 - .38)) * uK;
+  vec2 uv = base - disp / uTexSize;
+  vec3 col = texture(uTex, uv, -.6).rgb;
+  float d = depth(uv);
+  // surface direction from depth, for the lamp and the passing sun
+  vec2 e = 9. / uTexSize;
+  vec2 n = vec2(depth(uv - vec2(e.x, 0.)) - depth(uv + vec2(e.x, 0.)), depth(uv - vec2(0., e.y)) - depth(uv + vec2(0., e.y))) * .8;
+
+  // leaves nearest the viewer arrive first and reach furthest past the edge
+  float fine = clamp((lum(uv, 1.2) * .6 + lum(uv, 2.8) * .4) * 2., 0., 1.);
+  float reach = clamp(d * .42 + fine * .5 + (noise(px * uK / 70.) - .5) * .42 + .06, 0., 1.);
+  float g2 = smoothstep(.2, 1., grown);
+  float th = 1. - g2 * 1.55;
+  float a = smoothstep(th - .05, th + .05, reach) * step(.01, g2);
+
+  float beam = (px.x*.62 + px.y*.78 - mod(uT * uM * .34, uRes.x + uRes.y + uM*8.) + uM*4.) / (uM * 2.7);
+  float sun = exp(-beam*beam);
+  float face = dot(n, normalize(vec2(-.6, -.8)));
+  col *= 1.1 + glow * 1.2 + sun * (.26 + face * .5);
+
+  // light: ambient, then one warm lamp
+  vec2 ld = px - uLamp.xy;
+  float fall = uLamp.w / (1. + dot(ld, ld) / (uLamp.z * uLamp.z) * 1.35);
+  float lf = clamp(.78 + dot(n, -normalize(ld + .01)) * .8 + d * .3, .3, 1.35);
+  vec3 light = vec3(uAmb) * mix(vec3(.55, .78, 1.15), vec3(1.), uAmb) + vec3(1.5, 1.2, .8) * fall * lf;
+  col *= light;
+  col = col / (1. + max(col - .72, 0.) * .9);
+  // toward the edge the planting turns away from the light
+  col *= mix(.72, 1., smoothstep(th, th + .4, reach + g2 * .5));
+  col = clamp(col, 0., 1.);
+  col = mix(col, col * col * (3. - 2. * col), .1) * uTint;
+
+  // shade on the wall behind, and the black panel before it fills
+  vec2 sq = (px - vec2(8., 18.) - uOrigin) / uM;
+  vec2 sf = smoothstep(vec2(-.6), vec2(.5), sq) * smoothstep(vec2(-.6), vec2(.5), uGrid - sq);
+  float sh = smoothstep(.25, 1.1, texture(uCells, sq / uGrid).r * sf.x * sf.y) * .26 * uAmb;
+  vec2 f = fract(q);
+  float seam = smoothstep(0., .012, min(min(f.x, f.y), min(1. - f.x, 1. - f.y)));
+  vec4 own = texelFetch(uCells, ivec2(clamp(floor(q), vec2(0.), uGrid - 1.)), 0);
+  float panel = own.g * step(0., q.x) * step(0., q.y) * step(q.x, uGrid.x) * step(q.y, uGrid.y) * (1. - smoothstep(.12, .62, own.r));
+  vec3 pc = mix(vec3(.02, .03, .027), vec3(.07, .095, .085), seam) * (.4 + .6 * uAmb) * (.75 + .25 * step(.5, fract(q.x * 20.)));
+  vec4 under = vec4(pc, 1.) * panel;
+  under += vec4(.015, .05, .035, 1.) * sh * (1. - panel);
+  o = vec4(clamp(col, 0., 1.), 1.) * a + under * (1. - a);
 }`;
-
-const LEAF_FS = `#version 300 es
-precision mediump float;
-in vec2 vUv; in float vShade, vGlow, vLamp, vY;
-uniform sampler2D uTex; uniform float uShadow, uAmb; uniform vec3 uTint; uniform float uGrade;
-out vec4 o;
-void main(){
-  vec4 t = texture(uTex, vUv, -.35);
-  if (t.a < .04) discard;
-  if (uShadow > 0.) { o = vec4(.02, .07, .05, 1.) * (t.a * uShadow); return; }
-  vec3 col = t.rgb / t.a;
-  float l = dot(col, vec3(.3, .59, .11));
-  // pull every plant toward the brand greens, keeping the photograph underneath
-  vec3 ramp = mix(vec3(.02, .09, .07), vec3(.10, .34, .23), smoothstep(0., .34, l));
-  ramp = mix(ramp, vec3(.42, .66, .20), smoothstep(.28, .62, l));
-  ramp = mix(ramp, vec3(.70, .86, .40), smoothstep(.6, 1., l));
-  col = mix(col, ramp, uGrade);
-  col = mix(col * col * 1.2, col, .62);
-  col *= vShade * mix(.7, 1.06, vY);          // darker where it leaves the pot
-  float sheen = smoothstep(.45, .8, l) * vShade;
-  vec3 light = vec3(uAmb) * mix(vec3(.62, .8, 1.1), vec3(1.), uAmb) + vec3(1.5, 1.2, .82) * vLamp;
-  col = col * light * (1. + vGlow * 1.3) + vec3(.9, .84, .6) * sheen * (vGlow * .16 + vLamp * .22);
-  o = vec4(min(col, 1.) * uTint, 1.) * t.a;
-}`;
-
-const PANEL_VS = `#version 300 es
-precision highp float;
-layout(location=0) in vec2 aQ;
-layout(location=1) in vec3 aP; // col, row, cell
-uniform vec2 uRes, uOrigin; uniform float uM, uT;
-uniform vec2 uCell[${MAX_CELLS}];
-out vec2 vUv; out float vA;
-void main(){
-  vec2 c = uCell[int(aP.z + .5)];
-  float g = c.x < 0. ? 0. : clamp((uT - c.x) / .9, 0., 1.);
-  float e = 1. - pow(1. - g, 5.);
-  float away = c.y > 0. ? smoothstep(.15, .55, uT - c.y) : 0.;
-  vA = min(g * 2.4, 1.) * (1. - away);
-  vec2 p = uOrigin + (aP.xy + vec2((1. - e) * .5, 0.) + (aQ * 1.2 - .1)) * uM;
-  vUv = aQ;
-  gl_Position = vec4(p.x / uRes.x * 2. - 1., 1. - p.y / uRes.y * 2., 0., 1.);
-}`;
-
-const PANEL_FS = `#version 300 es
-precision mediump float;
-in vec2 vUv; in float vA; uniform sampler2D uTex; uniform float uAmb; out vec4 o;
-void main(){ vec4 t = texture(uTex, vUv) * vA; o = vec4(t.rgb * (.25 + .75 * uAmb), t.a); }`;
-
-// Cell order matches tools/foliage.py: plants cut from photos of planted Modiwalls. len in modules.
-const LIST = [['limeA', 0.62], ['limeB', 0.56], ['philoA', 0.6], ['philoB', 0.66], ['monA', 0.7], ['monB', 0.74], ['monG', 0.82], ['fernA', 0.76], ['fernB', 0.88], ['fernC', 0.9],
-  ['spiderA', 0.8], ['spiderB', 0.8], ['aspA', 0.62], ['aspB', 0.6], ['heart', 0.64], ['herb', 0.6], ['ribbonA', 0.8], ['varieg', 0.56], ['burg', 0.54], ['ribbonB', 0.8]];
-const SP = Object.fromEntries(LIST.map(([n, len], i) => [n, { s: i, len }]));
-// Planting styles: seven drifts each, from the crest of the wave to its trough.
-const STYLES = [
-  [['limeA', 'limeB', 'limeA'], ['varieg', 'limeB', 'philoA'], ['aspA', 'aspB', 'herb'], ['fernA', 'fernB', 'fernC'], ['philoA', 'philoB', 'heart'], ['monG', 'monA', 'philoB'], ['spiderA', 'spiderB', 'ribbonA']],
-  [['aspA', 'aspB'], ['fernA', 'aspB'], ['fernB', 'fernC'], ['fernA', 'herb'], ['ribbonA', 'fernB'], ['spiderA', 'fernC'], ['aspA', 'ribbonB']],
-  [['monG', 'monA', 'philoB'], ['philoA', 'philoB'], ['heart', 'philoB', 'monG'], ['monA', 'monB', 'heart'], ['philoB', 'heart'], ['fernB', 'philoA'], ['monG', 'burg']],
-];
-
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function speciesAt(u, v, r, style) {
-  const n = Math.sin(u * 0.72 - v * 1.25 + Math.sin(u * 0.7 + v * 0.35) * 1.15 + 0.4) * 1.75 + Math.sin(u * 0.4 + v * 0.5) * 0.3 + (r() - 0.5) * 0.4;
-  const at = n > 1.4 ? 0 : n > 0.9 ? 1 : n > 0.25 ? 2 : n > -0.35 ? 3 : n > -1.05 ? 4 : n > -1.5 ? 5 : 6;
-  const set = STYLES[style][at];
-  return SP[set[Math.floor(r() * set.length)]];
-}
-
-/* Written straight into draw order (back layer first, lower plants first), so nothing is sorted. */
-function buildPlants(cols, rows, style) {
-  const wide = cols * PLANTS;
-  const tall = rows * PLANTS;
-  const step = wide % 7 ? 7 : 11; // coprime with the width, so every place is visited once
-  const data = new Float32Array(wide * tall * 3 * 12);
-  let o = 0;
-  let back = 0;
-  for (let layer = 0; layer < 3; layer++) {
-    for (let py = tall - 1; py >= 0; py--) {
-      for (let k = 0; k < wide; k++) {
-        const px = (k * step + py * 3) % wide;
-        const r = rng((py * wide + px) * 331 + layer * 7919 + 5);
-        const off = layer === 1 ? 0.5 : 0;
-        const x0 = (px + 0.5 + off + (r() - 0.5) * 0.7) / PLANTS;
-        const y0 = (py + 0.62 + off * 0.5 + (r() - 0.5) * 0.6) / PLANTS;
-        const sp = speciesAt(x0, y0, r, style);
-        const a = (r() * 2 - 1) * (layer === 2 ? 0.62 : 0.95);
-        data[o++] = layer ? Math.min(cols - 0.04, x0) : Math.min(cols - 0.3, Math.max(0.3, x0));
-        const len = sp.len * (0.82 + r() * 0.36) * (layer ? 1 : 1.12);
-        data[o++] = y0 - len * 0.52;
-        data[o++] = Math.PI + a * 0.42; // everything hangs from its pot
-        data[o++] = len;
-        data[o++] = sp.s;
-        data[o++] = Math.floor(py / PLANTS) * cols + Math.floor(px / PLANTS);
-        data[o++] = r() * 6.28;
-        data[o++] = 0.35 + r() * 0.9;
-        data[o++] = (layer === 0 ? 0.5 : layer === 1 ? 0.7 : 1.04) + (r() - 0.5) * 0.18;
-        data[o++] = 0.92 + r() * 0.2;
-        data[o++] = r() < 0.5 ? -1 : 1;
-        data[o++] = (r() - 0.5) * 0.3;
-      }
-    }
-    if (!layer) back = o / 12;
-  }
-  return { data, count: o / 12, back };
-}
-
-/* ---------- the black moulded panel, glimpsed before the planting covers it ---------- */
-function drawPanel() {
-  const S = 256;
-  const pad = S * (0.1 / 1.2);
-  const W = S - pad * 2;
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = S;
-  const x = cv.getContext('2d');
-  x.save();
-  x.shadowColor = 'rgba(8,40,31,.3)';
-  x.shadowBlur = 12;
-  x.shadowOffsetX = 4;
-  x.shadowOffsetY = 7;
-  x.fillStyle = '#131c19';
-  x.fillRect(pad, pad, W, W);
-  x.restore();
-  const cw = W / 5;
-  const ch = W / 4;
-  for (let r = 0; r < 4; r++) {
-    for (let k = 0; k < 5; k++) {
-      const px = pad + (k + 0.5) * cw;
-      const py = pad + (r + 0.24) * ch;
-      const pw = cw * 0.46;
-      const g = x.createLinearGradient(px - pw, 0, px + pw, 0);
-      g.addColorStop(0, '#0a0f0d');
-      g.addColorStop(0.32, '#38423f');
-      g.addColorStop(1, '#080c0b');
-      x.fillStyle = g;
-      x.beginPath();
-      x.moveTo(px - pw, py);
-      x.lineTo(px - pw * 0.62, py + ch * 0.62);
-      x.lineTo(px + pw * 0.62, py + ch * 0.62);
-      x.lineTo(px + pw, py);
-      x.fill();
-    }
-  }
-  return cv;
-}
 
 function compile(gl, vs, fs) {
   const p = gl.createProgram();
@@ -236,77 +117,66 @@ function finish(gl, p) {
     const a = gl.getActiveUniform(p, i);
     u[a.name.replace('[0]', '')] = gl.getUniformLocation(p, a.name);
   }
-  return { p, u };
+  return u;
 }
 const breathe = () => new Promise((r) => { setTimeout(r, 0); });
 
-let atlasPromise;
-export const foliage = () => (atlasPromise ??= (async () => {
+/* wall photographs: the smaller cut on small screens; each is fetched once */
+const photos = {};
+export const wallPhoto = (name) => (photos[name] ??= (async () => {
   const img = new Image();
-  img.src = new URL('../img/foliage.webp', import.meta.url).href;
+  const small = innerWidth * Math.min(2, devicePixelRatio || 1) < 1500;
+  img.src = new URL(`../img/wall/${name}${small ? '-s' : ''}.avif`, import.meta.url).href;
   await img.decode();
   return img;
 })());
 
 /* ------------------------------------------------------------------ engine */
-export async function createWall(canvas, { grade = 0.12 } = {}) {
-  const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, powerPreference: 'high-performance' });
+export async function createWall(canvas, { style = 0, leaf = 0 } = {}) {
+  const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false, powerPreference: 'high-performance' });
   if (!gl) throw new Error('no webgl2');
   // Compilation starts now and is only checked once the driver is done, so the page never waits for it.
-  const raw = [compile(gl, LEAF_VS, LEAF_FS), compile(gl, PANEL_VS, PANEL_FS)];
+  const prog = compile(gl, VS, FS);
   const ext = gl.getExtension('KHR_parallel_shader_compile');
-  const bitmap = await createImageBitmap(await foliage(), { premultiplyAlpha: 'premultiply' });
-  const texture = (src) => {
+  const tex = {};
+  const upload = async (name) => {
+    if (tex[name]) return tex[name];
+    const img = await wallPhoto(name);
     const t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 5); // cells never bleed into each other
-    return t;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+    tex[name] = { t, w: img.naturalWidth, h: img.naturalHeight };
+    return tex[name];
   };
-  const atlas = texture(bitmap);
+  let face = await upload(STYLE_NAMES[style]);
   await breathe();
-  const panelTex = texture(drawPanel());
-  while (ext && raw.some((p) => !gl.getProgramParameter(p, ext.COMPLETION_STATUS_KHR))) await breathe();
-  const [leafP, panelP] = raw.map((p) => finish(gl, p));
+  while (ext && !gl.getProgramParameter(prog, ext.COMPLETION_STATUS_KHR)) await breathe();
+  const u = finish(gl, prog);
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const cellTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, cellTex);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
 
-  const strip = [];
-  for (let i = 0; i <= SEGMENTS; i++) strip.push(-0.5, i / SEGMENTS, 0.5, i / SEGMENTS);
-  const buffer = (data) => {
-    const b = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, b);
-    if (data) gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
-    return b;
-  };
-  const attr = (loc, n, stride = 0, off = 0, div = 0) => {
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, n, gl.FLOAT, false, stride, off);
-    gl.vertexAttribDivisor(loc, div);
-  };
-  const leafVao = gl.createVertexArray();
-  gl.bindVertexArray(leafVao);
-  buffer(strip);
-  attr(0, 2);
-  const leafBuf = buffer();
-  for (let i = 0; i < 3; i++) attr(i + 1, 4, 48, i * 16, 1);
-  const panelVao = gl.createVertexArray();
-  gl.bindVertexArray(panelVao);
-  buffer([0, 0, 1, 0, 0, 1, 1, 1]);
-  attr(0, 2);
-  const panelBuf = buffer();
-  attr(1, 3, 0, 0, 1);
-  gl.bindVertexArray(null);
-
-  const cells = new Float32Array(MAX_CELLS * 2).fill(-1); // [planted at, removed at]
+  const born = new Float32Array(MAX_CELLS).fill(-1);
+  const gone = new Float32Array(MAX_CELLS);
+  let bytes = new Uint8Array(4);
+  let settled = false;
   const rip = new Float32Array(12);
   let ripAt = 0;
   let maxDpr = 2;
   let built = '';
   const t0 = performance.now();
   const W = {
-    L: { w: 1, h: 1, cols: 0, rows: 0, m: 100, ox: 0, oy: 0, count: 0, back: 0 },
+    L: { w: 1, h: 1, cols: 1, rows: 1, m: 100, ox: 0, oy: 0 },
     ptr: { x: -9999, y: -9999, s: 0, target: 0 },
     gust: 0,
     tilt: 0,
@@ -316,33 +186,34 @@ export async function createWall(canvas, { grade = 0.12 } = {}) {
     tint: [1, 1, 1],
     planted: [],
     now: () => (performance.now() - t0) / 1000,
+    async style(i) {
+      face = await upload(STYLE_NAMES[i]);
+    },
     /* returns true when the grid changed and must be planted again */
-    place(next, style = 0) {
+    place(next) {
       Object.assign(W.L, next);
       const { cols, rows } = W.L;
-      const key = `${cols}x${rows}x${style}`;
+      const key = `${cols}x${rows}`;
       if (key === built) return false;
       built = key;
-      const b = buildPlants(cols, rows, style);
-      W.L.count = b.count;
-      W.L.back = b.back;
-      gl.bindBuffer(gl.ARRAY_BUFFER, leafBuf);
-      gl.bufferData(gl.ARRAY_BUFFER, b.data, gl.STATIC_DRAW);
-      const pd = [];
-      for (let i = 0; i < cols * rows; i++) pd.push(i % cols, Math.floor(i / cols), i);
-      gl.bindBuffer(gl.ARRAY_BUFFER, panelBuf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pd), gl.STATIC_DRAW);
-      cells.fill(-1);
+      bytes = new Uint8Array(cols * rows * 4);
+      gl.bindTexture(gl.TEXTURE_2D, cellTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, cols, rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+      born.fill(-1);
+      gone.fill(0);
       W.planted = new Array(cols * rows).fill(false);
+      settled = false;
       return true;
     },
     plant(i, on = true, delay = 0) {
       if (W.planted[i] === on) return;
       W.planted[i] = on;
+      settled = false;
       if (on) {
-        cells[i * 2] = reduced ? 0 : W.now() + delay;
-        cells[i * 2 + 1] = 0;
-      } else cells[i * 2 + 1] = reduced ? 0.01 : W.now();
+        born[i] = reduced ? -100 : W.now() + delay;
+        gone[i] = 0;
+      } else gone[i] = reduced ? 0.01 : W.now();
     },
     ripple(x, y) {
       rip.set([x, y, W.now()], ripAt * 3);
@@ -357,42 +228,64 @@ export async function createWall(canvas, { grade = 0.12 } = {}) {
         canvas.width = cw;
         canvas.height = ch;
       }
-      const use = (prog, tex, vao) => {
-        gl.useProgram(prog.p);
-        gl.uniform2f(prog.u.uRes, L.w, L.h);
-        gl.uniform2f(prog.u.uOrigin, L.ox, L.oy);
-        gl.uniform1f(prog.u.uM, L.m);
-        gl.uniform1f(prog.u.uT, reduced ? 60 : W.now());
-        gl.uniform2fv(prog.u.uCell, cells);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.bindVertexArray(vao);
-      };
+      const now = reduced ? 60 : W.now();
+      if (!settled) {
+        settled = true;
+        const n = L.cols * L.rows;
+        for (let i = 0; i < n; i++) {
+          let g = 0;
+          let pnl = 0;
+          if (born[i] !== -1) {
+            const t = Math.max(0, now - born[i]);
+            const k = Math.min(1, Math.max(0, (t - 0.25) / 2.6));
+            g = 1 - (1 - k) ** 2.4;
+            pnl = Math.min(1, t / 0.4);
+            if (gone[i]) {
+              const out = Math.max(0, 1 - (now - gone[i]) / 0.7);
+              g *= out * out;
+              pnl *= out;
+              if (out > 0) settled = false;
+            } else if (k < 1) settled = false;
+          }
+          bytes[i * 4] = g * 255;
+          bytes[i * 4 + 1] = pnl * 255;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, cellTex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, L.cols, L.rows, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+      }
       gl.viewport(0, 0, cw, ch);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      const verts = strip.length / 2;
-      const leaves = (shadow, sx, sy, n) => {
-        use(leafP, atlas, leafVao);
-        gl.uniform3f(leafP.u.uPtr, W.ptr.x, W.ptr.y, W.ptr.s);
-        gl.uniform3fv(leafP.u.uRip, rip);
-        gl.uniform3fv(leafP.u.uTint, W.tint);
-        gl.uniform1f(leafP.u.uGrade, grade);
-        gl.uniform2f(leafP.u.uPar, W.par.x * L.m * 0.16, W.par.y * L.m * 0.16);
-        gl.uniform4f(leafP.u.uLamp, W.lamp.x, W.lamp.y, W.lamp.r, W.lamp.on);
-        gl.uniform1f(leafP.u.uAmb, W.amb);
-        gl.uniform1f(leafP.u.uGust, W.gust);
-        gl.uniform1f(leafP.u.uTilt, W.tilt);
-        gl.uniform1f(leafP.u.uShadow, shadow);
-        gl.uniform2f(leafP.u.uShift, sx, sy);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verts, n);
-      };
-      leaves(0.09, L.m * 0.06, L.m * 0.12, L.back);
-      use(panelP, panelTex, panelVao);
-      gl.uniform1f(panelP.u.uAmb, W.amb);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, L.cols * L.rows);
-      leaves(0, 0, 0, L.count);
+      gl.disable(gl.BLEND);
+      gl.useProgram(prog);
+      gl.bindVertexArray(vao);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, face.t);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, cellTex);
+      gl.uniform1i(u.uTex, 0);
+      gl.uniform1i(u.uCells, 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform2f(u.uRes, L.w, L.h);
+      gl.uniform1f(u.uDpr, cw / L.w);
+      gl.uniform2f(u.uOrigin, L.ox, L.oy);
+      gl.uniform2f(u.uGrid, L.cols, L.rows);
+      // texture pixels to one CSS pixel: leaves keep a believable size against the panel
+      // stay inside the photograph, so its mirrored repeat is never seen
+      const fit = leaf ? Math.min((face.h * 0.97) / (L.oy + L.rows * L.m), (face.w * 0.97) / (L.ox + L.cols * L.m)) : Math.min((face.h * 0.98) / L.h, (face.w * 0.98) / L.w);
+      const K = (leaf ? 62 / (leaf * L.m) : innerWidth < 700 ? 1.9 : 1.22) * (face.w / 2048);
+      gl.uniform1f(u.uK, K > fit && K < fit * 2.2 ? fit : K);
+      gl.uniform2f(u.uTexSize, face.w, face.h);
+      gl.uniform1f(u.uM, L.m);
+      gl.uniform1f(u.uT, now);
+      gl.uniform1f(u.uGust, W.gust);
+      gl.uniform1f(u.uTilt, W.tilt);
+      gl.uniform2f(u.uPar, W.par.x, W.par.y);
+      gl.uniform3f(u.uPtr, W.ptr.x, W.ptr.y, W.ptr.s);
+      gl.uniform3fv(u.uRip, rip);
+      gl.uniform4f(u.uLamp, W.lamp.x, W.lamp.y, W.lamp.r, W.lamp.on);
+      gl.uniform1f(u.uAmb, W.amb);
+      gl.uniform3fv(u.uTint, W.tint);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
     /* runs only while `watch` is on screen; lowers resolution if frames are slow */
     run(watch, each) {
@@ -407,16 +300,16 @@ export async function createWall(canvas, { grade = 0.12 } = {}) {
         last = t;
         if (++frames > 40 && dt < 100) {
           avg = avg * 0.95 + dt * 0.05;
-          if (avg > 22 && maxDpr > 1) {
-            maxDpr = Math.max(1, maxDpr - 0.5);
+          if (avg > 21 && maxDpr > 0.75) {
+            maxDpr = Math.max(0.75, Math.min(maxDpr, devicePixelRatio || 1) - 0.35);
             avg = 12;
             frames = 0;
           }
         }
-        const ease = 1 - Math.exp(-dt / 260);
+        const ease = 1 - Math.exp(-dt / 320);
         W.par.x += ((W.parTo?.x ?? 0) - W.par.x) * ease;
         W.par.y += ((W.parTo?.y ?? 0) - W.par.y) * ease;
-        W.ptr.s += (W.ptr.target - W.ptr.s) * (1 - Math.exp(-dt / 200));
+        W.ptr.s += (W.ptr.target - W.ptr.s) * (1 - Math.exp(-dt / 220));
         each?.(dt);
         W.draw();
         go();
@@ -495,7 +388,7 @@ export async function heroWall(hero) {
     const hr = hero.getBoundingClientRect();
     const sr = stage.getBoundingClientRect();
     const small = hr.width < 700;
-    const inRows = Math.max(3, Math.round(sr.height / (small ? 108 : 158)));
+    const inRows = Math.max(3, Math.round(sr.height / (small ? 108 : 150)));
     const m = sr.height / inRows;
     const bottom = sr.bottom - hr.top;
     const rows = Math.ceil(bottom / m - 0.02);
@@ -510,7 +403,7 @@ export async function heroWall(hero) {
     const cost = (i) => cols - 1 - col(i) + (rows - 1 - row(i)) * 0.8 + Math.sin((col(i) - c0) * 2.1 + (row(i) - r0) * 1.7) * 0.35;
     const all = [...Array(cols * rows).keys()].sort((a, b) => cost(a) - cost(b));
     const inside = all.filter((i) => col(i) >= c0 && row(i) >= r0);
-    const first = new Set(inside.slice(0, Math.round(inside.length * (small ? 0.82 : 0.74))));
+    const first = new Set(inside.slice(0, Math.round(inside.length * (small ? 0.86 : 0.8))));
     auto.clear();
     grown = -1;
     spread = all.filter((i) => !first.has(i));
@@ -590,15 +483,51 @@ export async function stripWall(host) {
 
 /* ------------------------------------------------------------------ a wall for the visualiser */
 export async function frameWall(canvas, watch) {
-  const W = await createWall(canvas, { grade: 0.1 });
+  const W = await createWall(canvas, { leaf: 0.2 });
+  let shown = 0;
   W.run(watch);
   return {
     W,
-    set({ cols, rows, m, pad, style }) {
-      const fresh = W.place({ w: cols * m + pad * 2, h: rows * m + pad * 2, cols, rows, m, ox: pad, oy: pad }, style);
-      if (fresh) for (let i = 0; i < cols * rows; i++) W.plant(i, true, ((i % cols) + (rows - 1 - Math.floor(i / cols))) * 0.1);
+    async set({ cols, rows, m, pad, style }) {
+      const fresh = W.place({ w: cols * m + pad * 2, h: rows * m + pad * 2, cols, rows, m, ox: pad, oy: pad });
+      if (style !== shown) {
+        shown = style;
+        await W.style(style);
+      }
+      if (fresh) for (let i = 0; i < cols * rows; i++) W.plant(i, true, ((i % cols) + (rows - 1 - Math.floor(i / cols))) * 0.12);
       if (reduced) W.draw();
     },
+  };
+}
+
+/* ------------------------------------------------------------------ a wall planted by scrolling: returns grow(0..1) */
+export async function scrollWall(canvas) {
+  const W = await createWall(canvas);
+  let order = [];
+  let shown = -1;
+  const layout = () => {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const rows = Math.max(4, Math.round(h / (w < 700 ? 110 : 150)));
+    const m = h / rows;
+    const cols = Math.min(Math.floor(MAX_CELLS / rows), Math.ceil(w / m));
+    if (W.place({ w, h, cols, rows, m, ox: 0, oy: 0 })) {
+      order = [...Array(cols * rows).keys()].sort((a, b) => {
+        const cost = (i) => (cols - (i % cols)) * 0.9 + (rows - Math.floor(i / cols)) * 0.7 + Math.sin(i * 12.9) * 0.9;
+        return cost(a) - cost(b);
+      });
+      shown = -1;
+    }
+  };
+  layout();
+  new ResizeObserver(layout).observe(canvas);
+  pointer(W, canvas.closest('section'), canvas);
+  W.run(canvas);
+  return (p) => {
+    const goal = Math.round(p * order.length);
+    if (goal === shown) return;
+    shown = goal;
+    order.forEach((i, k) => W.plant(i, k < goal));
   };
 }
 
@@ -616,7 +545,7 @@ export async function nightWall(sec) {
   let swing = 0;
   let vs = 0;
   let drag = null;
-  W.amb = 0.1;
+  W.amb = 0.07;
 
   function layout() {
     const hr = sec.getBoundingClientRect();
@@ -647,8 +576,8 @@ export async function nightWall(sec) {
     const lx = px + Math.sin(swing) * drop;
     const ly = Math.cos(swing) * drop;
     lamp.style.transform = `translateX(${px.toFixed(1)}px) rotate(${(-swing * 57.3).toFixed(2)}deg)`;
-    W.lamp = { x: lx, y: ly + 20, r: Math.min(sr.width, sr.height) * 0.46, on: level * 1.25 };
-    W.amb = 0.1 + level * 0.2;
+    W.lamp = { x: lx, y: ly + 20, r: Math.min(sr.width, sr.height) * 0.46, on: level * 1.15 };
+    W.amb = 0.07 + level * 0.16;
     sec.style.setProperty('--lit', level.toFixed(3));
     sec.style.setProperty('--lx', `${lx.toFixed(1)}px`);
     sec.style.setProperty('--ly', `${ly.toFixed(1)}px`);

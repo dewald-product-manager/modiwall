@@ -92,17 +92,6 @@ body:has(main > .ph) .top:not(.is-stuck), body:has(main > .hall) .top:not(.is-st
 .js .foot__mark:not(.in) { visibility: hidden; }
 .foot { padding-block: clamp(5rem, 9vw, 9rem) 2rem; }
 
-/* ---- pointer: the leaf from the mark, and a lime disc that names what a click will do ---- */
-@media (hover: hover) and (pointer: fine) {
-  html { cursor: url(../img/cursor.png) 3 3, auto; cursor: -webkit-image-set(url(../img/cursor.png) 1x, url(../img/cursor@2x.png) 2x) 3 3, auto; }
-  a, button, label, summary, select, [role=button], .tile a, .room a, .vis__src label { cursor: url(../img/cursor-link.png) 3 3, pointer; cursor: -webkit-image-set(url(../img/cursor-link.png) 1x, url(../img/cursor-link@2x.png) 2x) 3 3, pointer; }
-  input:not([type=checkbox], [type=radio], [type=range], [type=file]), textarea { cursor: text; }
-}
-.cur { position: fixed; left: 0; top: 0; z-index: 90; width: 5.4rem; height: 5.4rem; margin: -2.7rem 0 0 -2.7rem; display: grid; place-items: center; pointer-events: none; will-change: transform; }
-.cur i { position: absolute; inset: 0; border-radius: 99px; background: var(--lime); transform: scale(0); transition: transform .55s var(--ease); }
-.cur b { position: relative; font-weight: 500; font-size: .9rem; color: var(--deep); opacity: 0; transition: opacity .2s; }
-.cur.on i { transform: none; } .cur.on b { opacity: 1; transition-delay: .12s; }
-
 /* ---- opening of every inner page ---- */
 .ph { position: relative; display: grid; min-height: 100vh; min-height: 100svh; background: var(--night); color: var(--white); overflow: clip; isolation: isolate; }
 .ph__img { position: absolute; inset: 0 0 0 34%; z-index: -1; }
@@ -218,14 +207,6 @@ body:has(main > .ph) .top:not(.is-stuck), body:has(main > .hall) .top:not(.is-st
 /* ---- living walls: the corridor ---- */
 .hall { --len: 20; position: relative; height: calc(var(--len) * 46vh + 100vh); background: var(--night); color: var(--white); }
 .hall__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; perspective: 900px; perspective-origin: 50% 48%; }
-.hall__floor, .hall__roof { position: absolute; left: -40%; right: -40%; height: 60%; pointer-events: none; }
-.hall__floor { bottom: 0; background: linear-gradient(0deg, #03120d 10%, rgba(3, 18, 13, 0)); }
-.hall__roof { top: 0; background: linear-gradient(180deg, #03120d, rgba(3, 18, 13, 0)); }
-.hall__cam { position: absolute; left: 50%; top: 48%; width: 0; height: 0; transform-style: preserve-3d; will-change: transform; }
-.hall a { position: absolute; left: 0; top: 0; display: block; overflow: hidden; will-change: opacity; backface-visibility: hidden; box-shadow: 0 40px 90px rgba(0, 0, 0, .5); }
-.hall a[hidden] { display: none; }
-.hall picture, .hall img { width: 100%; height: 100%; object-fit: cover; }
-.hall .tile__cap { position: absolute; left: 1.1rem; bottom: .9rem; opacity: 0; }
 .hall__ui { position: absolute; z-index: 5; inset: auto 0 0; padding: 0 var(--gut) clamp(1.6rem, 4vh, 3rem); max-width: var(--max); margin-inline: auto; display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: end; pointer-events: none; }
 .hall__ui > * { pointer-events: auto; }
 .hall h1 { font-size: clamp(1.1rem, 1.5vw, 1.35rem); font-family: var(--font); letter-spacing: 0; font-weight: 450; }
@@ -236,8 +217,6 @@ body:has(main > .ph) .top:not(.is-stuck), body:has(main > .hall) .top:not(.is-st
 .hall .filters { margin: 0; justify-content: flex-end; max-width: 30rem; }
 .hall .filters button { background: rgba(6, 37, 28, .62); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28); font-weight: 450; }
 .hall .filters button[aria-pressed=true] { background: var(--lime); color: var(--deep); box-shadow: none; }
-.hall.is-flat { height: auto; } .hall.is-flat .hall__pin { position: static; height: auto; padding: 8rem var(--gut) 3rem; overflow: visible; } .hall.is-flat .hall__cam { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; } .hall.is-flat a { position: relative; aspect-ratio: 4 / 3; } .hall.is-flat .hall__ui { position: static; padding: 2rem 0 0; }
-:root:not(.js) .hall { height: auto; } :root:not(.js) .hall .hall__pin { position: static; height: auto; padding: 8rem var(--gut) 3rem; overflow: visible; } :root:not(.js) .hall .hall__cam { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; } :root:not(.js) .hall a { position: relative; aspect-ratio: 4 / 3; } :root:not(.js) .hall .hall__ui { position: static; padding: 2rem 0 0; }
 @media (max-width: 800px) { .hall { height: calc(var(--len) * 40vh + 100vh); } .hall__ui { grid-template-columns: 1fr; padding-bottom: 5.8rem; } .hall .filters { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; margin-inline: calc(var(--gut) * -1); padding-inline: var(--gut); } .hall .filters button { flex: none; } }
 .index { display: grid; }
 .index a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem; align-items: baseline; padding-block: clamp(.7rem, 1.3vw, 1.2rem); border-bottom: 1px solid var(--hair); text-decoration: none; transition: padding .8s var(--ease), color .4s; }

@@ -20,12 +20,13 @@ RewriteRule ^ https://www.modiwall.com%{REQUEST_URI} [R=301,L]
 RewriteRule ^index\.html$ / [R=301,L]
 
 # ---- old pages keep their search ranking ----
-RewriteRule ^(blog|blog-2)\.html$ /benefits-and-uses.html [R=301,L]
+RewriteRule ^blog-2\.html$ /journal-vertical-garden-health-benefits.html [R=301,L]
+RewriteRule ^blog\.html$ /journal.html [R=301,L]
 RewriteRule ^publications\.html$ /clients.html#press [R=301,L,NE]
 RewriteRule ^(info|products)\.html$ /how-it-works.html [R=301,L]
 RewriteRule ^privacy-policy-2\.html$ /privacy-policy.html [R=301,L]
 RewriteRule ^distributoors/?$ /contact-us.html [R=301,L]
-RewriteRule ^feed\.(xml|json)$ - [G,L]
+RewriteRule ^feed\.json$ /feed.xml [R=301,L]
 
 # ---- reading only, except the quote form ----
 RewriteCond %{REQUEST_URI} !=/api/quote.php

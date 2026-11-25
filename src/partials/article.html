@@ -1,0 +1,20 @@
+<article class="art">
+  <div class="art__bar" aria-hidden="true"></div>
+  <header class="art__h">
+    <div class="art__t">
+      <p class="art__k"><a href="/journal.html">Journal</a><span>{{topic}}</span></p>
+      <h1>{{head}}</h1>
+      <p class="art__s">{{stand}}</p>
+      <p class="art__by">{{by}}</p>
+    </div>
+    <div class="art__img">{{lead}}</div>
+  </header>
+  <div class="art__b">
+{{BODY}}
+{{sources}}
+  </div>
+</article>
+<section class="sec jr__more" aria-labelledby="more-h">
+  <div class="wrap"><div class="head"><h2 id="more-h">Read next</h2><a class="link" href="/journal.html">The journal</a></div>{{more}}</div>
+</section>
+{{> cta}}

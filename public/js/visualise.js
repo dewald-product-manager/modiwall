@@ -1,5 +1,5 @@
 
-import { frameWall } from './wall.js?v=d891c108';
+import { frameWall } from './wall.js?v=426d4046';
 const STEP = 0.5; // metres per panel
 function quadMatrix(w, h, [a, b, c, d]) { // a top left, b top right, c bottom right, d bottom left
 const dx1 = b.x - c.x;
@@ -175,8 +175,8 @@ handles.forEach((h, i) => { h.style.transform = `translate(${px[i].x.toFixed(1)}
 let dusk = false;
 function evening() {
 const { W } = frame;
-W.amb = dusk ? 0.2 : 1;
-W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: dusk ? 1.15 : 0 };
+W.amb = dusk ? 0.16 : 1;
+W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: dusk ? 1.1 : 0 };
 }
 root.querySelector('[data-vis-evening]').addEventListener('click', (e) => {
 dusk = !dusk;
