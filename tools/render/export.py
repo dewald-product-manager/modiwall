@@ -24,10 +24,16 @@ def data(k,v):
     D={}
     if os.path.exists(DATA): D=json.loads(open(DATA).read().split('=',1)[1].rsplit(';',1)[0])
     D[k]=v; open(DATA,'w',newline='\n').write('/* how bright each rendered light layer is at full value; written by the render export */\nexport const ROOM = '+json.dumps(D)+';\n')
-def groups(name,src,ng):
+def glare(x):
+    # what a real lens does round a bright lamp: a little light spread wide
+    w=x.shape[1]; b=np.minimum(x,8.); o=x.copy()
+    for sg,k in((.0022,.05),(.009,.030),(.035,.014)):
+        o+=k*np.stack([gaussian_filter(b[...,c],w*sg,truncate=3) for c in range(3)],-1)
+    return o
+def groups(name,src,ng,lens=False):
     a,al,c=rt.load(src); A=rt.aov(src); sc=[]
     for g in range(ng):
-        x=denoise(a[...,g,:],A,keep=.12); s=float(max(np.percentile(x.max(-1),99.96),.03)); s=min(s,6.); sc.append(round(s,4)); e=(np.clip(x/s,0,1))**(1/2.4); avif(e,f'{name}-{g}',56); avif(small(e,1600),f'{name}-{g}-s',54)
+        x=denoise(a[...,g,:],A,keep=.12); x=glare(x) if lens else x; s=float(max(np.percentile(x.max(-1),99.96),.03)); s=min(s,7. if lens and g==2 else 3. if lens else 6.); sc.append(round(s,4)); e=(np.clip(x/s,0,1))**(1/2.4); avif(e,f'{name}-{g}',56); avif(small(e,1600),f'{name}-{g}-s',54)
         rt.save(f'out/ex_{name}_{g}.png',x,.9)
     t=np.clip(A[...,0,3],0,40); near,far=np.percentile(t,1),np.percentile(t,99); d=1-np.clip((1/near-1/np.clip(t,near,far))/(1/near-1/far),0,1); avif(np.repeat(small(np.repeat(d[...,None],3,2),960)[...,:1],3,2),f'{name}-d',60)
     data(name,sc); print(name,sc,{f:os.path.getsize(f'{OUT}/{f}')//1024 for f in os.listdir(OUT) if f.startswith(name)})
@@ -41,9 +47,9 @@ def rooms(k,exp=.78):
     Image.fromarray((M[::2,::2].clip(0,1)*255+.5).astype('u1')).save(f'{OUT}/{k}-map.webp',lossless=True,method=6); print(k,{f:os.path.getsize(f'{OUT}/{f}')//1024 for f in os.listdir(OUT) if f.startswith(k+'-')})
 def hall():
     sc={}
-    for n,q in(('elev',60),('floor',56),('ceil',50),('portal',56)):
+    for n,q in(('elev',62),('floor',58),('ceil',52)):
         a,al,c=rt.load('hall_'+n); A=rt.aov('hall_'+n); x=denoise(a.sum(2),A,keep=.1,levels=5); s=min(float(np.percentile(x.max(-1),99.7)),2.4); sc[n]=round(s,4); e=(np.clip(x/s,0,1))**(1/2.4); avif(e,'hall-'+n,q); rt.save(f'out/ex_hall_{n}.png',x,.8)
-        if n=='elev': X=A[...,3,0]; d=np.clip((X+2.15+.15)/.5,0,1); Image.fromarray((d*255).astype('u1')).resize((1008,434),Image.BOX).convert('RGB').save(f'{OUT}/hall-depth.avif',quality=62,speed=4)
+        if n=='elev': X=A[...,3,0]; d=np.clip((X+2.15+.15)/.5,0,1); Image.fromarray((gaussian_filter(d,2.2)*255+.5).astype('u1')).resize((1512,651),Image.LANCZOS).convert('RGB').save(f'{OUT}/hall-depth.avif',quality=84,speed=4)
     data('hall',sc); print(sc,{f:os.path.getsize(f'{OUT}/{f}')//1024 for f in os.listdir(OUT) if f.startswith('hall')})
 if __name__=='__main__':
-    for j in sys.argv[1].split(','): {'mat':lambda:groups('mat','rb_mat',4),'night':lambda:groups('night','rb_night',4),'hall':hall,'in':lambda:rooms('in'),'out':lambda:rooms('out'),'both':lambda:rooms('both')}[j]()
+    for j in sys.argv[1].split(','): {'mat':lambda:groups('mat','rb_mat',4,True),'night':lambda:groups('night','rb_night',4),'hall':hall,'in':lambda:rooms('in'),'out':lambda:rooms('out'),'both':lambda:rooms('both')}[j]()

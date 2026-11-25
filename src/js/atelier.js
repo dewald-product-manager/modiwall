@@ -1,6 +1,9 @@
 /* The commission room. Three places were rendered twice, bare and planted, with a map saying which plant owns each
    pixel. The shader plants exactly the wall being asked for, plant by plant, at true scale, and the camera steps back
    or forward to frame it. */
+import { page, follow } from './frame.js';
+import { programs, picture, texture, sized } from './gl.js';
+
 const VS = `#version 300 es
 layout(location=0) in vec2 a; out vec2 q; void main(){ q = a; gl_Position = vec4(a * 2. - 1., 0., 1.); }`;
 const FS = `#version 300 es
@@ -59,47 +62,24 @@ export async function createAtelier(canvas) {
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: false });
   if (!gl) throw new Error('no webgl2');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const prog = gl.createProgram();
-  for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, FS]]) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    gl.attachShader(prog, s);
-  }
-  gl.linkProgram(prog);
+  const making = programs(gl, [[VS, FS]], 'atelier');
+  making.catch(() => {});
   const small = canvas.clientWidth * Math.min(2, devicePixelRatio || 1) < 1100;
   const at = (f) => new URL(`../img/room/${f}`, import.meta.url).href;
-  const picture = async (f) => {
-    const img = new Image();
-    img.src = at(f);
-    await img.decode();
-    return img;
-  };
   const places = {};
-  const tex = (img, exact) => {
-    const t = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE7);
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-    if (!exact) gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, exact ? gl.NEAREST : gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, exact ? gl.NEAREST : gl.LINEAR);
-    for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
-    return t;
-  };
   const load = (k) => (places[k] ??= (async () => {
     const s = small ? '-s' : '';
-    const [b, f, m] = await Promise.all([picture(`${k}-0${s}.avif`), picture(`${k}-1${s}.avif`), fetch(at(`${k}-map.webp`)).then((r) => r.blob()).then((x) => createImageBitmap(x, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))]);
-    return [tex(b), tex(f), tex(m, true)];
+    const [b, f, m] = await Promise.all([picture(at(`${k}-0${s}.avif`)), picture(at(`${k}-1${s}.avif`)), picture(at(`${k}-map.webp`), true)]);
+    const t = [];
+    for (const [img, how] of [[b, { mip: true }], [f, { mip: true }], [m, { near: true }]]) {
+      t.push(await texture(gl, img, how));
+      img.close();
+    }
+    return t;
   })());
   let here = await load('in');
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(`atelier shader ${[...gl.getAttachedShaders(prog)].map((x) => gl.getShaderInfoLog(x)).join(' ')}`);
+  const [{ p: prog, u }] = await making;
   gl.useProgram(prog);
-  const u = {};
-  for (let i = 0; i < gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS); i++) {
-    const a = gl.getActiveUniform(prog, i);
-    u[a.name] = gl.getUniformLocation(prog, a.name);
-  }
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
@@ -111,8 +91,9 @@ export async function createAtelier(canvas) {
   let raf = 0;
   let then = 0;
   const want = { w: 3, h: 2.5, grow: 1 };
-  const now = { w: 3, h: 2.5, grow: 0, vw: 0, x: 0, y: 0 };
-  const drift = { x: 0, tx: 0 };
+  const now = { w: { x: 3, v: 0 }, h: { x: 2.5, v: 0 }, vw: { x: 0, v: 0 }, x: { x: 0, v: 0 }, y: { x: 0, v: 0 }, grow: 0 };
+  const drift = { x: 0, v: 0, tx: 0 };
+  const size = sized(canvas, 1.75, () => go());
   function frame(asp) {
     // metres of the wall plane to show, with the floor and some room around it
     let vw = Math.max(want.w + 2.4, (want.h + 2.7) * asp, 5.4 * Math.min(1, asp + 0.15));
@@ -123,27 +104,21 @@ export async function createAtelier(canvas) {
     return { vw, vh, x, y };
   }
   function draw(dt) {
-    const dpr = Math.min(1.75, devicePixelRatio || 1);
-    const w = Math.round(canvas.clientWidth * dpr);
-    const h = Math.round(canvas.clientHeight * dpr);
-    if (!w || !h) return false;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
+    if (!size.fit()) return false;
+    const { cw: w, ch: h } = size;
     const f = frame(w / h);
-    const k = reduced || !now.vw ? 1 : 1 - Math.exp(-dt / 480);
+    const first = reduced || !now.vw.x;
     let move = 0;
     for (const [n, v] of [['w', want.w], ['h', want.h], ['vw', f.vw], ['x', f.x], ['y', f.y]]) {
-      const d = v - now[n];
-      now[n] += d * k;
-      move += Math.abs(d);
+      move += Math.abs(v - now[n].x) + Math.abs(now[n].v) * 100;
+      if (first) now[n].x = v;
+      else follow(now[n], v, dt, 460);
     }
     const g = reduced ? 1 : 1 - Math.exp(-dt / 1100);
     now.grow += (want.grow - now.grow) * g;
     move += Math.abs(want.grow - now.grow);
-    drift.x += (drift.tx - drift.x) * (1 - Math.exp(-dt / 600));
     move += Math.abs(drift.tx - drift.x);
+    follow(drift, drift.tx, dt, 520);
     if (next) {
       mix = reduced ? 1 : Math.min(1, mix + dt / 1500);
       move += 1;
@@ -153,11 +128,12 @@ export async function createAtelier(canvas) {
         mix = 0;
       }
     }
-    const vh = now.vw / (w / h);
-    const x = Math.min(7.15 - now.vw, Math.max(-7.15, now.x + drift.x * now.vw * 0.02));
+    const vw = now.vw.x;
+    const vh = vw / (w / h);
+    const x = Math.min(7.15 - vw, Math.max(-7.15, now.x.x + drift.x * vw * 0.02));
     gl.viewport(0, 0, w, h);
-    gl.uniform4f(u.uBox, x / 14.4 + 0.5, 0.5 - (now.y + vh - 2.6) / 14.4, now.vw / 14.4, vh / 14.4);
-    gl.uniform2f(u.uWall, now.w, now.h);
+    gl.uniform4f(u.uBox, x / 14.4 + 0.5, 0.5 - (now.y.x + vh - 2.6) / 14.4, vw / 14.4, vh / 14.4);
+    gl.uniform2f(u.uWall, now.w.x, now.h.x);
     gl.uniform1f(u.uGrow, now.grow);
     gl.uniform1f(u.uMix, next ? Math.max(mix, 0.0001) : 0);
     [...here, ...(next ?? here)].forEach((t, i) => {
@@ -173,17 +149,16 @@ export async function createAtelier(canvas) {
     then = t;
     raf = draw(dt) ? requestAnimationFrame(loop) : 0;
   };
-  const go = () => {
+  function go() {
     if (raf) return;
     then = 0;
     raf = requestAnimationFrame(loop);
-  };
-  new ResizeObserver(go).observe(canvas);
+  }
   canvas.addEventListener('webglcontextlost', () => canvas.closest('[data-commission]')?.classList.add('no-webgl'));
   if (!reduced) {
     addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
-      drift.tx = e.clientX / innerWidth - 0.5;
+      drift.tx = e.clientX / page.w - 0.5;
       go();
     }, { passive: true });
   }

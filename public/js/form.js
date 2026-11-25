@@ -1,6 +1,6 @@
 
 import { html } from './html.js?v=fd61fe77';
-import { createAtelier } from './atelier.js?v=59484e30';
+import { createAtelier } from './atelier.js?v=a8b5f451';
 const RULES = {
 name: (v) => (v.trim().length < 2 ? 'Enter your name.' : ''),
 email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Enter an email address like name@example.co.za.'),

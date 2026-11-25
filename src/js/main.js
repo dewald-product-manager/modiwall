@@ -1,5 +1,6 @@
 /* Modiwall site behaviour. No dependencies, no third-party requests. */
 import { html } from './html.js';
+import { page, box, scene, quiet, follow, clamp, smooth } from './frame.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -11,37 +12,6 @@ root.classList.add('js');
 if (location.hostname.endsWith('.github.io')) {
   const tag = document.querySelector('meta[name=robots]');
   if (tag) tag.content = 'noindex';
-}
-
-/* ---- eased wheel scrolling (mouse only): scroll-linked scenes and the page move in the same frame ---- */
-if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-  let to = scrollY;
-  let at = scrollY;
-  let raf = 0;
-  let then = 0;
-  const run = (t) => {
-    const dt = Math.min(50, t - then || 16);
-    then = t;
-    at += (to - at) * (1 - Math.exp(-dt / 110));
-    if (Math.abs(to - at) < 0.4) at = to;
-    scrollTo({ top: at, behavior: 'instant' });
-    raf = at === to ? 0 : requestAnimationFrame(run);
-  };
-  addEventListener('wheel', (e) => {
-    if (e.ctrlKey || e.defaultPrevented || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    if (e.target.closest('dialog[open], textarea, select, .menu, [data-native-scroll]')) return;
-    e.preventDefault();
-    const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? innerHeight : 1;
-    if (!raf) at = to = scrollY;
-    to = Math.max(0, Math.min(root.scrollHeight - innerHeight, to + e.deltaY * unit));
-    if (!raf) {
-      then = 0;
-      raf = requestAnimationFrame(run);
-    }
-  }, { passive: false });
-  // anything else that scrolls (keyboard, scrollbar, anchors) takes over at once
-  addEventListener('keydown', () => { cancelAnimationFrame(raf); raf = 0; });
-  addEventListener('pointerdown', () => { cancelAnimationFrame(raf); raf = 0; });
 }
 
 /* ---- buttons lean toward the pointer ---- */
@@ -58,7 +28,7 @@ const top = $('[data-top]');
 let lastY = 0;
 let ticking = false;
 function onScroll() {
-  const y = scrollY;
+  const y = page.y = scrollY;
   top.classList.toggle('is-stuck', y > 40);
   top.classList.toggle('is-away', y > 500 && y > lastY + 2);
   lastY = y;
@@ -125,6 +95,10 @@ $$('[data-slots]').forEach((g) => [...g.children].forEach((c, i) => {
 }));
 $$('[data-slot], [data-watch]').forEach((el) => io.observe(el));
 
+$$('.lume').forEach((l) => l.addEventListener('transitionend', (e) => {
+  if (e.target.matches('picture') && l.classList.contains('in')) l.classList.add('done');
+}));
+
 /* ---- hero wall: starts after the first paint ---- */
 const hero = $('[data-hero]');
 if (hero) {
@@ -143,8 +117,8 @@ if (system) {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./system.js').then((m) => m.initSystem(system));
-  }, { rootMargin: '150% 0px' });
+    quiet(system, 1.1).then(() => import('./system.js')).then((m) => m.initSystem(system));
+  }, { rootMargin: '260% 0px' });
   near.observe(system);
 }
 
@@ -213,8 +187,8 @@ $$('[data-strip]').forEach((strip) => {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./wall.js').then((m) => m.stripWall(strip)).catch(() => strip.remove());
-  }, { rootMargin: '0px 0px -8% 0px' });
+    quiet(strip, 0.7).then(() => import('./wall.js')).then((m) => m.stripWall(strip)).catch(() => strip.remove());
+  }, { rootMargin: '200% 0px' });
   near.observe(strip);
 });
 
@@ -224,8 +198,8 @@ if (night) {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./room.js').then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
-  }, { rootMargin: '90% 0px' });
+    quiet(night, 1).then(() => import('./room.js')).then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
+  }, { rootMargin: '220% 0px' });
   near.observe(night);
 }
 
@@ -241,123 +215,127 @@ import('./pointer.js').then((m) => m.initPointer());
 /* ---- stone, timber, light ---- */
 const mat = $('[data-mat]');
 if (mat) {
+  let begun = false;
+  const begin = () => {
+    if (begun) return;
+    begun = true;
+    import('./materials.js').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+  };
+  if (!navigator.connection?.saveData) addEventListener('load', () => setTimeout(() => (window.requestIdleCallback ?? setTimeout)(begin), 3600));
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./materials.js').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+    begin();
   }, { rootMargin: '120% 0px' });
   near.observe(mat);
 }
 
 /* ---- depth: page openings answer the pointer in layers ---- */
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('[data-depth], .ph').forEach((sec) => {
-  let x = 0;
-  let y = 0;
+  const x = { x: 0, v: 0 };
+  const y = { x: 0, v: 0 };
   let tx = 0;
   let ty = 0;
-  let raf = 0;
-  let then = 0;
-  const run = (t) => {
-    const k = 1 - Math.exp(-Math.min(50, t - then || 16) / 240);
-    then = t;
-    x += (tx - x) * k;
-    y += (ty - y) * k;
-    sec.style.setProperty('--px', x.toFixed(4));
-    sec.style.setProperty('--py', y.toFixed(4));
-    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.002 ? requestAnimationFrame(run) : 0;
-  };
+  let was = '';
   sec.addEventListener('pointermove', (e) => {
-    tx = e.clientX / innerWidth - 0.5;
-    ty = e.clientY / innerHeight - 0.5;
-    if (!raf) {
-      then = 0;
-      raf = requestAnimationFrame(run);
-    }
+    tx = e.clientX / page.w - 0.5;
+    ty = e.clientY / page.h - 0.5;
   }, { passive: true });
+  scene(sec, (dt) => {
+    const k = `${follow(x, tx, dt, 340).toFixed(4)} ${follow(y, ty, dt, 340).toFixed(4)}`;
+    if (k === was) return;
+    was = k;
+    sec.style.setProperty('--px', x.x.toFixed(4));
+    sec.style.setProperty('--py', y.x.toFixed(4));
+  });
 });
 
 /* ---- one house: chapters laid over one another, the one beneath falling back ---- */
 const chapters = $$('[data-ch]');
 if (chapters.length && !reduced) {
-  let live = false;
-  const inner = chapters.map((c) => c.firstElementChild);
-  const run = () => {
-    if (!live) return;
-    const vh = innerHeight;
-    const tops = chapters.map((c) => c.getBoundingClientRect().top);
-    chapters.forEach((c, i) => {
-      const over = i + 1 < chapters.length ? Math.min(1, Math.max(0, 1 - tops[i + 1] / vh)) : 0;
-      const come = Math.min(1, Math.max(0, 1 - tops[i] / vh));
-      const key = `${over.toFixed(3)}${come.toFixed(3)}`;
-      if (c.dataset.k === key) return;
-      c.dataset.k = key;
-      inner[i].style.setProperty('--over', over.toFixed(3));
-      inner[i].style.setProperty('--come', come.toFixed(3));
-    });
-    requestAnimationFrame(run);
-  };
-  new IntersectionObserver(([e]) => {
-    const was = live;
-    live = e.isIntersecting;
-    if (live && !was) requestAnimationFrame(run);
-  }).observe($('[data-chapters]'));
+  const list = chapters.map((c) => {
+    const shade = document.createElement('i');
+    shade.className = 'ch__shade';
+    c.firstElementChild.append(shade);
+    return { c, inn: c.firstElementChild, par: $('.ch__par', c), shade, k: '' };
+  });
+  const track = chapters[0].parentElement;
+  box(track);
+  chapters.forEach(box);
   root.classList.add('has-ch');
+  scene($('[data-chapters]'), () => {
+    const wide = page.w > 900;
+    const tops = list.map(({ c }, i) => (wide ? Math.max(0, box(track).top + i * box(c).height - page.y) : box(c).top - page.y));
+    list.forEach((o, i) => {
+      const over = i + 1 < list.length ? smooth(clamp(1 - tops[i + 1] / page.h)) : 0;
+      const come = clamp(1 - tops[i] / page.h);
+      const key = `${over.toFixed(4)} ${come.toFixed(4)} ${wide}`;
+      if (o.k === key) return;
+      o.k = key;
+      o.inn.style.transform = wide ? `translate3d(0,${(over * -2.5).toFixed(3)}vh,0) scale(${(1 - over * 0.06).toFixed(5)})` : '';
+      o.shade.style.opacity = wide ? (over * 0.66).toFixed(3) : 0;
+      o.par.style.transform = `translate3d(0,${((1 - come) * 13 - over * 5).toFixed(3)}%,0) scale(${(1.14 - come * 0.1).toFixed(5)})`;
+    });
+  });
 }
 
 /* ---- client names, found by lamplight: follows the pointer, wanders when left alone ---- */
 $$('[data-lit]').forEach((sec) => {
   const wall = $('[data-lit-wall]', sec);
   const glow = $('[data-lit-glow]', sec);
-  let box = null;
-  let x = 0.2;
-  let y = 0.4;
-  let tx = x;
-  let ty = y;
-  let held = 0;
-  let live = false;
-  let then = 0;
-  const run = (t) => {
-    if (!live) return;
-    const dt = Math.min(50, t - then || 16);
-    then = t;
-    if (t - held > 1600) {
-      tx = 0.5 + Math.sin(t / 3100) * 0.42;
-      ty = 0.5 + Math.sin(t / 1900) * 0.34;
-    }
-    const k = 1 - Math.exp(-dt / (t - held > 1600 ? 520 : 150));
-    x += (tx - x) * k;
-    y += (ty - y) * k;
-    wall.style.setProperty('--mx', `${(x * 100).toFixed(2)}%`);
-    wall.style.setProperty('--my', `${(y * 100).toFixed(2)}%`);
-    if (box) glow.style.transform = `translate3d(${(box.x + x * box.w).toFixed(0)}px,${(box.y + y * box.h).toFixed(0)}px,0)`;
-    requestAnimationFrame(run);
-  };
-  const measure = () => {
-    const a = sec.getBoundingClientRect();
-    const b = wall.getBoundingClientRect();
-    box = { x: b.left - a.left, y: b.top - a.top, w: b.width, h: b.height };
-  };
   if (reduced) {
     wall.style.setProperty('--mx', '50%');
     wall.style.setProperty('--my', '50%');
     sec.classList.add('is-bright');
     return;
   }
+  // a window of light that slides over the names while the names stay still: nothing is ever repainted
+  const names = $('.lit__on', wall);
+  const spot = document.createElement('div');
+  spot.className = 'lit__spot';
+  names.replaceWith(spot);
+  spot.append(names);
+  const x = { x: 0.2, v: 0 };
+  const y = { x: 0.4, v: 0 };
+  let tx = 0.2;
+  let ty = 0.4;
+  let held = -1e9;
+  let cx = null;
+  let cy = 0;
+  let half = 0;
+  box(sec);
+  box(wall);
+  const measure = () => {
+    half = spot.offsetWidth / 2;
+    names.style.width = `${wall.clientWidth}px`;
+    names.style.height = `${wall.clientHeight}px`;
+  };
+  new ResizeObserver(measure).observe(wall);
   sec.addEventListener('pointermove', (e) => {
-    const b = wall.getBoundingClientRect();
-    tx = (e.clientX - b.left) / b.width;
-    ty = (e.clientY - b.top) / b.height;
+    cx = e.clientX;
+    cy = e.clientY;
     held = performance.now();
   }, { passive: true });
-  new ResizeObserver(measure).observe(wall);
-  new IntersectionObserver(([e]) => {
-    const was = live;
-    live = e.isIntersecting;
-    if (live && !was) {
-      measure();
-      requestAnimationFrame(run);
+  let drift = 1;
+  scene(sec, (dt, t) => {
+    const b = box(wall);
+    const a = box(sec);
+    const alone = t - held > 1600;
+    if (cx !== null && !alone) {
+      tx = (cx - b.left) / b.width;
+      ty = (cy + page.y - b.top) / b.height;
+    } else {
+      tx = 0.5 + Math.sin(t / 3100) * 0.42;
+      ty = 0.5 + Math.sin(t / 1900) * 0.34;
     }
-  }).observe(sec);
+    drift += ((alone ? 1 : 0) - drift) * (1 - Math.exp(-dt / 500)); // hand to lamp and back without a jerk
+    const lag = 170 + drift * 520;
+    const px = follow(x, tx, dt, lag) * b.width;
+    const py = follow(y, ty, dt, lag) * b.height;
+    spot.style.transform = `translate3d(${(px - half).toFixed(2)}px,${(py - half).toFixed(2)}px,0)`;
+    names.style.transform = `translate3d(${(half - px).toFixed(2)}px,${(half - py).toFixed(2)}px,0)`;
+    glow.style.transform = `translate3d(${(b.left - a.left + px).toFixed(1)}px,${(b.top - a.top + py).toFixed(1)}px,0)`;
+  });
 });
 
 /* ---- questions: animated open and close ---- */

@@ -2,13 +2,13 @@
    like a product photograph, planted with curved 3D leaves of the species on Modiwall's own walls. Scroll assembles
    it, a drag turns it. WebGL2, no libraries. Replace the geometry in parts() when the CAD drawings arrive. */
 
+import { page, scene as onScreen, follow, clamp, smooth, span } from './frame.js';
+import { programs, picture, texture, sized, slot } from './gl.js';
+
 const COLS = 5;
 const ROWS = 4;
 const PI = Math.PI;
-const clamp = (v) => Math.min(1, Math.max(0, v));
-const smooth = (v) => v * v * (3 - 2 * v);
 const ease = (v) => 1 - (1 - v) ** 3;
-const span = (p, a, b) => ease(clamp((p - a) / (b - a)));
 let seed = 11;
 const rnd = (a = 0, b = 1) => {
   seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -325,6 +325,7 @@ void main(){
   vec3 V = normalize(uEye - vP), N = normalize(vN); if (!gl_FrontFacing) N = -N;
   if (dot(N, V) < 0. && uKind > 9.5) N = -N;
   vec3 alb = vec3(.016); float rough = .44, f0 = .045, trans = 0., occ = 1.; vec3 tcol = vec3(0.), emit = vec3(0.);
+#ifdef HARD
   if (uKind < .5) {                                   // limewashed wall
     float t = noise(vP.xy * 1.1 + noise(vP.xy * .5) * 2.) * .6 + noise(vP.xy * 5.) * .25 + noise(vP.xy * 31.) * .1;
     alb = mix(vec3(.019, .05, .04), vec3(.034, .078, .062), t); rough = .95; f0 = .02;
@@ -359,7 +360,9 @@ void main(){
   } else if (uKind < 7.5) {                           // pipes, with the water passing inside
     alb = vec3(.013, .0145, .014); rough = .34;
     float f = fract(vUv.y * .9 - uT * .75); emit = vec3(.34, .74, .015) * smoothstep(.5, .0, abs(f - .5) * 2.4) * pow(max(dot(N, V), 0.), 3.) * uWet * .34 * smoothstep(-2.6, -2.3, vP.y);
-  } else {
+  }
+#else
+  {
     float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), s = vX.y;
     float back = gl_FrontFacing ? 0. : 1.;
     trans = .42; rough = .34; f0 = .045;
@@ -369,7 +372,9 @@ void main(){
     } else {                                          // a real leaf: colour and veins from the same scans the rendered walls use
       vec2 t = cell(uKind) + clamp(vec2(vUv.x, v), .004, .996) * .5;
       vec4 c = texture(uLeaf, t, -.4);
-      if (uKind > 13.5 && c.a < .5) discard;
+#ifdef HOLE
+      if (c.a < .5) discard;
+#endif
       alb = pow(c.rgb, vec3(2.2));
       alb *= (.82 + .4 * s) * (uKind > 10.5 && uKind < 11.5 ? .62 : 1.); alb = mix(alb, alb * vec3(1.32, 1.12, .75), smoothstep(.62, 1., fract(s * 37.)) * .7);
       vec3 nt = texture(uLeafN, t, -.2).xyz * 2. - 1.;
@@ -383,6 +388,7 @@ void main(){
     alb = mix(alb, alb * 1.25 + .012, back); rough += back * .22;
     occ = mix(.16, 1., vOcc);
   }
+#endif
   float sh = shade();
   float ndl = dot(N, uSun), ndv = max(dot(N, V), .02);
   vec3 sun = vec3(1., .95, .86) * 3.3;
@@ -405,7 +411,14 @@ void main(){
 }`;
 const SFS = `#version 300 es
 precision highp float; in vec2 vUv; in vec4 vX; uniform float uKind; uniform sampler2D uLeaf;
-void main(){ if (uKind > 13.5 && texture(uLeaf, vec2(.5) + clamp(vUv, .004, .996) * .5).a < .5) discard; }`;
+#ifdef HOLE
+void main(){ if (texture(uLeaf, vec2(.5) + clamp(vUv, .004, .996) * .5).a < .5) discard; }
+#else
+void main(){}
+#endif
+`;
+
+const only = (src, what) => src.replace('#version 300 es', `#version 300 es\n#define ${what}`);
 
 /* ------------------------------------------------------------------ small maths */
 const mul = (a, b) => {
@@ -487,7 +500,7 @@ function plant(out, kind, x, y, z, order, full = 1) {
   }
 }
 
-export function initSystem(sec) {
+export async function initSystem(sec) {
   const host = sec.querySelector('.rig');
   const pin = sec.querySelector('.sys__pin');
   const steps = [...sec.querySelectorAll('[data-steps] li')];
@@ -499,10 +512,12 @@ export function initSystem(sec) {
   canvas.dataset.cursor = 'Turn';
   canvas.setAttribute('aria-hidden', 'true');
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: true, powerPreference: 'high-performance' });
+  const told = [];
   const progress = (p) => steps.forEach((li, i) => {
     const on = p >= AT[i] && p < AT[i + 1];
     if (li.classList.contains('on') !== on) li.classList.toggle('on', on);
-    li.style.setProperty('--p', clamp((p - AT[i]) / (Math.min(1, AT[i + 1]) - AT[i])).toFixed(3));
+    const k = clamp((p - AT[i]) / (Math.min(1, AT[i + 1]) - AT[i])).toFixed(3);
+    if (told[i] !== k) li.style.setProperty('--p', (told[i] = k));
   });
   if (!gl) {
     sec.classList.add('no-webgl');
@@ -512,28 +527,9 @@ export function initSystem(sec) {
   pin.before(canvas);
   pin.parentElement.style.setProperty('--live', 1);
 
-  const link = (fs) => {
-    const p = gl.createProgram();
-    for (const [t, s] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
-      const sh = gl.createShader(t);
-      gl.shaderSource(sh, s);
-      gl.compileShader(sh);
-      gl.attachShader(p, sh);
-    }
-    gl.linkProgram(p);
-    return p;
-  };
-  const progs = [link(FS), link(SFS)];
-  const ext = gl.getExtension('KHR_parallel_shader_compile');
-  const uniforms = (p) => {
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`system shader: ${gl.getAttachedShaders(p).map((s) => gl.getShaderInfoLog(s)).join(' ')}`);
-    const u = {};
-    for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) {
-      const n = gl.getActiveUniform(p, i).name;
-      u[n] = gl.getUniformLocation(p, n);
-    }
-    return u;
-  };
+  const making = programs(gl, [[VS, only(FS, 'HARD')], [VS, only(FS, 'SOFT')], [VS, only(FS, 'HOLE')], [VS, SFS], [VS, only(SFS, 'HOLE')]], 'system');
+  making.catch(() => {});
+  await slot();
 
   const ONE = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0, 1]);
   const upload = (mesh, inst = ONE) => {
@@ -570,17 +566,20 @@ export function initSystem(sec) {
     wall: upload(wallMesh), panel: upload(panelMesh()), grid: upload(gridMesh()), screws: upload(screwsMesh()), vessel: upload(vesselMesh(), potInst), vesselFar: upload(vesselMesh(2, 4), potInst), soil: upload(soilMesh(), potInst),
     pipes: upload(plumbing()), lcd: upload(flat(3.72, -1.5, 4.18, -1.22, 0.005)), streams: upload(streams()),
   };
+  await slot();
   // distant panels carry lighter leaves; at that size the eye cannot tell
   const make = (far) => {
     const h = heartLeaf(far);
     return { 10: h, 11: h, 12: frond(far), 13: ribbon(far), 14: monsteraLeaf(far) };
   };
   const near = make(false);
+  await slot();
   const away = make(true);
   const full = innerWidth < 800 ? 0.62 : 0.76;
   const around = [];
   for (let r = -1; r <= 1; r++) for (let c = -1; c <= 1; c++) around.push({ r, c, far: !!(r || c) });
-  around.forEach((a, n) => {
+  for (const [n, a] of around.entries()) {
+    await slot();
     const out = {};
     for (const i of pots) {
       const [x, y] = potAt(i);
@@ -588,7 +587,8 @@ export function initSystem(sec) {
     }
     a.plants = Object.entries(out).map(([k, d]) => ({ kind: Number(k), ...upload((a.far ? away : near)[k], d) }));
     a.delay = n * 0.06;
-  });
+  }
+  await slot();
 
   /* the pressed mark and the timer's digits */
   const sheet = document.createElement('canvas');
@@ -621,22 +621,18 @@ export function initSystem(sec) {
   gl.generateMipmap(gl.TEXTURE_2D);
 
   /* the leaves' own colour and veins */
-  [['leaf', 2], ['leaf-n', 3]].forEach(([f, unit]) => {
+  const leafTex = [[58, 92, 48, 255], [128, 128, 255, 255]].map((c) => {
     const t = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(unit === 2 ? [58, 92, 48, 255] : [128, 128, 255, 255]));
-    const img = new Image();
-    img.src = new URL(`../img/room/${f}.avif`, import.meta.url).href;
-    img.decode().then(() => {
-      gl.activeTexture(gl.TEXTURE0 + unit);
-      gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      const x = gl.getExtension('EXT_texture_filter_anisotropic');
-      if (x) gl.texParameterf(gl.TEXTURE_2D, x.TEXTURE_MAX_ANISOTROPY_EXT, 4);
-    }).catch(() => {});
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(c));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    return t;
+  });
+  ['leaf', 'leaf-n'].forEach(async (f, i) => {
+    try {
+      leafTex[i] = await texture(gl, await picture(new URL(`../img/room/${f}.avif`, import.meta.url).href), { mip: true, sharp: 4 });
+    } catch { /* plain leaves */ }
   });
 
   /* shadow map */
@@ -682,14 +678,20 @@ export function initSystem(sec) {
     const k = smooth(clamp((p - keys[i][0]) / (keys[i + 1][0] - keys[i][0])));
     return keys[i].map((v, n) => v + (keys[i + 1][n] - v) * k);
   };
-  let U;
-  let SU;
-  let dpr = Math.min(innerWidth < 800 ? 1.6 : 1.75, devicePixelRatio || 1);
-  const turn = { x: 0, y: 0, tx: 0, ty: 0, gust: 0 };
+  let progs;
+  const size = sized(canvas, innerWidth < 800 ? 1.6 : 1.75);
+  const turn = { x: 0, y: 0, tx: 0, ty: 0, gust: 0, sx: { x: 0, v: 0 }, sy: { x: 0, v: 0 } };
   const I = move(0, 0, 0);
 
-  function scene(p, t, u, sun) {
+  function paint(p, sun) {
+    let on = null;
     const draw = (part, kind, m = I, grow = 1, drop = 1) => {
+      const P = progs[sun ? (kind > 13.5 ? 4 : 3) : kind > 13.5 ? 2 : kind > 9.5 ? 1 : 0];
+      if (P !== on) {
+        gl.useProgram(P.p);
+        on = P;
+      }
+      const { u } = P;
       gl.uniform1f(u.uKind, kind);
       gl.uniformMatrix4fv(u.uM, false, m);
       gl.uniform1f(u.uGrow, grow);
@@ -704,23 +706,29 @@ export function initSystem(sec) {
     const grow = clamp((p - 0.68) / 0.13);
     const visit = span(p, 0.05, 0.13) * (1 - span(p, 0.16, 0.22));
     const end = clamp((p - 0.79) / 0.15);
-    if (!sun) draw(parts.wall, 0);
+    const off = move(0, 0, part * 1.9);
     const base = move(0, 0, (1 - a) * 2.4);
-    draw(parts.panel, 1, base);
-    if (visit > 0.01) {
-      draw(parts.panel, 1, move(5.13 + (1 - visit) * 4, 0, (1 - a) * 2.4));
-      draw(parts.panel, 1, move(0, 5.13 + (1 - visit) * 4, (1 - a) * 2.4));
+    // nearest first, so nothing hidden is ever painted
+    if (grow > 0) for (const pl of around[4].plants) draw(pl, pl.kind, off, grow);
+    const beside = [];
+    if (end > 0) around.forEach((n) => {
+      if (!n.far) return;
+      const k = ease(clamp(end * 1.6 - n.delay));
+      if (k <= 0.002) return;
+      const m = move(n.c * 5.13 + n.c * (1 - k) * 5, -n.r * 5.13 - n.r * (1 - k) * 5, (1 - k) * 3);
+      beside.push(m);
+      for (const pl of n.plants) draw(pl, pl.kind, m, clamp(k * 1.25 - 0.1));
+    });
+    if (vess > 0) {
+      draw(parts.vessel, 4, off, 1, vess);
+      draw(parts.soil, 5, off, 1, vess);
     }
+    if (!sun) for (const m of beside) draw(parts.vesselFar, 4, m);
     const gz = 0.34 + (1 - b) * 5 + part * 1.9;
     if (b > 0.005) {
       const g = move(0, (1 - b) * 0.6, gz);
       draw(parts.grid, 1, g);
       draw(parts.screws, 2, g);
-    }
-    const off = move(0, 0, part * 1.9);
-    if (vess > 0) {
-      draw(parts.vessel, 4, off, 1, vess);
-      draw(parts.soil, 5, off, 1, vess);
     }
     const pipes = span(p, 0.555, 0.62);
     if (pipes > 0.005 && p < 0.97) {
@@ -728,31 +736,31 @@ export function initSystem(sec) {
       draw(parts.pipes, 7, pm);
       if (!sun) draw(parts.lcd, 6, pm);
     }
-    if (grow > 0) for (const pl of around[4].plants) draw(pl, pl.kind, off, grow);
-    if (end > 0) around.forEach((n) => {
-      if (!n.far) return;
-      const k = ease(clamp(end * 1.6 - n.delay));
-      if (k <= 0.002) return;
-      const m = move(n.c * 5.13 + n.c * (1 - k) * 5, -n.r * 5.13 - n.r * (1 - k) * 5, (1 - k) * 3);
-      draw(parts.panel, 1, m);
-      if (!sun) draw(parts.vesselFar, 4, m);
-      for (const pl of n.plants) draw(pl, pl.kind, m, clamp(k * 1.25 - 0.1));
-    });
-    return { part, off };
+    draw(parts.panel, 1, base);
+    if (visit > 0.01) {
+      draw(parts.panel, 1, move(5.13 + (1 - visit) * 4, 0, (1 - a) * 2.4));
+      draw(parts.panel, 1, move(0, 5.13 + (1 - visit) * 4, (1 - a) * 2.4));
+    }
+    for (const m of beside) draw(parts.panel, 1, m);
+    if (!sun) draw(parts.wall, 0);
+    const wet = span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82));
+    if (!sun && wet > 0.01) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+      draw(parts.streams, 3);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+    }
   }
 
   let VP = I;
-  let tick = 0;
+  let shadeAt = -1e9;
   let drawnAt = -1;
   let lightM = I;
   function render(p, t) {
-    const w = Math.round(canvas.clientWidth * dpr);
-    const h = Math.round(canvas.clientHeight * dpr);
-    if (!w || !h) return;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
+    if (!size.fit()) return;
+    const { cw: w, ch: h } = size;
     const asp = w / h;
     const tall = asp < 0.95;
     const [, yaw, pitch, d0, ty] = cam(p);
@@ -766,71 +774,69 @@ export function initSystem(sec) {
 
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
-    const set = (prog, u, vp) => {
-      gl.useProgram(prog);
-      if (u.uLeaf) gl.uniform1i(u.uLeaf, 2);
-      gl.uniformMatrix4fv(u.uVP, false, vp);
-      gl.uniform1f(u.uT, t);
-      gl.uniform2f(u.uGust, turn.gust, 0);
+    const all = (from, to, vp) => {
+      for (let i = from; i < to; i++) {
+        const { p: prog, u } = progs[i];
+        gl.useProgram(prog);
+        gl.uniformMatrix4fv(u.uVP, false, vp);
+        gl.uniform1f(u.uT, t);
+        gl.uniform2f(u.uGust, turn.gust, 0);
+        if (u.uLeaf) gl.uniform1i(u.uLeaf, 2);
+      }
     };
-    tick++;
-    const fresh = Math.abs(p - drawnAt) > 0.0002 ? tick % (p > 0.82 ? 2 : 1) === 0 : tick % 4 === 0;
-    if (fresh || drawnAt < 0) {
-    drawnAt = p;
-    lightM = L;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.viewport(0, 0, SIZE, SIZE);
-    gl.clear(gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.POLYGON_OFFSET_FILL);
-    gl.polygonOffset(2.2, 5);
-    set(progs[1], SU, L);
-    // the texture being written must not also be bound for reading
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    scene(p, t, SU, true);
-    gl.disable(gl.POLYGON_OFFSET_FILL);
+    const bind = (i, tex) => {
+      gl.activeTexture(gl.TEXTURE0 + i);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+    };
+    bind(2, leafTex[0]);
+    bind(3, leafTex[1]);
+    // shadows keep time with the light, not with the screen
+    if (t - shadeAt > (Math.abs(p - drawnAt) > 0.0002 ? 0.0145 : 0.031)) {
+      shadeAt = t;
+      drawnAt = p;
+      lightM = L;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, SIZE, SIZE);
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(2.2, 5);
+      all(3, 5, L);
+      bind(0, null); // the texture being written must not also be bound for reading
+      paint(p, true);
+      gl.disable(gl.POLYGON_OFFSET_FILL);
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, w, h);
     gl.clearColor(0.02, 0.1, 0.075, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.bindTexture(gl.TEXTURE_2D, depth);
-    set(progs[0], U, VP);
-    gl.uniformMatrix4fv(U.uL, false, lightM);
-    gl.uniform3fv(U.uEye, eye);
-    gl.uniform3fv(U.uSun, SUN);
-    gl.uniform1i(U.uSh, 0);
-    gl.uniform1i(U.uTx, 1);
-    gl.uniform1i(U.uLeaf, 2);
-    gl.uniform1i(U.uLeafN, 3);
-    gl.uniform1f(U.uPx, 1 / SIZE);
-    gl.uniform1f(U.uFade, 1 - span(p, 0.79, 0.92) * 0.82);
-    const wet = span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82));
-    gl.uniform1f(U.uWet, wet);
-    scene(p, t, U, false);
-    if (wet > 0.01) {
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      gl.depthMask(false);
-      gl.uniform1f(U.uKind, 3);
-      gl.uniformMatrix4fv(U.uM, false, I);
-      gl.bindVertexArray(parts.streams.vao);
-      gl.drawElementsInstanced(gl.TRIANGLES, parts.streams.n, gl.UNSIGNED_INT, 0, 1);
-      gl.depthMask(true);
+    bind(0, depth);
+    all(0, 3, VP);
+    for (const { p: prog, u } of progs.slice(0, 3)) {
+      gl.useProgram(prog);
+      gl.uniformMatrix4fv(u.uL, false, lightM);
+      gl.uniform3fv(u.uEye, eye);
+      gl.uniform3fv(u.uSun, SUN);
+      gl.uniform1i(u.uSh, 0);
+      gl.uniform1i(u.uTx, 1);
+      gl.uniform1i(u.uLeafN, 3);
+      gl.uniform1f(u.uPx, 1 / SIZE);
+      gl.uniform1f(u.uFade, 1 - span(p, 0.79, 0.92) * 0.82);
+      gl.uniform1f(u.uWet, span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82)));
     }
+    paint(p, false);
     for (const o of notes) {
-      const k = clamp((p - o.a) / 0.02) * (1 - clamp((p - o.b) / 0.015));
+      const k = smooth(clamp((p - o.a) / 0.03)) * (1 - smooth(clamp((p - o.b) / 0.02)));
       if (k < 0.01) {
         if (o.n.style.visibility !== 'hidden') o.n.style.visibility = 'hidden';
         continue;
       }
       const c = [0, 1, 3].map((r) => VP[r] * o.at[0] + VP[4 + r] * o.at[1] + VP[8 + r] * o.at[2] + VP[12 + r]);
-      const x = ((c[0] / c[2]) * 0.5 + 0.5) * canvas.clientWidth;
-      const y = (0.5 - (c[1] / c[2]) * 0.5) * canvas.clientHeight;
+      const x = ((c[0] / c[2]) * 0.5 + 0.5) * size.w;
+      const y = (0.5 - (c[1] / c[2]) * 0.5) * size.h;
       o.n.style.visibility = 'visible';
       o.n.style.opacity = k.toFixed(2);
-      o.n.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+      o.n.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;
       if (!o.set) {
         o.set = true;
         o.i.style.width = `${Math.hypot(o.dx, o.dy)}px`;
@@ -854,69 +860,68 @@ export function initSystem(sec) {
   });
   for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, () => { from = null; });
 
-  let live = false;
-  let cur = -1;
-  let then = 0;
-  let slow = 9;
+  let lost = false;
+  const cur = { x: -1, v: 0 };
   let was = 0;
   const t0 = performance.now();
-  function loop(now) {
-    if (!live) return;
-    const dt = Math.min(60, now - then || 16);
-    then = now;
-    slow = slow * 0.95 + dt * 0.05;
-    if (slow > 21 && dpr > 0.85) {
-      dpr -= 0.2;
-      slow = 12;
+  try {
+    progs = await making;
+  } catch (e) {
+    sec.classList.add('no-webgl');
+    canvas.remove();
+    steps.forEach((li) => li.classList.add('on'));
+    console.warn(e.message);
+    return;
+  }
+  sec.classList.add('is-real');
+  if (reduced) {
+    const still = () => {
+      shadeAt = -1e9;
+      render(0.82, 4);
+    };
+    still();
+    new ResizeObserver(still).observe(canvas);
+    steps.forEach((li) => li.classList.add('on'));
+    return;
+  }
+  // everything is drawn once, unseen, a piece to a frame, so the first frame anyone sees is as quick as the rest
+  await slot();
+  size.fit();
+  gl.viewport(0, 0, 4, 4);
+  for (const [i, part] of [[0, parts.panel], [0, parts.vessel], [0, parts.wall], [1, around[4].plants[0]], [2, around[4].plants[0]], [3, parts.panel], [4, around[4].plants[0]]]) {
+    await slot();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, i > 2 ? fbo : null);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, i > 2 ? null : depth);
+    gl.useProgram(progs[i].p);
+    if (i < 3) {
+      gl.uniform1i(progs[i].u.uTx, 1);
+      gl.uniform1i(progs[i].u.uLeaf, 2);
+      gl.uniform1i(progs[i].u.uLeafN, 3);
     }
-    const r = sec.getBoundingClientRect();
-    const p = clamp(-r.top / Math.max(1, r.height - innerHeight));
-    cur = cur < 0 ? p : cur + (p - cur) * (1 - Math.exp(-dt / 130));
+    gl.bindVertexArray(part.vao);
+    gl.drawElementsInstanced(gl.TRIANGLES, 3, gl.UNSIGNED_INT, 0, 1);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  onScreen(sec, (dt, now, top, h) => {
+    if (lost) return;
+    const p = clamp(-top / Math.max(1, h - page.h));
+    if (cur.x < 0) cur.x = p;
     if (!from && Math.abs(p - was) > 0.0005) {
-      turn.tx *= 0.94;
-      turn.ty *= 0.94;
+      const k = Math.exp(-dt / 260);
+      turn.tx *= k;
+      turn.ty *= k;
     }
     was = p;
-    const k = 1 - Math.exp(-dt / 160);
-    turn.x += (turn.tx - turn.x) * k;
-    turn.y += (turn.ty - turn.y) * k;
-    turn.gust *= 0.985;
-    progress(cur);
-    render(cur, (now - t0) / 1000);
-    requestAnimationFrame(loop);
-  }
-  const start = () => {
-    try {
-      U = uniforms(progs[0]);
-      SU = uniforms(progs[1]);
-    } catch (e) {
-      sec.classList.add('no-webgl');
-      canvas.remove();
-      steps.forEach((li) => li.classList.add('on'));
-      console.warn(e.message);
-      return;
-    }
-    sec.classList.add('is-real');
-    if (reduced) {
-      const still = () => render(0.82, 4);
-      still();
-      new ResizeObserver(still).observe(canvas);
-      steps.forEach((li) => li.classList.add('on'));
-      return;
-    }
-    new IntersectionObserver(([e]) => {
-      const before = live;
-      live = e.isIntersecting;
-      if (live && !before) {
-        then = 0;
-        requestAnimationFrame(loop);
-      }
-    }).observe(sec);
-  };
-  const wait = () => (!ext || progs.every((p) => gl.getProgramParameter(p, ext.COMPLETION_STATUS_KHR)) ? start() : setTimeout(wait, 12));
-  wait();
+    turn.x = follow(turn.sx, turn.tx, dt, 190);
+    turn.y = follow(turn.sy, turn.ty, dt, 190);
+    turn.gust *= Math.exp(-dt / 1100);
+    follow(cur, p, dt, 170);
+    progress(cur.x);
+    render(cur.x, (now - t0) / 1000);
+  });
   canvas.addEventListener('webglcontextlost', () => {
-    live = false;
+    lost = true;
     canvas.remove();
     sec.classList.add('no-webgl');
   });

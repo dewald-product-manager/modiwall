@@ -1,7 +1,8 @@
-/* The walk: a hall of limestone and limewash, path traced one bay at a time, and walked through in real time. Photos
-   hang on one side of each bay under their own lights; the other side is planted, with true depth. The honed floor
-   reflects all of it softly. Scroll walks you through; the camera slows and turns to each wall as you reach it. */
+/* The walk: a dark hall, path traced one bay at a time, and walked through in real time. Photos hang on one side of
+   each bay under their own lights; the other side is planted, with true depth. The polished floor reflects all of it. Scroll walks you through; the camera slows and turns to each wall as you reach it. */
 import { ROOM } from './roomdata.js';
+import { page, scene as onScreen, follow, clamp, smooth } from './frame.js';
+import { programs, picture, texture, sized } from './gl.js';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const GAP = 3.6; // metres between stops
@@ -10,8 +11,8 @@ const FLOOR = -1.35;
 const ROOF = 1.75;
 const NEAR = 0.05;
 const FAR = 44;
-const JAMB = 0.17; // how far the stone portals stand out
-const LEAF = 0.34; // how far the planting stands out
+const JAMB = 0.1; // how far the stone portals stand out
+const LEAF = 0.21; // how far the planting stands out
 const n2 = (v) => v.toFixed(3);
 
 const WALL_VS = `#version 300 es
@@ -22,10 +23,10 @@ void main(){ vP = aP; vUv = aUv; vec3 p = aP; if (uFlip > .5) p.y = ${(FLOOR * 2
 
 const COMMON = `
 precision highp float;
-const vec3 FOG = vec3(.40, .365, .305);
+const vec3 FOG = vec3(.010, .020, .016);
 uniform vec3 uCam; uniform float uT, uFlip;
-float fogOf(vec3 p){ return 1. - exp(-pow(distance(p, uCam) * .042, 1.7)); }
-vec3 film(vec3 c){ c *= vec3(1.36, 1.36, 1.46); c = pow(c, vec3(1.12)) * 1.12; c = c * (c * 2.51 + .03) / (c * (c * 2.43 + .59) + .14); return mix(c * 12.92, 1.055 * pow(max(c, vec3(1e-5)), vec3(1. / 2.4)) - .055, step(.0031308, c)); }
+float fogOf(vec3 p){ return 1. - exp(-pow(distance(p, uCam) * .046, 1.6)); }
+vec3 film(vec3 c){ c *= vec3(1.26, 1.24, 1.22); c = c * (c * 2.51 + .03) / (c * (c * 2.43 + .59) + .14); return mix(c * 12.92, 1.055 * pow(max(c, vec3(1e-5)), vec3(1. / 2.4)) - .055, step(.0031308, c)); }
 vec3 lin(vec3 c, float s){ return pow(c, vec3(2.4)) * s; }
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 `;
@@ -42,7 +43,8 @@ vec3 elev(vec2 uv, float b){ return lin(texture(uElev, vec2(uv.x, clamp(uv.y, .0
 void main(){
   vec3 col; float fog = fogOf(vP);
   if (uKind == 1) {
-    col = lin(texture(uCeil, vec2((${n2(GAP / 2)} - vP.z) / ${n2(GAP * 2)}, (${n2(HALF)} - vP.x) / ${n2(HALF * 2)})).rgb, uS.y);
+    col = lin(texture(uCeil, vec2((${n2(GAP / 2)} - vP.z) / ${n2(GAP * 2)}, (${n2(HALF)} - clamp(vP.x, -1.64, 1.64)) / ${n2(HALF * 2)})).rgb, uS.y);
+    col *= 1. + 1.6 * smoothstep(.3, 1.2, col.g);                // the line of light itself
   } else if (uKind == 2) {
     vec2 uv = vec2(.75 + vP.x * .107, up(vP.y));
     col = elev(uv, 0.) * 1.35;
@@ -51,41 +53,45 @@ void main(){
     vec3 v = normalize(vP - uCam); float inX = max(v.x * uSide, .05);
     vec3 st = v * (${n2(LEAF + 0.15)} / inX);                    // from the front of the leaves to the panel behind
     float bay = floor(-vP.z / ${n2(GAP)} + .5) * -${n2(GAP)};
-    float h = 1., hit = -1., last = 0.; const int N = 26;
+    float h = 1., hit = -1., last = 0.; const int N = 40;
     float jit = hash(gl_FragCoord.xy) ;
     for (int i = 0; i <= N; i++) {
       float f = (float(i) + jit * .9) / float(N); vec3 p = vP + st * f;
-      if (abs(p.z - bay) > 1.62 || p.y > ${n2(ROOF - 0.03)}) break;
+      if (abs(p.z - bay) > 1.70 || p.y > ${n2(ROOF - 0.03)}) break;
       float d = textureLod(uDepth, vec2(along(p.z), up(p.y)), 0.).r;
-      if (d * ${n2(0.5 / (LEAF + 0.15))} >= 1. - f) { hit = f; break; }
+      if (d * ${n2(0.36 / (LEAF + 0.15))} >= 1. - f) { hit = f; break; }
       last = f;
     }
     if (hit < 0.) discard;
     float a = last, b = hit;
-    for (int i = 0; i < 5; i++) { float m = (a + b) * .5; vec3 p = vP + st * m; float d = textureLod(uDepth, vec2(along(p.z), up(p.y)), 0.).r; if (d * ${n2(0.5 / (LEAF + 0.15))} >= 1. - m) b = m; else a = m; }
+    for (int i = 0; i < 5; i++) { float m = (a + b) * .5; vec3 p = vP + st * m; float d = textureLod(uDepth, vec2(along(p.z), up(p.y)), 0.).r; if (d * ${n2(0.36 / (LEAF + 0.15))} >= 1. - m) b = m; else a = m; }
     vec3 p = vP + st * b; vec2 uv = vec2(along(p.z), up(p.y));
     float sway = .0016 * textureLod(uDepth, uv, 2.).r; uv += vec2(sin(uT * .7 + p.z * 2.1 + p.y), cos(uT * .55 + p.z * 1.7)) * sway;
     col = elev(uv, -.4);
     col *= 1. + .35 * pow(1. - abs(v.x), 3.);
   } else if (uKind == 4) {
-    // the portal is the same stone, seen edge on
-    vec2 uv = vec2((vUv.x - .5) * .036, max(up(vP.y), .07));
-    if (vP.y > ${n2(ROOF - 0.102)} && abs(vP.x) < ${n2(HALF - JAMB - 0.002)}) uv.y = .34 + vP.x * .03;   // the beam across
-    float edge = abs(fract((vP.z + ${n2(GAP / 2)}) / ${n2(GAP)} + .5) - .5) * ${n2(GAP)};
-    col = elev(uv, .6) * mix(.66, 1., smoothstep(.15, .158, edge)) * (vP.y > ${n2(ROOF - 0.102)} ? .72 : 1.);
+    // a slim bronze fin: dark metal that takes the light of whatever is beside it
+    vec3 v = normalize(vP - uCam);
+    float face = abs(vUv.x - .5);
+    vec3 near = elev(vec2(along(vP.z + (v.z < 0. ? -.34 : .34)), up(vP.y)), 4.5);
+    near = mix(vec3(dot(near, vec3(.3, .55, .15))), near, .2);
+    float brush = hash(vec2(floor(vP.y * 900.), 3.)) * .12 + .94;
+    col = (vec3(.030, .021, .013) + near * vec3(.62, .46, .31) * .9) * brush * mix(.75, 1.25, smoothstep(0., 1., up(vP.y)) * -.5 + 1.);
   } else {
     vec2 uv = vec2(along(vP.z), up(vP.y));
     col = elev(uv, 0.);
     float z = -vP.z, i = floor(z / ${n2(GAP)} + .5), dz = z - i * ${n2(GAP)};
     float mine = step(.5, 1. - abs(mod(i, 2.) - (uSide > 0. ? 1. : 0.))) * step(-.4, i) * step(i, uStops - .5);
+    float photo = step(.5, 1. - abs(mod(i, 2.) - (uSide > 0. ? 1. : 0.)));
+    col = mix(col, mix(vec3(dot(col, vec3(.3, .55, .15))) * vec3(1.03, 1., .95), col, .3), photo);   // charcoal, whatever the leaves throw on it
     // three small lights in the ceiling wash each photo
-    float drop = ${n2(ROOF)} - vP.y, wide = .26 + drop * .34; float pool = 0.;
-    for (int k = -1; k < 2; k++) { float q = (dz - float(k) * .78) / wide; pool += exp(-q * q * 1.6) * smoothstep(.02, .3, drop) * exp(-drop * .62); }
-    col += col * vec3(1.5, 1.28, .98) * pool * mine * 1.05;
-    vec2 fr = abs(vec2(dz, vP.y - .12)) - vec2(1.08, .80);       // the frame's soft shadow, thrown down
-    col *= 1. - mine * .42 * exp(-length(max(fr, 0.)) * 7.);
+    float drop = ${n2(ROOF)} - vP.y, wide = .20 + drop * .30; float pool = 0.;
+    for (int k = -1; k < 2; k++) { float q = (dz - float(k) * .80) / wide; pool += exp(-q * q * 1.7) * smoothstep(.02, .34, drop) * exp(-drop * .66); }
+    col += col * vec3(1.3, 1.12, .84) * pool * mine * .9;
+    vec2 fr = abs(vec2(dz, vP.y - .14)) - vec2(1.06, .80);       // the frame's soft shadow, thrown down
+    col *= 1. - mine * .5 * exp(-length(max(fr, 0.)) * 6.);
   }
-  vec3 c = mix(film(col * .92), FOG, fog);
+  vec3 c = mix(film(col), FOG, fog);
   o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
 
@@ -97,13 +103,13 @@ out vec4 o;
 void main(){
   if (uOn < -.5) {                                       // brass
     float sh = .5 + .5 * sin(vP.z * 3.1 + vP.y * 2.3 + uCam.z * 1.4);
-    vec3 b = mix(vec3(.13, .10, .065), vec3(.55, .44, .29), sh * sh) * (.8 + uHot * .5);
+    vec3 b = mix(vec3(.030, .024, .017), vec3(.30, .225, .14), sh * sh * .8) * (.8 + uHot * .9);
     b = mix(b, FOG, fogOf(vP)); o = vec4(b, 1.); return;
   }
-  vec3 col = uOn > 0. ? texture(uTex, vUv, uFlip > .5 ? 1.5 : -.35).rgb : vec3(.16, .145, .12);
-  col = mix(vec3(.16, .145, .12), col, uOn);
+  vec3 col = uOn > 0. ? texture(uTex, vUv, uFlip > .5 ? 1.5 : -.35).rgb : vec3(.030, .034, .030);
+  col = mix(vec3(.030, .034, .030), col, uOn);
   float l = 1.06 - .26 * vUv.y;                        // lit from above
-  col *= vec3(1.06, 1.01, .93) * l * (1. + uHot * .12);
+  col *= vec3(1.02, .99, .95) * l * (.97 + uHot * .16);
   float fog = fogOf(vP);
   col = mix(col, FOG, fog * .9);
   o = vec4(col, 1.);
@@ -115,18 +121,18 @@ in vec3 vP; in vec2 vUv;
 uniform sampler2D uFloor, uMirror; uniform vec2 uView; uniform vec4 uS;
 out vec4 o;
 void main(){
-  vec2 uv = vec2((vP.z + ${n2(GAP * 1.5)}) / ${n2(GAP * 2)}, (${n2(HALF)} - clamp(vP.x, -1.72, 1.72)) / ${n2(HALF * 2)});
+  vec2 uv = vec2((vP.z + ${n2(GAP * 1.5)}) / ${n2(GAP * 2)}, (${n2(HALF)} - clamp(vP.x, -1.46, 1.46)) / ${n2(HALF * 2)});
   vec3 t = texture(uFloor, uv, -.3).rgb;
-  vec3 base = lin(t, uS.z) * (1. - smoothstep(1.6, 2.1, abs(vP.x)) * .4);
+  vec3 base = lin(t, uS.z) * (1. - smoothstep(1.5, 2.1, abs(vP.x)) * .5);
   vec3 v = normalize(uCam - vP);
   float dist = distance(uCam, vP);
-  // honed, not polished: what it reflects is soft, and softer with distance from the foot of the thing reflected
+  // polished stone: a clear reflection close to, softening as it runs away
   float grain = textureLod(uFloor, uv * 5.3, 1.).r - textureLod(uFloor, uv * 5.3, 5.).r;
-  vec2 st = gl_FragCoord.xy / uView + vec2(grain * .012, grain * .03);
-  float lod = clamp(1.4 + dist * .16, 1.4, 3.4);
-  vec3 m = textureLod(uMirror, st, lod).rgb * .55 + textureLod(uMirror, st + vec2(0., .012), lod + .8).rgb * .3 + textureLod(uMirror, st - vec2(0., .016), lod + 1.4).rgb * .15;
-  float f = .15 + .7 * pow(1. - max(v.y, 0.), 3.);
-  vec3 c = film(base * .62) * (1. - f * .55) + m * f * (.9 + grain * 2.);
+  vec2 st = gl_FragCoord.xy / uView + vec2(grain * .010, grain * .022);
+  float lod = clamp(.5 + dist * .20, .5, 3.1);
+  vec3 m = textureLod(uMirror, st, lod).rgb * .58 + textureLod(uMirror, st + vec2(0., .010), lod + .9).rgb * .27 + textureLod(uMirror, st - vec2(0., .014), lod + 1.6).rgb * .15;
+  float f = .16 + .74 * pow(1. - max(v.y, 0.), 2.6);
+  vec3 c = film(base * .8) * (1. - f * .5) + m * f * (.82 + grain * 1.6);
   c = mix(c, FOG, fogOf(vP));
   o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
@@ -146,7 +152,7 @@ void main(){
 }`;
 const DUST_FS = `#version 300 es
 precision mediump float; in float vA; out vec4 o;
-void main(){ float r = length(gl_PointCoord - .5) * 2.; float a = exp(-r*r*3.4) * vA; o = vec4(vec3(1., .93, .68) * a, a); }`;
+void main(){ float r = length(gl_PointCoord - .5) * 2.; float a = exp(-r*r*3.4) * vA; o = vec4(vec3(1., .93, .78) * a, a); }`;
 
 /* ---- small matrix helpers, column major ---- */
 const mul = (a, b) => {
@@ -165,27 +171,6 @@ const viewM = (x, y, z, yaw, pitch) => {
   const t = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -x, -y, -z, 1]);
   return mul(r, t);
 };
-
-function program(gl, vs, fs) {
-  const p = gl.createProgram();
-  for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    gl.attachShader(p, s);
-  }
-  gl.linkProgram(p);
-  return p;
-}
-function ready(gl, p) {
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`corridor shader ${[...gl.getAttachedShaders(p)].map((s) => gl.getShaderInfoLog(s)).join(' ')}`);
-  const u = {};
-  for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) {
-    const a = gl.getActiveUniform(p, i);
-    u[a.name] = gl.getUniformLocation(p, a.name);
-  }
-  return { p, u };
-}
 
 export async function initCorridor(sec, frames, open) {
   const stage = sec.querySelector('[data-hall]');
@@ -208,35 +193,20 @@ export async function initCorridor(sec, frames, open) {
   let dustP;
   let T;
   try {
-    const raw = [program(gl, WALL_VS, WALL_FS), program(gl, WALL_VS, PIC_FS), program(gl, WALL_VS, FLOOR_FS), program(gl, DUST_VS, DUST_FS)];
-    const ext = gl.getExtension('KHR_parallel_shader_compile');
-    const pics = await Promise.all(['elev', 'depth', 'ceil', 'floor'].map(async (f) => {
-      const img = new Image();
-      img.src = new URL(`../img/room/hall-${f}.avif`, import.meta.url).href;
-      await img.decode();
-      return img;
-    }));
-    while (ext && raw.some((p) => !gl.getProgramParameter(p, ext.COMPLETION_STATUS_KHR))) await new Promise((r) => { setTimeout(r, 4); });
-    [wallP, picP, floorP, dustP] = raw.map((p) => ready(gl, p));
-    T = pics.map((p) => texture(p, true));
+    const making = programs(gl, [[WALL_VS, WALL_FS], [WALL_VS, PIC_FS], [WALL_VS, FLOOR_FS], [DUST_VS, DUST_FS]], 'hall');
+    making.catch(() => {});
+    const pics = await Promise.all(['elev', 'depth', 'ceil', 'floor'].map((f) => picture(new URL(`../img/room/hall-${f}.avif`, import.meta.url).href)));
+    [wallP, picP, floorP, dustP] = await making;
+    T = [];
+    for (const p of pics) {
+      T.push(await texture(gl, p, { mip: true, wrap: 's', sharp: 8 }));
+      p.close();
+    }
   } catch {
     return fail();
   }
   // what the floor sees
   const mirror = { t: gl.createTexture(), f: gl.createFramebuffer(), d: gl.createRenderbuffer(), w: 0, h: 0 };
-  function texture(img, tile) {
-    const t = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, tile ? gl.REPEAT : gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    const x = gl.getExtension('EXT_texture_filter_anisotropic');
-    if (x) gl.texParameterf(gl.TEXTURE_2D, x.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(x.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-    return t;
-  }
-
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
   const vbo = gl.createBuffer();
@@ -280,7 +250,7 @@ export async function initCorridor(sec, frames, open) {
       const side = n % 2 ? -1 : 1;
       const x = side * (HALF - LEAF);
       const name = `g${n}`;
-      quad(name, [x, ROOF, z + 1.64], [x, ROOF, z - 1.64], [x, FLOOR, z + 1.64], [x, FLOOR, z - 1.64]);
+      quad(name, [x, ROOF, z + 1.72], [x, ROOF, z - 1.72], [x, FLOOR, z + 1.72], [x, FLOOR, z - 1.72]);
       quads.bays.push([quads[name], side, n]);
       const zp = z - GAP / 2;
       const box = (nm, a, b, c, d) => {
@@ -290,13 +260,10 @@ export async function initCorridor(sec, frames, open) {
       for (const sd of [-1, 1]) {
         const xi = sd * (HALF - JAMB);
         const xo = sd * (HALF + 0.1);
-        box(`j${n}a${sd}`, [xi, ROOF, zp + 0.16], [xo, ROOF, zp + 0.16], [xi, FLOOR, zp + 0.16], [xo, FLOOR, zp + 0.16]);
-        box(`j${n}b${sd}`, [xi, ROOF, zp - 0.16], [xo, ROOF, zp - 0.16], [xi, FLOOR, zp - 0.16], [xo, FLOOR, zp - 0.16]);
-        box(`j${n}c${sd}`, [xi, ROOF, zp + 0.16], [xi, ROOF, zp - 0.16], [xi, FLOOR, zp + 0.16], [xi, FLOOR, zp - 0.16]);
+        box(`j${n}a${sd}`, [xi, ROOF, zp + 0.02], [xo, ROOF, zp + 0.02], [xi, FLOOR, zp + 0.02], [xo, FLOOR, zp + 0.02]);
+        box(`j${n}b${sd}`, [xi, ROOF, zp - 0.02], [xo, ROOF, zp - 0.02], [xi, FLOOR, zp - 0.02], [xo, FLOOR, zp - 0.02]);
+        box(`j${n}c${sd}`, [xi, ROOF, zp + 0.02], [xi, ROOF, zp - 0.02], [xi, FLOOR, zp + 0.02], [xi, FLOOR, zp - 0.02]);
       }
-      const yb = ROOF - 0.1;
-      box(`j${n}d`, [-HALF, ROOF, zp + 0.16], [HALF, ROOF, zp + 0.16], [-HALF, yb, zp + 0.16], [HALF, yb, zp + 0.16]);
-      box(`j${n}e`, [-HALF, yb, zp + 0.16], [HALF, yb, zp + 0.16], [-HALF, yb, zp - 0.16], [HALF, yb, zp - 0.16]);
     }
     list.forEach((f, n) => {
       const side = n % 2 ? 1 : -1;
@@ -328,26 +295,28 @@ export async function initCorridor(sec, frames, open) {
     if (f.busy || f.tex) return;
     f.busy = true;
     try {
-      const img = new Image();
-      img.src = f.src;
-      await img.decode();
-      f.tex = texture(img);
+      const img = await picture(f.src);
+      f.tex = await texture(gl, img, { mip: true, sharp: 8 });
+      img.close();
     } catch { /* stays a dark panel */ }
     f.busy = false;
   }
 
   let vp;
   const cam = { x: 0, y: 0, z: 2, yaw: 0, pitch: 0 };
-  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0, sx: { x: 0, v: 0 }, sy: { x: 0, v: 0 } };
   let hover = -1;
-  let dpr = Math.min(2, devicePixelRatio || 1);
+  const size = sized(stage, 2);
+  const set = {}; // what the page has been told, so it is only told of changes
 
-  function draw(t, walk) {
+  function draw(t, walk, dt = 16) {
     if (dirty) geometry();
-    const w = stage.clientWidth;
-    const h = stage.clientHeight;
+    size.w = size.w || stage.clientWidth;
+    const { w, h } = size;
+    const dpr = Math.min(2, devicePixelRatio || 1) * page.sharp;
     const cw = Math.round(w * dpr);
     const ch = Math.round(h * dpr);
+    if (!cw || !ch) return;
     if (canvas.width !== cw || canvas.height !== ch) {
       canvas.width = cw;
       canvas.height = ch;
@@ -359,7 +328,7 @@ export async function initCorridor(sec, frames, open) {
     // walk: ease in and out of every stop
     const i = Math.floor(walk);
     const f = walk - i;
-    const e = f * f * f * (f * (f * 6 - 15) + 10);
+    const e = smooth(f);
     const s = i + e * 0.82 + f * 0.18;
     const back = tall ? 2.5 : 2.35; // how far before a wall we pause
     cam.z = -s * GAP + back + Math.max(0, walk - (list.length - 1)) * 0.4;
@@ -378,7 +347,7 @@ export async function initCorridor(sec, frames, open) {
 
     vp = mul(persp(tall ? 1.18 : 0.98, asp), viewM(cam.x, cam.y, cam.z, cam.yaw, cam.pitch));
     gl.viewport(0, 0, cw, ch);
-    gl.clearColor(0.4, 0.365, 0.305, 1);
+    gl.clearColor(0.01, 0.02, 0.016, 1);
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -420,7 +389,7 @@ export async function initCorridor(sec, frames, open) {
         gl.uniform1f(picP.u.uHot, p.hot);
         gl.drawArrays(gl.TRIANGLE_STRIP, quads[`b${n}`], 4);
         if (!p.tex) continue;
-        p.on += (1 - p.on) * 0.05;
+        p.on += flip ? 0 : (1 - p.on) * (1 - Math.exp(-dt / 420));
         bind(0, p.tex);
         gl.uniform1f(picP.u.uOn, p.on);
         gl.uniform1f(picP.u.uHot, p.hot);
@@ -475,7 +444,7 @@ export async function initCorridor(sec, frames, open) {
         p.tex = null;
         p.on = 0;
       }
-      p.hot += ((n === hover ? 1 : 0) - p.hot) * 0.12;
+      p.hot += ((n === hover ? 1 : 0) - p.hot) * (1 - Math.exp(-dt / 170));
     });
 
     // words: one wall's name softens away as the next comes into focus
@@ -492,10 +461,15 @@ export async function initCorridor(sec, frames, open) {
       void neu.offsetWidth;
       neu.classList.add('on');
     }
-    sec.style.setProperty('--end', endK.toFixed(3));
-    last.classList.toggle('on', endK > 0.72);
-    sec.classList.toggle('at-end', endK > 0.5);
-    meter.style.transform = `scaleX(${(Math.min(list.length, walk + 0.4) / list.length).toFixed(4)})`;
+    const e2 = endK.toFixed(3);
+    if (set.end !== e2) {
+      set.end = e2;
+      last.style.setProperty('--end', e2);
+      last.classList.toggle('on', endK > 0.72);
+      sec.classList.toggle('at-end', endK > 0.5);
+    }
+    const m2 = (Math.min(list.length, walk + 0.4) / list.length).toFixed(4);
+    if (set.meter !== m2) meter.style.transform = `scaleX(${(set.meter = m2)})`;
   }
 
   const project = ([x, y, z]) => {
@@ -524,8 +498,8 @@ export async function initCorridor(sec, frames, open) {
   }
   stage.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
-    mouse.tx = e.clientX / innerWidth - 0.5;
-    mouse.ty = e.clientY / innerHeight - 0.5;
+    mouse.tx = e.clientX / page.w - 0.5;
+    mouse.ty = e.clientY / page.h - 0.5;
     hover = e.target.closest('button, a') || !vp ? -1 : hit(e);
     if (hover >= 0) stage.dataset.cursor = 'View';
     else delete stage.dataset.cursor;
@@ -536,40 +510,22 @@ export async function initCorridor(sec, frames, open) {
     if (n >= 0) open(list[n].a);
   });
 
-  let live = false;
-  let cur = -1;
-  let then = 0;
-  let slow = 8;
+  let lost = false;
+  const cur = { x: -1, v: 0 };
   const t0 = performance.now();
-  function loop(t) {
-    if (!live) return;
-    const dt = Math.min(60, t - then || 16);
-    then = t;
-    slow = slow * 0.96 + dt * 0.04;
-    if (slow > 22 && dpr > 1) {
-      dpr = Math.max(1, dpr - 0.25);
-      slow = 10;
-    }
-    const r = sec.getBoundingClientRect();
-    const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
-    const to = p * list.length;
-    const k = 1 - Math.exp(-dt / 190);
-    mouse.x += (mouse.tx - mouse.x) * k;
-    mouse.y += (mouse.ty - mouse.y) * k;
-    cur = cur < 0 ? to : cur + (to - cur) * k;
-    if (!document.hidden) draw((t - t0) / 1000, cur);
-    requestAnimationFrame(loop);
-  }
   geometry();
   draw(0, 0);
   sec.classList.add('is-ready');
-  new IntersectionObserver(([e]) => {
-    const was = live;
-    live = e.isIntersecting;
-    if (live && !was) requestAnimationFrame(loop);
-  }).observe(sec);
+  onScreen(sec, (dt, t, top, h) => {
+    if (lost) return;
+    mouse.x = follow(mouse.sx, mouse.tx, dt, 300);
+    mouse.y = follow(mouse.sy, mouse.ty, dt, 300);
+    const to = clamp(-top / Math.max(1, h - page.h)) * list.length;
+    if (cur.x < 0) cur.x = to;
+    draw((t - t0) / 1000, follow(cur, to, dt, 210), dt);
+  });
   canvas.addEventListener('webglcontextlost', () => {
-    live = false;
+    lost = true;
     sec.classList.add('is-flat');
   });
 
@@ -577,7 +533,7 @@ export async function initCorridor(sec, frames, open) {
     filter(where) {
       list = all.filter((f) => where === 'all' || f.place === where);
       dirty = true;
-      cur = 0;
+      cur.x = cur.v = 0;
       delete sec.dataset.n;
       scrollTo({ top: sec.offsetTop, behavior: 'instant' });
     },

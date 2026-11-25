@@ -1,5 +1,7 @@
 
-import { ROOM } from './roomdata.js?v=84784c04';
+import { ROOM } from './roomdata.js?v=496d7227';
+import { page, scene, follow } from './frame.js?v=c5329617';
+import { programs, picture, texture, sized, slot } from './gl.js?v=da570bfd';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const VS = `#version 300 es
 layout(location=0) in vec2 a; out vec2 q; void main(){ q = a; gl_Position = vec4(a * 2. - 1., 0., 1.); }`;
@@ -26,46 +28,31 @@ o = vec4(c + (hash(gl_FragCoord.xy + fract(uT) * 61.) - .5) / 180., 1.);
 export async function createRoom(canvas, name) {
 const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'high-performance' });
 if (!gl) throw new Error('no webgl2');
-const prog = gl.createProgram();
-for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, FS]]) {
-const s = gl.createShader(type);
-gl.shaderSource(s, src);
-gl.compileShader(s);
-gl.attachShader(prog, s);
-}
-gl.linkProgram(prog);
+const making = programs(gl, [[VS, FS]], 'room');
+making.catch(() => {});
 const small = innerWidth * Math.min(2, devicePixelRatio || 1) < 1500;
-const load = async (f) => {
-const r = await fetch(new URL(`../img/room/${f}.avif`, import.meta.url));
-return createImageBitmap(await r.blob()); // decoded away from the page's own thread
-};
-const pics = await Promise.all([0, 1, 2, 3].map((g) => load(`${name}-${g}${small ? '-s' : ''}`)).concat(load(`${name}-d`)));
-if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(`room shader ${gl.getProgramInfoLog(prog)}`);
-gl.useProgram(prog);
-const u = {};
-for (let i = 0; i < gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS); i++) {
-const a = gl.getActiveUniform(prog, i);
-u[a.name] = gl.getUniformLocation(prog, a.name);
-}
+const at = (f) => picture(new URL(`../img/room/${f}.avif`, import.meta.url).href);
+const pics = await Promise.all([0, 1, 2, 3].map((g) => at(`${name}-${g}${small ? '-s' : ''}`)).concat(at(`${name}-d`)));
+const [{ p: prog, u }] = await making;
 let asp = 0;
 gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
 gl.enableVertexAttribArray(0);
 gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-for (let i = 0; i < pics.length; i++) {
-gl.activeTexture(gl.TEXTURE0 + i);
-gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pics[i]);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-gl.uniform1i(u[['uA', 'uB', 'uC', 'uD', 'uZ'][i]], i);
-pics[i].width > 1000 && (asp ||= pics[i].width / pics[i].height);
-pics[i].close();
-await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+const tex = [];
+for (const img of pics) {
+tex.push(await texture(gl, img));
+asp ||= img.width / img.height;
+img.close();
 }
+gl.useProgram(prog);
+tex.forEach((t, i) => {
+gl.activeTexture(gl.TEXTURE0 + i);
+gl.bindTexture(gl.TEXTURE_2D, t);
+gl.uniform1i(u[['uA', 'uB', 'uC', 'uD', 'uZ'][i]], i);
+});
 gl.uniform4fv(u.uS, ROOM[name]);
-let dpr = Math.min(1.75, devicePixelRatio || 1);
+const size = sized(canvas, 1.75);
 let key = '';
 const R = {
 w: [0, 0, 0, 0], // how far up each light is
@@ -73,19 +60,13 @@ view: [0.5, 0.5, 1], // where the camera looks, and how close
 par: [0, 0],
 rise: 2, // how far up the last light has climbed
 exp: 0.95,
-slower() {
-dpr = Math.max(0.75, dpr - 0.25);
-},
+size,
 draw(t) {
-const w = Math.round(canvas.clientWidth * dpr);
-const h = Math.round(canvas.clientHeight * dpr);
-const k = [w, h, ...R.w.map((v) => v.toFixed(3)), ...R.view.map((v) => v.toFixed(4)), R.par[0].toFixed(4), R.par[1].toFixed(4), R.rise.toFixed(3)].join();
+if (!size.fit()) return;
+const { cw: w, ch: h } = size;
+const k = [w, h, ...R.w.map((v) => v.toFixed(4)), ...R.view.map((v) => v.toFixed(5)), R.par[0].toFixed(5), R.par[1].toFixed(5), R.rise.toFixed(4)].join();
 if (k === key) return;
 key = k;
-if (canvas.width !== w || canvas.height !== h) {
-canvas.width = w;
-canvas.height = h;
-}
 gl.viewport(0, 0, w, h);
 const a = w / h;
 const cov = a > asp ? [1, asp / a] : [a / asp, 1];
@@ -103,39 +84,21 @@ gl.uniform1f(u.uT, t / 1000);
 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 },
 run(sec, each) {
-let live = false;
-let then = 0;
-let slow = 8;
-const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+const mouse = { x: { x: 0, v: 0 }, y: { x: 0, v: 0 }, tx: 0, ty: 0 };
 sec.addEventListener('pointermove', (e) => {
 if (e.pointerType !== 'mouse') return;
-mouse.tx = e.clientX / innerWidth - 0.5;
-mouse.ty = e.clientY / innerHeight - 0.5;
+mouse.tx = e.clientX / page.w - 0.5;
+mouse.ty = e.clientY / page.h - 0.5;
 }, { passive: true });
-const loop = (t) => {
-if (!live) return;
-const dt = Math.min(60, t - then || 16);
-then = t;
-slow = slow * 0.95 + dt * 0.05;
-if (slow > 22) {
-R.slower();
-slow = 10;
-}
-const k = 1 - Math.exp(-dt / 380);
-mouse.x += (mouse.tx - mouse.x) * k;
-mouse.y += (mouse.ty - mouse.y) * k;
-R.par = [mouse.x * 0.011, mouse.y * 0.008];
-each(dt, t);
+scene(sec, (dt, t, top, h) => {
+R.par = [follow(mouse.x, mouse.tx, dt, 420) * 0.011, follow(mouse.y, mouse.ty, dt, 420) * 0.008];
+each(dt, top, h);
 R.draw(t);
-requestAnimationFrame(loop);
-};
-new IntersectionObserver(([e]) => {
-const was = live;
-live = e.isIntersecting;
-if (live && !was) requestAnimationFrame(loop);
-}).observe(sec);
+});
 },
 };
+await slot();
+R.draw(0);
 return R;
 }
 export async function nightRoom(sec) {
@@ -148,7 +111,7 @@ let since = 0;
 const to = [1, 0, 0, 0];
 R.w = [0.2, 0, 0, 0];
 const place = () => {
-const tall = canvas.clientWidth < canvas.clientHeight;
+const tall = R.size.w < R.size.h;
 R.view[0] = tall ? 0.66 : 0.5;
 R.view[1] = tall ? 0.5 : 0.52;
 };
@@ -176,21 +139,21 @@ still();
 new ResizeObserver(still).observe(canvas);
 return;
 }
-let zoom = 1.1;
-R.run(sec, (dt) => {
-const r = sec.getBoundingClientRect();
-if (!on && !touched && r.top < innerHeight * 0.22 && r.bottom > innerHeight * 0.6) set(true);
+const zoom = { x: 1.1, v: 0 };
+const lamp = R.w.map((x) => ({ x, v: 0 }));
+const warm = [1000, 620, 1250, 520];
+let lit = '';
+R.run(sec, (dt, top, h) => {
+if (!on && !touched && top < page.h * 0.22 && top + h > page.h * 0.6) set(true);
 since += dt;
 to[0] = on ? 0.55 : 1;
 to[3] = on && since > 120 ? 1.9 : 0;
 to[1] = on && since > 620 ? 1.25 : 0;
 to[2] = on && since > 1250 ? 1 : 0;
-const slow = [900, 520, 1100, 420];
-for (let i = 0; i < 4; i++) R.w[i] += (to[i] - R.w[i]) * (1 - Math.exp(-dt / (on ? slow[i] : slow[i] * 0.7)));
+for (let i = 0; i < 4; i++) R.w[i] = follow(lamp[i], to[i], dt, on ? warm[i] : warm[i] * 0.7);
 place();
-const p = Math.min(1, Math.max(0, 1 - r.top / innerHeight));
-zoom += (1.1 - p * 0.07 - zoom) * (1 - Math.exp(-dt / 500));
-R.view[2] = zoom;
-sec.style.setProperty('--lit', R.w[2].toFixed(3));
+R.view[2] = follow(zoom, 1.1 - Math.min(1, Math.max(0, 1 - top / page.h)) * 0.07, dt, 480);
+const k = R.w[2].toFixed(2);
+if (k !== lit) sec.style.setProperty('--lit', (lit = k));
 });
 }
