@@ -1,12 +1,15 @@
 
-import { wallPhoto } from './wall.js?v=426d4046';
+import { ROOM } from './roomdata.js?v=84784c04';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const GAP = 3.6; // metres between stops
-const HALF = 2.15; // half width of the corridor
+const HALF = 2.15; // half width of the hall
 const FLOOR = -1.35;
 const ROOF = 1.75;
 const NEAR = 0.05;
-const FAR = 34;
+const FAR = 44;
+const JAMB = 0.17; // how far the stone portals stand out
+const LEAF = 0.34; // how far the planting stands out
+const n2 = (v) => v.toFixed(3);
 const WALL_VS = `#version 300 es
 layout(location=0) in vec3 aP; layout(location=1) in vec2 aUv;
 uniform mat4 uVP; uniform float uFlip;
@@ -14,73 +17,66 @@ out vec3 vP; out vec2 vUv;
 void main(){ vP = aP; vUv = aUv; vec3 p = aP; if (uFlip > .5) p.y = ${(FLOOR * 2).toFixed(2)} - p.y; gl_Position = uVP * vec4(p, 1.); }`;
 const COMMON = `
 precision highp float;
-const vec3 FOG = vec3(.013, .03, .024);
-uniform vec3 uCam; uniform float uT, uFlip, uEnd, uDim;
-float fogOf(vec3 p){ return 1. - exp(-pow(distance(p, uCam) * .062, 1.6)); }
-vec3 tone(vec3 c){ return c / (1. + max(c - .8, 0.) * .85); }
+const vec3 FOG = vec3(.40, .365, .305);
+uniform vec3 uCam; uniform float uT, uFlip;
+float fogOf(vec3 p){ return 1. - exp(-pow(distance(p, uCam) * .042, 1.7)); }
+vec3 film(vec3 c){ c *= vec3(1.36, 1.36, 1.46); c = pow(c, vec3(1.12)) * 1.12; c = c * (c * 2.51 + .03) / (c * (c * 2.43 + .59) + .14); return mix(c * 12.92, 1.055 * pow(max(c, vec3(1e-5)), vec3(1. / 2.4)) - .055, step(.0031308, c)); }
+vec3 lin(vec3 c, float s){ return pow(c, vec3(2.4)) * s; }
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 `;
 const WALL_FS = `#version 300 es
 ${COMMON}
 in vec3 vP; in vec2 vUv;
-uniform sampler2D uTex; uniform int uKind; uniform float uStops, uSide; uniform vec2 uTexSize;
+uniform sampler2D uElev, uDepth, uCeil; uniform int uKind; uniform float uStops, uSide; uniform vec4 uS;
 out vec4 o;
-float lum(vec2 uv, float l){ return dot(textureLod(uTex, uv, l).rgb, vec3(.3, .59, .11)); }
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
-float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
-float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 4; i++){ v += a * noise(p); p = mat2(1.6, 1.2, -1.2, 1.6) * p + 5.1; a *= .5; } return v; }
-vec3 plants(vec2 w, vec3 view, float cx, float fx){
-vec2 uv = vec2(cx + w.x * fx * .205, .02 + (1.75 - w.y) * .31);
-float d = clamp((lum(uv, 3.) + lum(uv, 4.4)) * 1.05, 0., 1.);
-uv += vec2(sin(uT*.6 + w.x*1.7 + w.y*.8), cos(uT*.5 + w.x*1.3)) * .0011 * (.3 + d);
-uv -= view.xy * (d - .4) * .012;
-vec3 c = texture(uTex, uv, -.7).rgb;
-c = mix(vec3(dot(c, vec3(.3, .59, .11))), c, .82) * vec3(.9, 1., .92);
-return c * (.72 + .75 * d);
-}
+float along(float z){ return (${n2(GAP / 2)} - z - (uSide > 0. ? ${n2(GAP)} : 0.)) / ${n2(GAP * 2)}; }
+float up(float y){ return (${n2(ROOF)} - y) / ${n2(ROOF - FLOOR)}; }
+vec3 elev(vec2 uv, float b){ return lin(texture(uElev, vec2(uv.x, clamp(uv.y, .002, .998)), b).rgb, uS.x); }
 void main(){
-float lod = uFlip > .5 ? 1. : 0.;
 vec3 col; float fog = fogOf(vP);
 if (uKind == 1) {
-float slot = smoothstep(.17, .145, abs(vP.x));
-float spill = exp(-pow(abs(vP.x) / .62, 2.));
-col = vec3(.02, .023, .02) + vec3(1., .86, .62) * spill * .07 + vec3(1.5, 1.28, .95) * slot * (.72 + .05 * sin(vP.z * 3.));
+col = lin(texture(uCeil, vec2((${n2(GAP / 2)} - vP.z) / ${n2(GAP * 2)}, (${n2(HALF)} - vP.x) / ${n2(HALF * 2)})).rgb, uS.y);
 } else if (uKind == 2) {
-vec2 w = vP.xy;
-col = plants(w * vec2(.9, 1.), vec3(0.), .5, 1.) * 1.1;
-float l = exp(-dot(w - vec2(0., .2), w - vec2(0., .2)) * .22);
-col *= vec3(1.4, 1.2, .9) * l * 2.3 + .18;
-} else {
-float z = -vP.z;                                  // distance along the corridor
-float i = floor(z / ${GAP.toFixed(2)} + .5);
-float mine = step(.5, 1. - abs(mod(i, 2.) - (uSide > 0. ? 1. : 0.))) * step(.5, i + .6) * step(i, uStops - .5);
-float dz = z - i * ${GAP.toFixed(2)};
-vec2 pw = vec2(z * 1.6, vP.y * 2.2);
-float tr = fbm(pw + fbm(pw * .7) * .9) * .8 + fbm(pw * 6.) * .3 + noise(pw * 46.) * .06;
-col = vec3(.088, .09, .078) * (.5 + tr * .85);
-float drop = max(1.72 - vP.y, 0.);                  // each photo is washed from a spot in the ceiling
-float wide = .34 + drop * .52;
-float cone = exp(-pow(abs(dz) / wide, 2.6)) * exp(-drop * .34) * smoothstep(0., .2, drop);
-col += col * vec3(21., 16., 10.4) * cone * mine * (1. - uDim * .4);
-vec2 fr = abs(vec2(dz, vP.y - .1)) - vec2(1.18, .86);
-col *= 1. - mine * .45 * exp(-max(length(max(fr, 0.)) * 7., 0.));
-float bay = 1. - mine;
-float ci = .3 + .4 * hash(vec2(i, uSide)), fx = hash(vec2(i, uSide + 4.)) > .5 ? 1. : -1.;
-vec2 buv = vec2(ci + dz * fx * .205, .02 + (1.75 - vP.y) * .31);
-float leafy = lum(buv, 1.6) * .6 + lum(buv, 3.2) * .6;
-float edge = abs(dz) - 1.2 + (noise(vec2(z * 7., vP.y * 7.)) - .5) * .1 - (leafy - .4) * .34;
-float inBay = bay * (1. - smoothstep(-.012, .012, edge));
-col *= 1. - bay * .7 * exp(-max(edge, 0.) * 5.);    // planting stands off the wall, and shades it
-vec3 view = normalize(vP - uCam);
-vec3 gr = plants(vec2(dz, vP.y), vec3(view.z * -uSide * fx, view.y, 0.), ci, fx);
-float wash = exp(-pow(max(1.75 - vP.y, 0.) * .36, 2.)) * 1.5 + .22;
-gr *= vec3(1.25, 1.1, .88) * wash * (1. - .55 * smoothstep(-.34, 0., edge));
-col = mix(col, gr * (.9 - .3 * uDim), inBay);
-col += vec3(1., .8, .5) * exp(-pow((vP.y - ${FLOOR.toFixed(2)}) / .07, 2.)) * .1;
-col += vec3(1., .86, .62) * exp(-pow((vP.y - ${ROOF.toFixed(2)}) / .5, 2.)) * .05;
+vec2 uv = vec2(.75 + vP.x * .107, up(vP.y));
+col = elev(uv, 0.) * 1.35;
+} else if (uKind == 3) {
+vec3 v = normalize(vP - uCam); float inX = max(v.x * uSide, .05);
+vec3 st = v * (${n2(LEAF + 0.15)} / inX);                    // from the front of the leaves to the panel behind
+float bay = floor(-vP.z / ${n2(GAP)} + .5) * -${n2(GAP)};
+float h = 1., hit = -1., last = 0.; const int N = 26;
+float jit = hash(gl_FragCoord.xy) ;
+for (int i = 0; i <= N; i++) {
+float f = (float(i) + jit * .9) / float(N); vec3 p = vP + st * f;
+if (abs(p.z - bay) > 1.62 || p.y > ${n2(ROOF - 0.03)}) break;
+float d = textureLod(uDepth, vec2(along(p.z), up(p.y)), 0.).r;
+if (d * ${n2(0.5 / (LEAF + 0.15))} >= 1. - f) { hit = f; break; }
+last = f;
 }
-col = mix(tone(col), FOG, fog);
-if (uFlip > .5) col *= .5;
-o = vec4(col, 1.);
+if (hit < 0.) discard;
+float a = last, b = hit;
+for (int i = 0; i < 5; i++) { float m = (a + b) * .5; vec3 p = vP + st * m; float d = textureLod(uDepth, vec2(along(p.z), up(p.y)), 0.).r; if (d * ${n2(0.5 / (LEAF + 0.15))} >= 1. - m) b = m; else a = m; }
+vec3 p = vP + st * b; vec2 uv = vec2(along(p.z), up(p.y));
+float sway = .0016 * textureLod(uDepth, uv, 2.).r; uv += vec2(sin(uT * .7 + p.z * 2.1 + p.y), cos(uT * .55 + p.z * 1.7)) * sway;
+col = elev(uv, -.4);
+col *= 1. + .35 * pow(1. - abs(v.x), 3.);
+} else if (uKind == 4) {
+vec2 uv = vec2((vUv.x - .5) * .036, max(up(vP.y), .07));
+if (vP.y > ${n2(ROOF - 0.102)} && abs(vP.x) < ${n2(HALF - JAMB - 0.002)}) uv.y = .34 + vP.x * .03;   // the beam across
+float edge = abs(fract((vP.z + ${n2(GAP / 2)}) / ${n2(GAP)} + .5) - .5) * ${n2(GAP)};
+col = elev(uv, .6) * mix(.66, 1., smoothstep(.15, .158, edge)) * (vP.y > ${n2(ROOF - 0.102)} ? .72 : 1.);
+} else {
+vec2 uv = vec2(along(vP.z), up(vP.y));
+col = elev(uv, 0.);
+float z = -vP.z, i = floor(z / ${n2(GAP)} + .5), dz = z - i * ${n2(GAP)};
+float mine = step(.5, 1. - abs(mod(i, 2.) - (uSide > 0. ? 1. : 0.))) * step(-.4, i) * step(i, uStops - .5);
+float drop = ${n2(ROOF)} - vP.y, wide = .26 + drop * .34; float pool = 0.;
+for (int k = -1; k < 2; k++) { float q = (dz - float(k) * .78) / wide; pool += exp(-q * q * 1.6) * smoothstep(.02, .3, drop) * exp(-drop * .62); }
+col += col * vec3(1.5, 1.28, .98) * pool * mine * 1.05;
+vec2 fr = abs(vec2(dz, vP.y - .12)) - vec2(1.08, .80);       // the frame's soft shadow, thrown down
+col *= 1. - mine * .42 * exp(-length(max(fr, 0.)) * 7.);
+}
+vec3 c = mix(film(col * .92), FOG, fog);
+o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
 const PIC_FS = `#version 300 es
 ${COMMON}
@@ -90,34 +86,36 @@ out vec4 o;
 void main(){
 if (uOn < -.5) {                                       // brass
 float sh = .5 + .5 * sin(vP.z * 3.1 + vP.y * 2.3 + uCam.z * 1.4);
-vec3 b = mix(vec3(.2, .135, .06), vec3(.86, .66, .36), sh * sh) * (.75 + uHot * .5);
-b = mix(b, FOG, fogOf(vP)); o = vec4(uFlip > .5 ? b * .4 : b, 1.); return;
+vec3 b = mix(vec3(.13, .10, .065), vec3(.55, .44, .29), sh * sh) * (.8 + uHot * .5);
+b = mix(b, FOG, fogOf(vP)); o = vec4(b, 1.); return;
 }
-vec3 col = uOn > 0. ? texture(uTex, vUv, uFlip > .5 ? 1.5 : -.35).rgb : vec3(.03, .07, .055);
-col = mix(vec3(.03, .07, .055), col, uOn);
+vec3 col = uOn > 0. ? texture(uTex, vUv, uFlip > .5 ? 1.5 : -.35).rgb : vec3(.16, .145, .12);
+col = mix(vec3(.16, .145, .12), col, uOn);
 float l = 1.06 - .26 * vUv.y;                        // lit from above
 col *= vec3(1.06, 1.01, .93) * l * (1. + uHot * .12);
 float fog = fogOf(vP);
-col = mix(tone(col), FOG, fog * .92);
-if (uFlip > .5) col *= .46;
+col = mix(col, FOG, fog * .9);
 o = vec4(col, 1.);
 }`;
 const FLOOR_FS = `#version 300 es
 ${COMMON}
 in vec3 vP; in vec2 vUv;
+uniform sampler2D uFloor, uMirror; uniform vec2 uView; uniform vec4 uS;
 out vec4 o;
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
-float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
 void main(){
+vec2 uv = vec2((vP.z + ${n2(GAP * 1.5)}) / ${n2(GAP * 2)}, (${n2(HALF)} - clamp(vP.x, -1.72, 1.72)) / ${n2(HALF * 2)});
+vec3 t = texture(uFloor, uv, -.3).rgb;
+vec3 base = lin(t, uS.z) * (1. - smoothstep(1.6, 2.1, abs(vP.x)) * .4);
 vec3 v = normalize(uCam - vP);
-float fres = pow(1. - max(v.y, 0.), 3.);
-vec2 g = abs(fract(vP.xz * vec2(.7, .42)) - .5);
-float joint = smoothstep(.492, .498, max(g.x, g.y));
-float vein = noise(vP.xz * 2.4 + noise(vP.xz * 5.) * 1.4);
-vec3 col = vec3(.026, .027, .023) * (.8 + vein * .5) - joint * .012;
-float a = clamp(.9 - fres * .66 - vein * .06, .25, .95);
-float fog = fogOf(vP);
-o = vec4(mix(col, FOG, fog) * mix(a, 1., fog), mix(a, 1., fog));
+float dist = distance(uCam, vP);
+float grain = textureLod(uFloor, uv * 5.3, 1.).r - textureLod(uFloor, uv * 5.3, 5.).r;
+vec2 st = gl_FragCoord.xy / uView + vec2(grain * .012, grain * .03);
+float lod = clamp(1.4 + dist * .16, 1.4, 3.4);
+vec3 m = textureLod(uMirror, st, lod).rgb * .55 + textureLod(uMirror, st + vec2(0., .012), lod + .8).rgb * .3 + textureLod(uMirror, st - vec2(0., .016), lod + 1.4).rgb * .15;
+float f = .15 + .7 * pow(1. - max(v.y, 0.), 3.);
+vec3 c = film(base * .62) * (1. - f * .55) + m * f * (.9 + grain * 2.);
+c = mix(c, FOG, fogOf(vP));
+o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
 const DUST_VS = `#version 300 es
 layout(location=0) in vec4 aD;
@@ -130,7 +128,7 @@ p.z = uCam.z - mod(aD.z + uT * .05 + uCam.z * -1., 9.) ;
 gl_Position = uVP * vec4(p, 1.);
 float d = distance(p, uCam);
 gl_PointSize = clamp((2. + aD.w * 5.) * uPx / d, 1., 16. * uPx);
-vA = smoothstep(.3, 1.4, d) * smoothstep(8.5, 3., d) * (.14 + .3 * aD.w) * (.6 + .4 * sin(uT * .7 + aD.w * 50.));
+vA = smoothstep(.3, 1.4, d) * smoothstep(8.5, 3., d) * (.05 + .13 * aD.w) * (.6 + .4 * sin(uT * .7 + aD.w * 50.));
 }`;
 const DUST_FS = `#version 300 es
 precision mediump float; in float vA; out vec4 o;
@@ -173,8 +171,8 @@ return { p, u };
 export async function initCorridor(sec, frames, open) {
 const stage = sec.querySelector('[data-hall]');
 const canvas = sec.querySelector('[data-hall-canvas]');
-const title = sec.querySelector('[data-hall-title]');
-const place = sec.querySelector('[data-hall-place]');
+const words = sec.querySelector('[data-hall-words]');
+const spare = [...words.children];
 const meter = sec.querySelector('[data-hall-meter]');
 const last = sec.querySelector('[data-hall-end]');
 const fail = () => {
@@ -188,26 +186,31 @@ let wallP;
 let picP;
 let floorP;
 let dustP;
-let leaves;
+let T;
 try {
 const raw = [program(gl, WALL_VS, WALL_FS), program(gl, WALL_VS, PIC_FS), program(gl, WALL_VS, FLOOR_FS), program(gl, DUST_VS, DUST_FS)];
 const ext = gl.getExtension('KHR_parallel_shader_compile');
-const img = await wallPhoto('forest');
+const pics = await Promise.all(['elev', 'depth', 'ceil', 'floor'].map(async (f) => {
+const img = new Image();
+img.src = new URL(`../img/room/hall-${f}.avif`, import.meta.url).href;
+await img.decode();
+return img;
+}));
 while (ext && raw.some((p) => !gl.getProgramParameter(p, ext.COMPLETION_STATUS_KHR))) await new Promise((r) => { setTimeout(r, 4); });
 [wallP, picP, floorP, dustP] = raw.map((p) => ready(gl, p));
-leaves = texture(img, true);
+T = pics.map((p) => texture(p, true));
 } catch {
 return fail();
 }
-function texture(img, mirror) {
+const mirror = { t: gl.createTexture(), f: gl.createFramebuffer(), d: gl.createRenderbuffer(), w: 0, h: 0 };
+function texture(img, tile) {
 const t = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, t);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 gl.generateMipmap(gl.TEXTURE_2D);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-const wrap = mirror ? gl.MIRRORED_REPEAT : gl.CLAMP_TO_EDGE;
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, tile ? gl.REPEAT : gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 const x = gl.getExtension('EXT_texture_filter_anisotropic');
 if (x) gl.texParameterf(gl.TEXTURE_2D, x.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(x.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
 return t;
@@ -238,13 +241,38 @@ const quad = (name, a, b, c, d, uv = [0, 0, 1, 0, 0, 1, 1, 1]) => {
 quads[name] = v.length / 5;
 [a, b, c, d].forEach((p, i) => v.push(...p, uv[i * 2], uv[i * 2 + 1]));
 };
-const z0 = 6;
-const z1 = -(list.length * GAP + 3.4);
+const z0 = GAP * 1.5;
+const z1 = -(list.length * GAP + 3.0);
 quad('left', [-HALF, ROOF, z0], [-HALF, ROOF, z1], [-HALF, FLOOR, z0], [-HALF, FLOOR, z1]);
 quad('right', [HALF, ROOF, z0], [HALF, ROOF, z1], [HALF, FLOOR, z0], [HALF, FLOOR, z1]);
 quad('roof', [-HALF, ROOF, z0], [HALF, ROOF, z0], [-HALF, ROOF, z1], [HALF, ROOF, z1]);
 quad('floor', [-HALF, FLOOR, z0], [HALF, FLOOR, z0], [-HALF, FLOOR, z1], [HALF, FLOOR, z1]);
 quad('end', [-HALF, ROOF, z1], [HALF, ROOF, z1], [-HALF, FLOOR, z1], [HALF, FLOOR, z1]);
+quads.bays = [];
+quads.jambs = [];
+for (let n = -1; n <= list.length; n++) {
+const z = -n * GAP;
+const side = n % 2 ? -1 : 1;
+const x = side * (HALF - LEAF);
+const name = `g${n}`;
+quad(name, [x, ROOF, z + 1.64], [x, ROOF, z - 1.64], [x, FLOOR, z + 1.64], [x, FLOOR, z - 1.64]);
+quads.bays.push([quads[name], side, n]);
+const zp = z - GAP / 2;
+const box = (nm, a, b, c, d) => {
+quad(nm, a, b, c, d);
+quads.jambs.push([quads[nm], n]);
+};
+for (const sd of [-1, 1]) {
+const xi = sd * (HALF - JAMB);
+const xo = sd * (HALF + 0.1);
+box(`j${n}a${sd}`, [xi, ROOF, zp + 0.16], [xo, ROOF, zp + 0.16], [xi, FLOOR, zp + 0.16], [xo, FLOOR, zp + 0.16]);
+box(`j${n}b${sd}`, [xi, ROOF, zp - 0.16], [xo, ROOF, zp - 0.16], [xi, FLOOR, zp - 0.16], [xo, FLOOR, zp - 0.16]);
+box(`j${n}c${sd}`, [xi, ROOF, zp + 0.16], [xi, ROOF, zp - 0.16], [xi, FLOOR, zp + 0.16], [xi, FLOOR, zp - 0.16]);
+}
+const yb = ROOF - 0.1;
+box(`j${n}d`, [-HALF, ROOF, zp + 0.16], [HALF, ROOF, zp + 0.16], [-HALF, yb, zp + 0.16], [HALF, yb, zp + 0.16]);
+box(`j${n}e`, [-HALF, yb, zp + 0.16], [HALF, yb, zp + 0.16], [-HALF, yb, zp - 0.16], [HALF, yb, zp - 0.16]);
+}
 list.forEach((f, n) => {
 const side = n % 2 ? 1 : -1;
 const h = f.ratio > 1 ? 1.62 : 2.06;
@@ -317,35 +345,41 @@ cam.yaw = yaw + mouse.x * 0.1;
 cam.pitch = mouse.y * 0.05;
 vp = mul(persp(tall ? 1.18 : 0.98, asp), viewM(cam.x, cam.y, cam.z, cam.yaw, cam.pitch));
 gl.viewport(0, 0, cw, ch);
-gl.clearColor(0.013, 0.03, 0.024, 1);
+gl.clearColor(0.4, 0.365, 0.305, 1);
 gl.enable(gl.DEPTH_TEST);
 gl.disable(gl.BLEND);
 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 gl.activeTexture(gl.TEXTURE0);
+const bind = (i, t) => {
+gl.activeTexture(gl.TEXTURE0 + i);
+gl.bindTexture(gl.TEXTURE_2D, t);
+};
 const common = (P, flip) => {
 gl.useProgram(P.p);
 gl.uniformMatrix4fv(P.u.uVP, false, vp);
 gl.uniform3f(P.u.uCam, cam.x, cam.y, cam.z);
 gl.uniform1f(P.u.uT, t);
 gl.uniform1f(P.u.uFlip, flip);
-gl.uniform1i(P.u.uTex, 0);
+for (const [n, i] of [['uTex', 0], ['uElev', 1], ['uDepth', 2], ['uCeil', 3], ['uFloor', 4], ['uMirror', 5]]) if (P.u[n]) gl.uniform1i(P.u[n], i);
+if (P.u.uS) gl.uniform4f(P.u.uS, ROOM.hall.elev, ROOM.hall.ceil, ROOM.hall.floor, 0);
 };
-const seen = list.map((p, n) => ({ p, n })).filter(({ n }) => Math.abs(n - s) < 7.5);
+T.forEach((x, i) => bind(i + 1, x));
+const seen = list.map((p, n) => ({ p, n })).filter(({ n }) => Math.abs(n - s) < 8.5);
 const scene = (flip) => {
 gl.bindVertexArray(vao);
 common(wallP, flip);
-gl.bindTexture(gl.TEXTURE_2D, leaves);
 gl.uniform1f(wallP.u.uStops, list.length);
-gl.uniform1f(wallP.u.uDim, 0);
-const part = (kind, name, side = 0) => {
+const part = (kind, at, side = 0) => {
 gl.uniform1i(wallP.u.uKind, kind);
 gl.uniform1f(wallP.u.uSide, side);
-gl.drawArrays(gl.TRIANGLE_STRIP, quads[name], 4);
+gl.drawArrays(gl.TRIANGLE_STRIP, at, 4);
 };
-part(0, 'left', -1);
-part(0, 'right', 1);
-part(2, 'end');
-if (!flip) part(1, 'roof');
+for (const [at, n] of quads.jambs) if (n > s - 1.6 && n < s + 9) part(4, at);
+if (!flip) for (const [at, side, n] of quads.bays) if (n > s - 1.4 && n < s + 4.2) part(3, at, side);
+part(0, quads.left, -1);
+part(0, quads.right, 1);
+part(2, quads.end);
+if (!flip || true) part(1, quads.roof);
 common(picP, flip);
 for (const { p, n } of seen) {
 gl.uniform1f(picP.u.uOn, -1);
@@ -353,21 +387,43 @@ gl.uniform1f(picP.u.uHot, p.hot);
 gl.drawArrays(gl.TRIANGLE_STRIP, quads[`b${n}`], 4);
 if (!p.tex) continue;
 p.on += (1 - p.on) * 0.05;
-gl.bindTexture(gl.TEXTURE_2D, p.tex);
+bind(0, p.tex);
 gl.uniform1f(picP.u.uOn, p.on);
 gl.uniform1f(picP.u.uHot, p.hot);
 gl.drawArrays(gl.TRIANGLE_STRIP, quads[`p${n}`], 4);
 }
 };
-scene(1); // reflection first
-gl.enable(gl.BLEND);
-gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+const mw = cw >> 1;
+const mh = ch >> 1;
+if (mirror.w !== mw || mirror.h !== mh) {
+mirror.w = mw;
+mirror.h = mh;
+bind(5, mirror.t);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, mw, mh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.bindFramebuffer(gl.FRAMEBUFFER, mirror.f);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, mirror.t, 0);
+gl.bindRenderbuffer(gl.RENDERBUFFER, mirror.d);
+gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, mw, mh);
+gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, mirror.d);
+}
+bind(5, null);
+gl.bindFramebuffer(gl.FRAMEBUFFER, mirror.f);
+gl.viewport(0, 0, mw, mh);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+scene(1); // what the floor reflects, small, then softened
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+bind(5, mirror.t);
+gl.generateMipmap(gl.TEXTURE_2D);
+gl.viewport(0, 0, cw, ch);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+scene(0);
 gl.bindVertexArray(vao);
 common(floorP, 0);
-gl.depthMask(true);
+gl.uniform2f(floorP.u.uView, cw, ch);
 gl.drawArrays(gl.TRIANGLE_STRIP, quads.floor, 4);
-gl.disable(gl.BLEND);
-scene(0);
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.ONE, gl.ONE);
 gl.depthMask(false);
@@ -386,18 +442,19 @@ p.on = 0;
 p.hot += ((n === hover ? 1 : 0) - p.hot) * 0.12;
 });
 const near = Math.round(stop);
-if (title.dataset.n !== `${near}`) {
-title.dataset.n = near;
-title.textContent = list[near].title;
-place.textContent = list[near].where;
-for (const el of [title, place]) {
-el.classList.remove('turn');
-void el.offsetWidth;
-el.classList.add('turn');
-}
+if (sec.dataset.n !== `${near}`) {
+sec.dataset.n = near;
+const old = words.querySelector('.on');
+const neu = spare[0] === old ? spare[1] : spare[0];
+old?.classList.remove('on');
+old?.classList.add('gone');
+neu.classList.remove('gone');
+neu.firstElementChild.textContent = list[near].title;
+neu.lastElementChild.textContent = list[near].where;
+void neu.offsetWidth;
+neu.classList.add('on');
 }
 sec.style.setProperty('--end', endK.toFixed(3));
-sec.style.setProperty('--say', Math.max(0, 1 - Math.abs(s - near) * 2.1).toFixed(3));
 last.classList.toggle('on', endK > 0.72);
 sec.classList.toggle('at-end', endK > 0.5);
 meter.style.transform = `scaleX(${(Math.min(list.length, walk + 0.4) / list.length).toFixed(4)})`;
@@ -480,7 +537,7 @@ filter(where) {
 list = all.filter((f) => where === 'all' || f.place === where);
 dirty = true;
 cur = 0;
-title.dataset.n = '';
+delete sec.dataset.n;
 scrollTo({ top: sec.offsetTop, behavior: 'instant' });
 },
 };

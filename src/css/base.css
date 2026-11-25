@@ -70,10 +70,6 @@ p { text-wrap: pretty; max-width: 62ch; }
 .words .w { display: inline-block; overflow: clip; overflow-clip-margin: .18em; vertical-align: top; padding-bottom: .12em; margin-bottom: -.12em; }
 .words .w > span { display: inline-block; transform: translateX(.9em); opacity: 0; clip-path: inset(-20% 0 -20% 60%); transition: transform 1.3s var(--ease), opacity .5s, clip-path 1.3s var(--ease); transition-delay: calc(var(--i) * 75ms); }
 .words.in .w > span { transform: none; opacity: 1; clip-path: inset(-20% -20%); }
-[data-panels] { position: relative; overflow: hidden; }
-.panels { position: absolute; inset: 0; display: grid; grid-template: repeat(5, 1fr) / repeat(8, 1fr); pointer-events: none; }
-.panels i { background: var(--white); margin: -.6px; transition: transform .8s cubic-bezier(.76, 0, .18, 1); transition-delay: calc(var(--i) * 70ms); transform-origin: 0 50%; }
-[data-panels].in .panels i { transform: scaleX(0); }
 .js [data-slot] { opacity: 0; transform: translateX(3.5rem); clip-path: inset(0 0 0 38%); transition: opacity .3s linear, transform 1.4s var(--ease), clip-path 1.4s var(--ease); transition-delay: calc(var(--i, 0) * 110ms); }
 .js [data-slot].in { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
 

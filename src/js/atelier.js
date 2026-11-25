@@ -1,0 +1,211 @@
+/* The commission room. Three places were rendered twice, bare and planted, with a map saying which plant owns each
+   pixel. The shader plants exactly the wall being asked for, plant by plant, at true scale, and the camera steps back
+   or forward to frame it. */
+const VS = `#version 300 es
+layout(location=0) in vec2 a; out vec2 q; void main(){ q = a; gl_Position = vec4(a * 2. - 1., 0., 1.); }`;
+const FS = `#version 300 es
+precision highp float;
+in vec2 q; out vec4 o;
+uniform sampler2D uBare, uFull, uMap, uBare2, uFull2, uMap2;
+uniform vec4 uBox;   // what is seen of the picture: left, top, width, height (0 to 1)
+uniform vec2 uWall;  // metres wide, metres high
+uniform float uGrow, uMix, uT;
+const float F = 14.4, CY = 2.6, FOOT = .16;
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float plantAt(vec4 m, vec2 here){
+  vec2 r = vec2(m.r * 12. - 6., m.g * 5.);                      // where this plant is rooted
+  float t = m.b;
+  // plants rooted on the wall asked for, and whatever else fills it; only whole leaves hang past its edge
+  float far = max(abs(r.x) - uWall.x * .5, r.y - uWall.y);
+  float spot = max(abs(here.x) - uWall.x * .5 + .10, here.y - uWall.y + .06);
+  far = min(far, spot * 1.6 + .02);
+  far += smoothstep(.10, .26, spot) * .4;
+  float n = hash(floor(r * 9.) + .5);
+  float g = smoothstep(.03, -.05, far) * smoothstep(0., 1., uGrow * 2.2 - n * .5 - length(r / vec2(6., 5.)) * .7);
+  return smoothstep(-.02, .06, g * 1.08 - t * .98);
+}
+vec4 one(sampler2D bare, sampler2D full, sampler2D map, vec2 uv){
+  vec3 b = texture(bare, uv).rgb, f = texture(full, uv).rgb;
+  vec2 n = vec2(textureSize(map, 0)); vec2 st = uv * n - .5; ivec2 i = ivec2(floor(st)); vec2 w = fract(st);
+  float m = 0., own = 0.;
+  vec2 p = vec2((uv.x - .5) * F, CY + (.5 - uv.y) * F - FOOT);
+  for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) {
+    vec4 c = texelFetch(map, clamp(i + ivec2(x, y), ivec2(0), ivec2(n) - 1), 0);
+    float k = (x == 0 ? 1. - w.x : w.x) * (y == 0 ? 1. - w.y : w.y), is = step(.015, c.b);
+    own += k * is; m += k * is * plantAt(c, p);
+  }
+  // everything else in the room: what the planting reflects on to, and shades
+  float side = abs(p.x) - uWall.x * .5;
+  float near = 1. - smoothstep(-.25, .5, side);
+  float share = clamp(uWall.x * uWall.y / 60., 0., 1.);
+  float refl = p.y < 0. ? near * smoothstep(.2, 1., uWall.y / 3.2 * smoothstep(0., -1.4, p.y) + .35) : 0.;
+  float shade = exp(-length(max(vec2(abs(p.x - .16) - uWall.x * .5 + .04, p.y - uWall.y + .16), 0.)) * 8.) * .5;
+  vec3 room = mix(b, f, clamp(max(refl, share * .55), 0., 1.) * uGrow);
+  vec3 wall = b * (1. - shade * uGrow);
+  return vec4(mix(room, mix(wall, f, m / max(own, .001)), own), 1.);
+}
+void main(){
+  vec2 uv = uBox.xy + vec2(q.x, 1. - q.y) * uBox.zw;
+  vec4 c = uMix >= 1. ? vec4(0.) : one(uBare, uFull, uMap, uv);
+  if (uMix > 0.) {
+    float n = smoothstep(0., 1., uMix);                          // one place dissolves into the next, light first
+    vec4 e = one(uBare2, uFull2, uMap2, uv);
+    c = uMix >= 1. ? e : mix(c, e, smoothstep(0., 1., clamp(n * 1.5 - .5 + dot(e.rgb, vec3(.33)) * .5 * (1. - n) * n * 2., 0., 1.)));
+  }
+  o = vec4(c.rgb + (hash(gl_FragCoord.xy) - .5) / 200., 1.);
+}`;
+
+export async function createAtelier(canvas) {
+  const gl = canvas.getContext('webgl2', { alpha: false, antialias: false });
+  if (!gl) throw new Error('no webgl2');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prog = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, FS]]) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    gl.attachShader(prog, s);
+  }
+  gl.linkProgram(prog);
+  const small = canvas.clientWidth * Math.min(2, devicePixelRatio || 1) < 1100;
+  const at = (f) => new URL(`../img/room/${f}`, import.meta.url).href;
+  const picture = async (f) => {
+    const img = new Image();
+    img.src = at(f);
+    await img.decode();
+    return img;
+  };
+  const places = {};
+  const tex = (img, exact) => {
+    const t = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE7);
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    if (!exact) gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, exact ? gl.NEAREST : gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, exact ? gl.NEAREST : gl.LINEAR);
+    for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+    return t;
+  };
+  const load = (k) => (places[k] ??= (async () => {
+    const s = small ? '-s' : '';
+    const [b, f, m] = await Promise.all([picture(`${k}-0${s}.avif`), picture(`${k}-1${s}.avif`), fetch(at(`${k}-map.webp`)).then((r) => r.blob()).then((x) => createImageBitmap(x, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))]);
+    return [tex(b), tex(f), tex(m, true)];
+  })());
+  let here = await load('in');
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(`atelier shader ${[...gl.getAttachedShaders(prog)].map((x) => gl.getShaderInfoLog(x)).join(' ')}`);
+  gl.useProgram(prog);
+  const u = {};
+  for (let i = 0; i < gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS); i++) {
+    const a = gl.getActiveUniform(prog, i);
+    u[a.name] = gl.getUniformLocation(prog, a.name);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  let next = null;
+  let mix = 0;
+  let wanted = 'in';
+  let raf = 0;
+  let then = 0;
+  const want = { w: 3, h: 2.5, grow: 1 };
+  const now = { w: 3, h: 2.5, grow: 0, vw: 0, x: 0, y: 0 };
+  const drift = { x: 0, tx: 0 };
+  function frame(asp) {
+    // metres of the wall plane to show, with the floor and some room around it
+    let vw = Math.max(want.w + 2.4, (want.h + 2.7) * asp, 5.4 * Math.min(1, asp + 0.15));
+    vw = Math.min(vw, 14.3, 14.3 * asp);
+    const vh = vw / asp;
+    const y = Math.min(9.75 - vh, Math.max(-4.55, -vh * 0.25));
+    const x = Math.min(7.15 - vw, Math.max(-7.15, -vw / 2));
+    return { vw, vh, x, y };
+  }
+  function draw(dt) {
+    const dpr = Math.min(1.75, devicePixelRatio || 1);
+    const w = Math.round(canvas.clientWidth * dpr);
+    const h = Math.round(canvas.clientHeight * dpr);
+    if (!w || !h) return false;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const f = frame(w / h);
+    const k = reduced || !now.vw ? 1 : 1 - Math.exp(-dt / 480);
+    let move = 0;
+    for (const [n, v] of [['w', want.w], ['h', want.h], ['vw', f.vw], ['x', f.x], ['y', f.y]]) {
+      const d = v - now[n];
+      now[n] += d * k;
+      move += Math.abs(d);
+    }
+    const g = reduced ? 1 : 1 - Math.exp(-dt / 1100);
+    now.grow += (want.grow - now.grow) * g;
+    move += Math.abs(want.grow - now.grow);
+    drift.x += (drift.tx - drift.x) * (1 - Math.exp(-dt / 600));
+    move += Math.abs(drift.tx - drift.x);
+    if (next) {
+      mix = reduced ? 1 : Math.min(1, mix + dt / 1500);
+      move += 1;
+      if (mix >= 1) {
+        here = next;
+        next = null;
+        mix = 0;
+      }
+    }
+    const vh = now.vw / (w / h);
+    const x = Math.min(7.15 - now.vw, Math.max(-7.15, now.x + drift.x * now.vw * 0.02));
+    gl.viewport(0, 0, w, h);
+    gl.uniform4f(u.uBox, x / 14.4 + 0.5, 0.5 - (now.y + vh - 2.6) / 14.4, now.vw / 14.4, vh / 14.4);
+    gl.uniform2f(u.uWall, now.w, now.h);
+    gl.uniform1f(u.uGrow, now.grow);
+    gl.uniform1f(u.uMix, next ? Math.max(mix, 0.0001) : 0);
+    [...here, ...(next ?? here)].forEach((t, i) => {
+      gl.activeTexture(gl.TEXTURE0 + i);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.uniform1i(u[['uBare', 'uFull', 'uMap', 'uBare2', 'uFull2', 'uMap2'][i]], i);
+    });
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    return move > 0.003;
+  }
+  const loop = (t) => {
+    const dt = Math.min(60, t - then || 16);
+    then = t;
+    raf = draw(dt) ? requestAnimationFrame(loop) : 0;
+  };
+  const go = () => {
+    if (raf) return;
+    then = 0;
+    raf = requestAnimationFrame(loop);
+  };
+  new ResizeObserver(go).observe(canvas);
+  canvas.addEventListener('webglcontextlost', () => canvas.closest('[data-commission]')?.classList.add('no-webgl'));
+  if (!reduced) {
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      drift.tx = e.clientX / innerWidth - 0.5;
+      go();
+    }, { passive: true });
+  }
+  go();
+  return {
+    size(w, h) {
+      want.w = w;
+      want.h = h;
+      go();
+    },
+    async place(k) {
+      if (k === wanted) return;
+      wanted = k;
+      const t = await load(k);
+      if (k !== wanted) return;
+      if (next) here = next;
+      next = t;
+      mix = 0;
+      go();
+    },
+    warm(k) {
+      load(k).catch(() => {});
+    },
+  };
+}

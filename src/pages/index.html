@@ -34,15 +34,13 @@
 
 <section class="mat" data-mat aria-label="What a living wall is">
   <div class="mat__pin">
-    <canvas class="mat__c" data-mat-canvas aria-hidden="true"></canvas>
-    <canvas class="mat__c mat__grow" data-grow aria-hidden="true"></canvas>
-    <div class="mat__shade" data-shade aria-hidden="true"></div>
+    <canvas class="mat__c" data-room aria-hidden="true"></canvas>
     <div class="mat__say">
-      <p data-line class="ink"><span>You chose the stone.</span></p>
+      <p data-line><span>You chose the stone.</span></p>
       <p data-line><span>The timber.</span></p>
       <p data-line><span>The light.</span></p>
       <p data-line><span>All of it was bought.</span></p>
-      <p data-line class="grown"><span>This was grown.</span></p>
+      <p data-line><span>This was grown.</span></p>
     </div>
   </div>
 </section>
@@ -67,14 +65,10 @@
 </section>
 
 <section class="night" data-night aria-labelledby="night-h">
-  <div class="night__room" aria-hidden="true"></div>
-  <div class="night__stage" data-stage></div>
-  <canvas class="night__canvas" data-wall aria-hidden="true"></canvas>
-  <div class="night__edge" aria-hidden="true"></div>
-  <div class="lamp" data-lamp data-cursor="Light" aria-hidden="true"><div class="lamp__halo"></div><svg viewBox="0 0 144 400" preserveAspectRatio="xMidYMax meet"><path d="M72 -600V300" stroke="#0a1512" stroke-width="2.500"/><path d="M72 -600V300" stroke="#b08d57" stroke-width="1" opacity=".5"/><path d="M62 296h20l4 18H58z" fill="#b08d57"/><path d="M58 314h28c20 8 40 30 48 64H10c8-34 28-56 48-64z" fill="#0d1a16"/><path d="M58 314h28c6 2 11 6 16 10-20-5-40-4-58 2 4-5 9-9 14-12z" fill="#22352d"/><path d="M10 378h124c0 5-28 9-62 9s-62-4-62-9z" fill="#3a2f1c"/><ellipse class="lamp__bulb" cx="72" cy="381" rx="46" ry="6" fill="#ffe6b0"/></svg></div>
+  <canvas class="night__canvas" data-room aria-hidden="true"></canvas>
   <div class="night__t">
     <h2 id="night-h">Come home to it.</h2>
-    <p class="lede">One warm lamp, and the wall is the room. Pull the lamp along to see what it finds.</p>
+    <p class="lede">Dusk, one switch, and the wall is the room. Everything else in the house can stay dark.</p>
     <button class="switch" type="button" data-switch aria-pressed="false"><i aria-hidden="true"></i><span class="a">Turn on the light</span><span class="b">Turn off the light</span></button>
   </div>
 </section>
@@ -121,8 +115,8 @@
   <div class="wrap">
     <div class="head"><h2 id="aw-h">On the record</h2><p class="lede">Two South African Landscapers Institute golds, for walls built with Modiwall by Bidvest TopTurf.</p></div>
     <div class="awards">
-      <article class="award"><div data-panels>{{img pinehaven | (min-width:800px) 58vw, 100vw}}</div><div class="award__t"><h3>Netcare Pinehaven Hospital</h3><p>Gold, 2016. An atrium wall that lives on daylight alone.</p></div></article>
-      <article class="award"><div data-panels>{{img sun-city | (min-width:800px) 38vw, 100vw}}</div><div class="award__t"><h3>Sun City</h3><p>Gold, 2017. A steel tree, clad in living panels.</p></div></article>
+      <article class="award"><div class="lume" data-watch>{{img pinehaven | (min-width:800px) 58vw, 100vw}}</div><div class="award__t"><h3>Netcare Pinehaven Hospital</h3><p>Gold, 2016. An atrium wall that lives on daylight alone.</p></div></article>
+      <article class="award"><div class="lume" data-watch>{{img sun-city | (min-width:800px) 38vw, 100vw}}</div><div class="award__t"><h3>Sun City</h3><p>Gold, 2017. A steel tree, clad in living panels.</p></div></article>
     </div>
     <ol class="rec">
       <li><a href="/clients.html#press"><span class="rec__y">2016</span><b>South African patent</b><span>For a modular wall system for vertical gardens.</span></a></li>

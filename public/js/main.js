@@ -95,21 +95,6 @@ h.append(o, ' ');
 h.classList.add('words');
 h.dataset.watch = '';
 });
-if (!reduced) $$('[data-panels]').forEach((el) => {
-const cols = 8;
-const rows = 5;
-const mask = document.createElement('div');
-mask.className = 'panels';
-mask.setAttribute('aria-hidden', 'true');
-for (let i = 0; i < cols * rows; i++) {
-const t = document.createElement('i');
-t.style.setProperty('--i', (cols - 1 - (i % cols)) + (rows - 1 - Math.floor(i / cols)) + ((i * 7) % 3) * 0.5);
-mask.append(t);
-}
-el.append(mask);
-el.dataset.watch = '';
-mask.firstElementChild.addEventListener('transitionend', () => setTimeout(() => mask.remove(), 900), { once: true });
-});
 const io = new IntersectionObserver((es) => {
 for (const e of es) {
 if (!e.isIntersecting) continue;
@@ -125,18 +110,18 @@ c.style.setProperty('--i', i % 4);
 $$('[data-slot], [data-watch]').forEach((el) => io.observe(el));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=426d4046').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=de96398e').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=471af281').then((m) => m.initVisualiser(vis));
+if (vis) import('./visualise.js?v=7f0046ed').then((m) => m.initVisualiser(vis));
 const system = $('[data-system]');
 if (system) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./system.js?v=4754fe48').then((m) => m.initSystem(system));
+import('./system.js?v=b54c0cb5').then((m) => m.initSystem(system));
 }, { rootMargin: '150% 0px' });
 near.observe(system);
 }
@@ -200,7 +185,7 @@ $$('[data-strip]').forEach((strip) => {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=426d4046').then((m) => m.stripWall(strip)).catch(() => strip.remove());
+import('./wall.js?v=de96398e').then((m) => m.stripWall(strip)).catch(() => strip.remove());
 }, { rootMargin: '0px 0px -8% 0px' });
 near.observe(strip);
 });
@@ -209,22 +194,22 @@ if (night) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./wall.js?v=426d4046').then((m) => m.nightWall(night)).catch(() => night.classList.add('no-webgl'));
-}, { rootMargin: '60% 0px' });
+import('./room.js?v=87d96ba0').then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
+}, { rootMargin: '90% 0px' });
 near.observe(night);
 }
 $$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
 m.classList.toggle('in', e.isIntersecting);
 m.classList.toggle('lg-go', e.isIntersecting && !reduced);
 }, { threshold: 0.35 }).observe(m));
-import('./seed.js?v=6aa0ff01').then((m) => m.initSeed());
+import('./pointer.js?v=d8371ced').then((m) => m.initPointer());
 const mat = $('[data-mat]');
 if (mat) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-import('./materials.js?v=61496bba').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
-}, { rootMargin: '70% 0px' });
+import('./materials.js?v=440e2af1').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+}, { rootMargin: '120% 0px' });
 near.observe(mat);
 }
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('[data-depth], .ph').forEach((sec) => {
@@ -347,7 +332,7 @@ body.animate({ height: ['0px', `${body.offsetHeight}px`] }, ease);
 });
 const filters = $('[data-filters]');
 const hall = $('[data-hall-page]');
-if (hall) import('./corridor.js?v=9a303249').then(async (m) => {
+if (hall) import('./corridor.js?v=35ad344a').then(async (m) => {
 const frames = $$('[data-frame]');
 const rows = $$('.cards li');
 const status = $('[data-filter-status]');
@@ -441,7 +426,7 @@ if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
 const form = $('[data-form]');
-if (form) import('./form.js?v=f24b9826').then((m) => m.initForm(form));
+if (form) import('./form.js?v=5795d79f').then((m) => m.initForm(form));
 const dock = $('[data-dock]');
 if (dock && hero) {
 new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero.closest('[data-pin]'));

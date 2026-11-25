@@ -1,5 +1,6 @@
 
 import { html } from './html.js?v=fd61fe77';
+import { createAtelier } from './atelier.js?v=59484e30';
 const RULES = {
 name: (v) => (v.trim().length < 2 ? 'Enter your name.' : ''),
 email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Enter an email address like name@example.co.za.'),
@@ -21,22 +22,37 @@ const started = Date.now();
 let at = 0;
 let sized = false; // only send a size the visitor actually gave
 const picked = (n) => form.querySelector(`[name=${n}]:checked`)?.value ?? '';
+let room = null;
+let saying = 0;
+const line = $('[data-sentence]');
+const words = line.firstElementChild;
+const say = (text) => {
+if (text === 'A wall.') text = 'A wall, and the room it belongs to.';
+if (words.textContent === text) return;
+clearTimeout(saying);
+if (reduced) {
+words.textContent = text;
+return;
+}
+line.classList.add('turn');
+saying = setTimeout(() => {
+words.textContent = text;
+line.classList.remove('turn');
+}, 420);
+};
 const draw = () => {
 const w = Number(el('w').value);
 const h = Number(el('h').value);
 $('[data-w]').textContent = `${num(w)} m`;
 $('[data-h]').textContent = `${num(h)} m`;
-const scale = Math.min(86 / Math.max(w + 1.7, 5), 78 / Math.max(h, 2.6)); // % of the drawing per metre
-const art = $('[data-art]');
-art.style.setProperty('--w', (w * scale).toFixed(2));
-art.style.setProperty('--h', (h * scale).toFixed(2));
-art.style.setProperty('--m', scale.toFixed(3));
+room?.size(w, h);
+room?.place({ indoors: 'in', outdoors: 'out', both: 'both' }[picked('where')] ?? 'in');
 const v = Number(el('area').value) || w * h;
 $('[data-area]').textContent = `${num(v)} m²`;
 const kind = { living: 'A living wall', artificial: 'An artificial wall', unsure: 'A wall' }[picked('wall')] ?? 'A wall';
 const where = { indoors: ', indoors', outdoors: ', outdoors', both: ', indoors and out' }[picked('where')] ?? '';
 const place = el('place').value.trim();
-$('[data-sentence]').textContent = `${kind}${where}${sized ? `, about ${num(v)} square metres` : ''}${place ? `, in ${place}` : ''}.`;
+say(`${kind}${where}${sized ? `, about ${num(v)} square metres` : ''}${place ? `, in ${place}` : ''}.`);
 page.classList.toggle('is-sized', sized);
 page.dataset.kind = picked('wall');
 };
@@ -72,6 +88,11 @@ const r = form.querySelector(`[name=role][value="${role}"]`);
 if (r) r.checked = true;
 }
 draw();
+createAtelier($('[data-atelier]')).then((r) => {
+room = r;
+page.classList.add('is-real');
+draw();
+}).catch(() => page.classList.add('no-webgl'));
 const setError = (name, text) => {
 form.querySelector(`[data-e="${name}"]`).textContent = text;
 if (text) el(name).setAttribute('aria-invalid', 'true');
@@ -93,6 +114,7 @@ back.hidden = at === 0;
 next.hidden = at === steps.length - 1;
 send.hidden = at !== steps.length - 1;
 page.dataset.at = at;
+if (at === 1) ['out', 'both'].forEach((k) => room?.warm(k));
 page.style.setProperty('--done', (at / (steps.length - 1)).toFixed(3));
 $('[data-count]').textContent = `Step ${at + 1} of ${steps.length}`;
 if (focus) steps[at].querySelector('[data-focus]')?.focus({ preventScroll: true });

@@ -6,9 +6,10 @@ Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefa
 | --- | --- |
 | `src/pages` | One file per page. The JSON comment at the top sets title, description and structured data. |
 | `src/partials` | Header, footer, logo, closing call to action, visualiser. |
-| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall, `visualise.js` is "See it on your wall", `system.js` is the real-time 3D system (replace the part meshes there when CAD arrives), `materials.js` is stone, timber, light, `corridor.js` is the walk through the projects, `form.js` is the commission, `seed.js` is the pointer, `boot.js` runs before first paint. |
+| `src/css`, `src/js` | Styles and behaviour. `wall.js` is the living wall (every leaf is its own geometry), `room.js` the rooms lit one lamp at a time (`materials.js` and the evening scene use it), `atelier.js` the commission room, `visualise.js` is "See it on your wall", `system.js` is the real-time 3D system (replace the part meshes there when CAD arrives), `corridor.js` is the walk through the projects, `form.js` is the commission, `pointer.js` is the pointer, `boot.js` runs before first paint. |
 | `src/originals` | Master photos. |
-| `src/wall` | Wall textures joined from photos of planted Modiwalls (`python tools/wall.py` exports them). |
+| `src/wall` | Rendered plantings (`python tools/wall.py` exports them). |
+| `src/static/img/room` | Rendered rooms and hall. `tools/render` makes these and the plantings. |
 | `src/foliage` | Older plant cut-outs, kept as masters. |
 | `src/static` | Copied as is: fonts, icons, `.htaccess`, `robots.txt`, the form handler. |
 | `public` | The built site. **Upload the contents of this folder.** |
@@ -27,7 +28,7 @@ Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefa
 Gallery links point at the largest size of each photo automatically. The links in the "At home" section of
 `src/pages/index.html` name a size (for example `bathroom-1920.avif`); check them after replacing those photos.
 
-Plants on the living wall: replace a texture in `src/wall/`, then `python tools/wall.py`.
+Plants and rooms are rendered, not photographed: see `tools/render/README.md`.
 
 ## Add a journal story
 

@@ -30,8 +30,8 @@
 <link rel="preload" href="fonts/italiana.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/gloock.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/montserrat-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=8273da79">
-<script type="module" src="js/main.js?v=1b1f441e"></script>
+<link rel="stylesheet" href="css/site.css?v=cdab6c50">
+<script type="module" src="js/main.js?v=a8c68473"></script>
 <link rel="modulepreload" href="js/html.js?v=fd61fe77">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"HomeAndConstructionBusiness","@id":"https://www.modiwall.com/#business","name":"Modiwall Vertical Gardens","url":"https://www.modiwall.com/","logo":"https://www.modiwall.com/img/icon-512.png","image":"https://www.modiwall.com/img/og.jpg","telephone":"+27768740299","email":"info@modiwall.com","foundingDate":"2012","description":"Modiwall designs, makes, installs and maintains living vertical gardens and artificial green walls across South Africa.","address":{"@type":"PostalAddress","addressLocality":"Centurion","addressRegion":"Pretoria, Gauteng","addressCountry":"ZA"},"areaServed":[{"@type":"Country","name":"South Africa"},{"@type":"Continent","name":"Africa"}],"knowsAbout":["vertical gardens","living walls","green walls","artificial green walls","biophilic design"],"sameAs":["https://www.facebook.com/modiwall","https://www.instagram.com/modiwall_gardens/","https://www.linkedin.com/company/modiwall-vertical-gardens/","https://www.youtube.com/@modiwallverticalgardens3531"]},{"@type":"WebSite","@id":"https://www.modiwall.com/#site","url":"https://www.modiwall.com/","name":"Modiwall","inLanguage":"en-ZA","publisher":{"@id":"https://www.modiwall.com/#business"}},{"@type":"WebPage","@id":"https://www.modiwall.com/#page","url":"https://www.modiwall.com/","name":"Modiwall | Luxury Living Walls and Vertical Gardens, South Africa","description":"The patented Modiwall living wall. Designed, made, planted, guaranteed and cared for by one house, for private homes, estates and corporate interiors.","inLanguage":"en-ZA","isPartOf":{"@id":"https://www.modiwall.com/#site"},"about":{"@id":"https://www.modiwall.com/#business"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://www.modiwall.com/img/og.jpg","width":1200,"height":630,"caption":"Courtyard living wall planted in bands of fern, lime and burgundy foliage"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does a Modiwall cost?","acceptedAnswer":{"@type":"Answer","text":"Every wall is priced for its own place: the area, the plants, the light and how we reach it. Send us the wall and we will reply with a figure."}},{"@type":"Question","name":"Can it live indoors?","acceptedAnswer":{"@type":"Answer","text":"Yes. Many of our walls are inside: in bathrooms, stairwells, receptions and hospital atriums. We choose species that grow naturally in shade, and we tell you plainly if a room is too dark."}},{"@type":"Question","name":"How is it watered?","acceptedAnswer":{"@type":"Answer","text":"The wall waters itself. A pump on a digital timer lifts water from a hidden reservoir to the top. It runs down through channels inside the panels and returns."}},{"@type":"Question","name":"What if a plant dies?","acceptedAnswer":{"@type":"Answer","text":"We lift out its vessel and place a new one. The plants around it stay rooted."}},{"@type":"Question","name":"Who looks after it?","acceptedAnswer":{"@type":"Answer","text":"We do. Our own team visits weekly or monthly to prune, replant, treat pests and check the irrigation. See what a visit covers."}},{"@type":"Question","name":"Is it guaranteed?","acceptedAnswer":{"@type":"Answer","text":"Yes, by the people who designed and made it. The terms are set out in writing with your quotation."}}]}]}</script>
 <link rel="alternate" type="application/rss+xml" title="Modiwall Journal" href="feed.xml">
@@ -94,15 +94,13 @@
 </div>
 <section class="mat" data-mat aria-label="What a living wall is">
   <div class="mat__pin">
-    <canvas class="mat__c" data-mat-canvas aria-hidden="true"></canvas>
-    <canvas class="mat__c mat__grow" data-grow aria-hidden="true"></canvas>
-    <div class="mat__shade" data-shade aria-hidden="true"></div>
+    <canvas class="mat__c" data-room aria-hidden="true"></canvas>
     <div class="mat__say">
-      <p data-line class="ink"><span>You chose the stone.</span></p>
+      <p data-line><span>You chose the stone.</span></p>
       <p data-line><span>The timber.</span></p>
       <p data-line><span>The light.</span></p>
       <p data-line><span>All of it was bought.</span></p>
-      <p data-line class="grown"><span>This was grown.</span></p>
+      <p data-line><span>This was grown.</span></p>
     </div>
   </div>
 </section>
@@ -125,14 +123,10 @@
   </div>
 </section>
 <section class="night" data-night aria-labelledby="night-h">
-  <div class="night__room" aria-hidden="true"></div>
-  <div class="night__stage" data-stage></div>
-  <canvas class="night__canvas" data-wall aria-hidden="true"></canvas>
-  <div class="night__edge" aria-hidden="true"></div>
-  <div class="lamp" data-lamp data-cursor="Light" aria-hidden="true"><div class="lamp__halo"></div><svg viewBox="0 0 144 400" preserveAspectRatio="xMidYMax meet"><path d="M72 -600V300" stroke="#0a1512" stroke-width="2.500"/><path d="M72 -600V300" stroke="#b08d57" stroke-width="1" opacity=".5"/><path d="M62 296h20l4 18H58z" fill="#b08d57"/><path d="M58 314h28c20 8 40 30 48 64H10c8-34 28-56 48-64z" fill="#0d1a16"/><path d="M58 314h28c6 2 11 6 16 10-20-5-40-4-58 2 4-5 9-9 14-12z" fill="#22352d"/><path d="M10 378h124c0 5-28 9-62 9s-62-4-62-9z" fill="#3a2f1c"/><ellipse class="lamp__bulb" cx="72" cy="381" rx="46" ry="6" fill="#ffe6b0"/></svg></div>
+  <canvas class="night__canvas" data-room aria-hidden="true"></canvas>
   <div class="night__t">
     <h2 id="night-h">Come home to it.</h2>
-    <p class="lede">One warm lamp, and the wall is the room. Pull the lamp along to see what it finds.</p>
+    <p class="lede">Dusk, one switch, and the wall is the room. Everything else in the house can stay dark.</p>
     <button class="switch" type="button" data-switch aria-pressed="false"><i aria-hidden="true"></i><span class="a">Turn on the light</span><span class="b">Turn off the light</span></button>
   </div>
 </section>
@@ -176,8 +170,8 @@
   <div class="wrap">
     <div class="head"><h2 id="aw-h">On the record</h2><p class="lede">Two South African Landscapers Institute golds, for walls built with Modiwall by Bidvest TopTurf.</p></div>
     <div class="awards">
-      <article class="award"><div data-panels><picture><source type="image/avif" srcset="img/pinehaven-480.avif 480w, img/pinehaven-800.avif 800w, img/pinehaven-1280.avif 1280w, img/pinehaven-1920.avif 1920w" sizes="(min-width:800px) 58vw, 100vw"><img src="img/pinehaven-800.jpg" width="800" height="533" alt="Living green wall in the atrium of Netcare Pinehaven Hospital" loading="lazy" decoding="async"></picture></div><div class="award__t"><h3>Netcare Pinehaven Hospital</h3><p>Gold, 2016. An atrium wall that lives on daylight alone.</p></div></article>
-      <article class="award"><div data-panels><picture><source type="image/avif" srcset="img/sun-city-480.avif 480w, img/sun-city-600.avif 600w" sizes="(min-width:800px) 38vw, 100vw"><img src="img/sun-city-600.jpg" width="600" height="800" alt="Planted tree structure in the Sun City Entertainment Centre" loading="lazy" decoding="async"></picture></div><div class="award__t"><h3>Sun City</h3><p>Gold, 2017. A steel tree, clad in living panels.</p></div></article>
+      <article class="award"><div class="lume" data-watch><picture><source type="image/avif" srcset="img/pinehaven-480.avif 480w, img/pinehaven-800.avif 800w, img/pinehaven-1280.avif 1280w, img/pinehaven-1920.avif 1920w" sizes="(min-width:800px) 58vw, 100vw"><img src="img/pinehaven-800.jpg" width="800" height="533" alt="Living green wall in the atrium of Netcare Pinehaven Hospital" loading="lazy" decoding="async"></picture></div><div class="award__t"><h3>Netcare Pinehaven Hospital</h3><p>Gold, 2016. An atrium wall that lives on daylight alone.</p></div></article>
+      <article class="award"><div class="lume" data-watch><picture><source type="image/avif" srcset="img/sun-city-480.avif 480w, img/sun-city-600.avif 600w" sizes="(min-width:800px) 38vw, 100vw"><img src="img/sun-city-600.jpg" width="600" height="800" alt="Planted tree structure in the Sun City Entertainment Centre" loading="lazy" decoding="async"></picture></div><div class="award__t"><h3>Sun City</h3><p>Gold, 2017. A steel tree, clad in living panels.</p></div></article>
     </div>
     <ol class="rec">
       <li><a href="clients.html#press"><span class="rec__y">2016</span><b>South African patent</b><span>For a modular wall system for vertical gardens.</span></a></li>

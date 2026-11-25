@@ -20,7 +20,7 @@ cpSync('src/static', OUT, { recursive: true });
 
 /* ---- css + js ---- */
 const minCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
-const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
+const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2', 'lux3'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
 mkdirSync(`${OUT}/css`, { recursive: true });
 mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);

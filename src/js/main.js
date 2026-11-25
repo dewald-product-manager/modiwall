@@ -90,7 +90,7 @@ matchMedia('(min-width: 1021px)').addEventListener('change', (e) => {
   if (e.matches && !menu.hidden) setMenu(false);
 });
 
-/* ---- headings: words slide in one after another, like panels ---- */
+/* ---- headings: words come into focus one after another ---- */
 if (!reduced) $$('h2, .open h1, .ph h1, .vis-top h1, .quote h1, .lost h1').forEach((h) => {
   if (h.closest('.foot, .lightbox') || h.matches('.vh')) return;
   const words = h.textContent.trim().split(/\s+/);
@@ -108,23 +108,6 @@ if (!reduced) $$('h2, .open h1, .ph h1, .vis-top h1, .quote h1, .lost h1').forEa
   });
   h.classList.add('words');
   h.dataset.watch = '';
-});
-
-/* ---- key photos are put together from panels ---- */
-if (!reduced) $$('[data-panels]').forEach((el) => {
-  const cols = 8;
-  const rows = 5;
-  const mask = document.createElement('div');
-  mask.className = 'panels';
-  mask.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < cols * rows; i++) {
-    const t = document.createElement('i');
-    t.style.setProperty('--i', (cols - 1 - (i % cols)) + (rows - 1 - Math.floor(i / cols)) + ((i * 7) % 3) * 0.5);
-    mask.append(t);
-  }
-  el.append(mask);
-  el.dataset.watch = '';
-  mask.firstElementChild.addEventListener('transitionend', () => setTimeout(() => mask.remove(), 900), { once: true });
 });
 
 /* ---- slot-in reveals ---- */
@@ -241,8 +224,8 @@ if (night) {
   const near = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
     near.disconnect();
-    import('./wall.js').then((m) => m.nightWall(night)).catch(() => night.classList.add('no-webgl'));
-  }, { rootMargin: '60% 0px' });
+    import('./room.js').then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
+  }, { rootMargin: '90% 0px' });
   near.observe(night);
 }
 
@@ -252,8 +235,8 @@ $$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
   m.classList.toggle('lg-go', e.isIntersecting && !reduced);
 }, { threshold: 0.35 }).observe(m));
 
-/* ---- the pointer is a seed ---- */
-import('./seed.js').then((m) => m.initSeed());
+/* ---- the pointer ---- */
+import('./pointer.js').then((m) => m.initPointer());
 
 /* ---- stone, timber, light ---- */
 const mat = $('[data-mat]');
@@ -262,7 +245,7 @@ if (mat) {
     if (!e.isIntersecting) return;
     near.disconnect();
     import('./materials.js').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
-  }, { rootMargin: '70% 0px' });
+  }, { rootMargin: '120% 0px' });
   near.observe(mat);
 }
 

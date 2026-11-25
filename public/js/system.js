@@ -279,8 +279,9 @@ gl_Position = uVP * w;
 const FS = `#version 300 es
 precision highp float; precision highp sampler2DShadow;
 in vec3 vP, vN; in vec2 vUv; in vec4 vX; in vec4 vS; in float vOcc;
-uniform vec3 uEye, uSun; uniform float uKind, uT, uWet, uFade, uPx; uniform sampler2DShadow uSh; uniform sampler2D uTx;
+uniform vec3 uEye, uSun; uniform float uKind, uT, uWet, uFade, uPx; uniform sampler2DShadow uSh; uniform sampler2D uTx, uLeaf, uLeafN;
 out vec4 o;
+vec2 cell(float k){ return k < 10.5 ? vec2(0., 0.) : k < 11.5 ? vec2(.5, 0.) : k < 13.5 ? vec2(0., .5) : vec2(.5, .5); }
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
 float panel(vec3 d, vec3 c, vec3 ux, vec2 size, float soft){
@@ -340,35 +341,27 @@ float lcd = texture(uTx, vec2(.5 + vUv.x * .5, 1. - vUv.y)).r;
 alb = vec3(.02); emit = mix(vec3(.34, .72, .012), vec3(.02, .07, .02), lcd) * .9; rough = .2;
 } else if (uKind < 7.5) {                           // pipes, with the water passing inside
 alb = vec3(.013, .0145, .014); rough = .34;
-float f = fract(vUv.y * .9 - uT * .75); emit = vec3(.34, .74, .015) * smoothstep(.5, .0, abs(f - .5) * 2.4) * pow(max(dot(N, V), 0.), 3.) * uWet * .34;
+float f = fract(vUv.y * .9 - uT * .75); emit = vec3(.34, .74, .015) * smoothstep(.5, .0, abs(f - .5) * 2.4) * pow(max(dot(N, V), 0.), 3.) * uWet * .34 * smoothstep(-2.6, -2.3, vP.y);
 } else {
 float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), s = vX.y;
 float back = gl_FrontFacing ? 0. : 1.;
-trans = .42; rough = .46; f0 = .04;
-if (uKind < 11.5) {                               // heart-leaf philodendron, green (10) and lime (11)
-float lat = abs(fract((v + au * .34) * 7.5 + s) - .5), vein = smoothstep(.06, .0, abs(u) - .012) , side = smoothstep(.1, .02, lat) * smoothstep(1., .2, au);
-vec3 a = uKind < 10.5 ? mix(vec3(.016, .07, .014), vec3(.04, .135, .022), s) : mix(vec3(.075, .17, .012), vec3(.2, .3, .022), s * s);
-vec3 hi = uKind < 10.5 ? vec3(.11, .25, .05) : vec3(.34, .44, .08);
-float m = noise(vec2(u * 3. + s * 50., v * 4.));
-alb = a * (.75 + .5 * m); alb = mix(alb, hi, vein * .55 + side * .16);
-alb = mix(alb, hi * .9, smoothstep(.78, 1., au) * .16);
-N = normalize(N + cross(N, vec3(0., 0., 1.)) * 0. + vec3(sign(u) * side * .16, (lat - .25) * .32, 0.) * (1. - back));
-tcol = uKind < 10.5 ? vec3(.16, .36, .02) : vec3(.36, .5, .03);
-if (s > .9 && uKind < 10.5) alb *= vec3(1.9, 1.5, 1.2);
-} else if (uKind < 12.5) {                        // sword fern
-alb = mix(vec3(.05, .15, .02), vec3(.14, .28, .04), s * .6 + noise(vP.xy * 6.) * .4); tcol = vec3(.24, .46, .04); rough = .6;
-} else if (uKind < 13.5) {                        // variegated spider plant
-float st = smoothstep(.34, .5, au + noise(vec2(u * 2., v * 30.)) * .08);
-alb = mix(vec3(.62, .66, .4), mix(vec3(.035, .16, .025), vec3(.07, .24, .04), s), st); alb *= .86 + .2 * noise(vec2(u * 22., v * 3.)); tcol = vec3(.4, .6, .12); rough = .42;
-} else {                                          // delicious monster: the splits are cut here
-float row = (v - .04 + au * .22) * 6.4, f = fract(row) - .5; float id = floor(row);
-float open = smoothstep(.36, .5, au) * step(.6, row) * step(row, 6.2);
-if (open > 0. && abs(f) < .16 * smoothstep(.34, .72, au) && v < .95) discard;
-float holes = length(vec2((au - .22) * 2.3, f * 1.1)); if (row > 1.4 && row < 4.6 && holes < .13 + .04 * hash(vec2(id, s))) discard;
-float vein = smoothstep(.035, .0, abs(u) - .01), side = smoothstep(.09, .0, abs(abs(f) - .5)) * smoothstep(1., .1, au);
-alb = mix(vec3(.012, .054, .015), vec3(.026, .092, .022), noise(vec2(u * 2. + s * 9., v * 3.)));
-alb = mix(alb, vec3(.16, .3, .09), vein * .7 + side * .16); tcol = vec3(.1, .28, .03); rough = .44; f0 = .042;
-N = normalize(N + vec3(0., f * .34, 0.) * (1. - back));
+trans = .42; rough = .34; f0 = .045;
+if (uKind > 11.5 && uKind < 12.5) {               // sword fern
+alb = mix(vec3(.05, .125, .022), vec3(.115, .215, .036), s * .6 + noise(vP.xy * 6.) * .4) * (.82 + .3 * noise(vUv * vec2(3., 26.))); tcol = vec3(.22, .4, .05); rough = .52;
+N = normalize(N + vec3(0., (noise(vUv * vec2(2., 30.)) - .5) * .3, 0.));
+} else {                                          // a real leaf: colour and veins from the same scans the rendered walls use
+vec2 t = cell(uKind) + clamp(vec2(vUv.x, v), .004, .996) * .5;
+vec4 c = texture(uLeaf, t, -.4);
+if (uKind > 13.5 && c.a < .5) discard;
+alb = pow(c.rgb, vec3(2.2));
+alb *= (.82 + .4 * s) * (uKind > 10.5 && uKind < 11.5 ? .62 : 1.); alb = mix(alb, alb * vec3(1.32, 1.12, .75), smoothstep(.62, 1., fract(s * 37.)) * .7);
+vec3 nt = texture(uLeafN, t, -.2).xyz * 2. - 1.;
+vec3 dp1 = dFdx(vP), dp2 = dFdy(vP); vec2 d1 = dFdx(vUv), d2 = dFdy(vUv);
+vec3 a1 = cross(dp2, N), a2 = cross(N, dp1); vec3 tg = a1 * d1.x + a2 * d2.x, bt = a1 * d1.y + a2 * d2.y; float im = inversesqrt(max(max(dot(tg, tg), dot(bt, bt)), 1e-12));
+N = normalize(tg * im * nt.x * 1.1 + bt * im * nt.y * 1.1 + N * max(nt.z, .35));
+if (dot(N, V) < 0.) N = normalize(N - V * (dot(N, V) - .02));
+tcol = uKind < 10.5 ? vec3(.15, .30, .03) : uKind < 11.5 ? vec3(.24, .32, .03) : uKind < 13.5 ? vec3(.34, .5, .12) : vec3(.10, .24, .04);
+rough = uKind > 13.5 ? .27 : uKind > 12.5 ? .38 : .30;
 }
 alb = mix(alb, alb * 1.25 + .012, back); rough += back * .22;
 occ = mix(.16, 1., vOcc);
@@ -382,20 +375,20 @@ float D = a2 / (3.14159 * pow(nh * nh * (a2 - 1.) + 1., 2.)); float k = (rough +
 float G = 1. / ((max(ndl, .0) * (1. - k) + k) * (ndv * (1. - k) + k));
 float F = f0 + (1. - f0) * pow(1. - max(dot(H, V), 0.), 5.);
 if (uKind > 9.5) { float dz = smoothstep(.5, 2.1, vP.z); occ *= mix(.5, 1., dz); }
-vec3 c = alb / 3.14159 * max(ndl, 0.) * sun * sh * spot + sun * D * G * F * (uKind > 9.5 ? .16 : .25) * max(ndl, 0.) * sh * spot;
+vec3 c = alb / 3.14159 * max(ndl, 0.) * sun * sh * spot + sun * D * G * F * (uKind > 9.5 ? .2 : .25) * max(ndl, 0.) * sh * spot;
 c += trans * alb * .0 + trans * tcol * (pow(max(dot(-N, uSun), 0.), 1.2) * .34 + pow(max(dot(-V, uSun), 0.), 4.) * .2) * sun * (.25 + .75 * sh) * spot / 3.14159;
 vec3 amb = mix(vec3(.05, .09, .075), vec3(.46, .52, .5), N.y * .5 + .5) + vec3(.2, .2, .18) * max(dot(N, normalize(vec3(-.5, .4, .7))), 0.);
 c += alb * amb * occ * (.35 + .65 * spot);
 vec3 R = reflect(-V, N); vec4 q = rough * vec4(-1., -.0275, -.572, .022) + vec4(1., .0425, 1.04, -.04);
 float x = min(q.x * q.x, exp2(-9.28 * ndv)) * q.x + q.y; vec2 ab = vec2(-1.04, 1.04) * x + q.zw;
-c += studio(R, rough) * (f0 * ab.x + ab.y) * occ * (.3 + .7 * sh) * (.25 + .75 * spot) * (uKind < .5 ? .25 : 1.) * (uKind > 13.5 ? .13 : uKind > 9.5 ? .28 : 1.25);
+c += studio(R, rough) * (f0 * ab.x + ab.y) * occ * (.3 + .7 * sh) * (.25 + .75 * spot) * (uKind < .5 ? .25 : 1.) * (uKind > 13.5 ? .19 : uKind > 9.5 ? .27 : 1.25);
 c += emit;
 c = aces(c * 1.28);
 o = vec4(pow(c, vec3(.4545)) + (hash(gl_FragCoord.xy + 3.) - .5) / 200., 1.);
 }`;
 const SFS = `#version 300 es
-precision highp float; in vec2 vUv; in vec4 vX; uniform float uKind;
-void main(){ if (uKind > 13.5) { float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), row = (v - .04 + au * .22) * 6.4, f = fract(row) - .5; if (au > .4 && row > .6 && row < 6.2 && v < .95 && abs(f) < .14) discard; } }`;
+precision highp float; in vec2 vUv; in vec4 vX; uniform float uKind; uniform sampler2D uLeaf;
+void main(){ if (uKind > 13.5 && texture(uLeaf, vec2(.5) + clamp(vUv, .004, .996) * .5).a < .5) discard; }`;
 const mul = (a, b) => {
 const o = new Float32Array(16);
 for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) o[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k];
@@ -594,6 +587,23 @@ gl.activeTexture(gl.TEXTURE1);
 gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sheet);
 gl.generateMipmap(gl.TEXTURE_2D);
+[['leaf', 2], ['leaf-n', 3]].forEach(([f, unit]) => {
+const t = gl.createTexture();
+gl.activeTexture(gl.TEXTURE0 + unit);
+gl.bindTexture(gl.TEXTURE_2D, t);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(unit === 2 ? [58, 92, 48, 255] : [128, 128, 255, 255]));
+const img = new Image();
+img.src = new URL(`../img/room/${f}.avif`, import.meta.url).href;
+img.decode().then(() => {
+gl.activeTexture(gl.TEXTURE0 + unit);
+gl.bindTexture(gl.TEXTURE_2D, t);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+gl.generateMipmap(gl.TEXTURE_2D);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+const x = gl.getExtension('EXT_texture_filter_anisotropic');
+if (x) gl.texParameterf(gl.TEXTURE_2D, x.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+}).catch(() => {});
+});
 const SIZE = innerWidth < 800 ? 1024 : 2048;
 gl.activeTexture(gl.TEXTURE0);
 const depth = gl.createTexture();
@@ -716,6 +726,7 @@ gl.enable(gl.DEPTH_TEST);
 gl.disable(gl.BLEND);
 const set = (prog, u, vp) => {
 gl.useProgram(prog);
+if (u.uLeaf) gl.uniform1i(u.uLeaf, 2);
 gl.uniformMatrix4fv(u.uVP, false, vp);
 gl.uniform1f(u.uT, t);
 gl.uniform2f(u.uGust, turn.gust, 0);
@@ -747,6 +758,8 @@ gl.uniform3fv(U.uEye, eye);
 gl.uniform3fv(U.uSun, SUN);
 gl.uniform1i(U.uSh, 0);
 gl.uniform1i(U.uTx, 1);
+gl.uniform1i(U.uLeaf, 2);
+gl.uniform1i(U.uLeafN, 3);
 gl.uniform1f(U.uPx, 1 / SIZE);
 gl.uniform1f(U.uFade, 1 - span(p, 0.79, 0.92) * 0.82);
 const wet = span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82));
