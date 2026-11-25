@@ -5,7 +5,7 @@
  },
  "monstera": {
   "src": "monstera.jpg",
-  "alt": "Dense living wall of pothos and delicious monster in a home"
+  "alt": "Living wall of pothos and delicious monster in a home"
  },
  "dining": {
   "src": "dining.jpg",
@@ -37,7 +37,7 @@
  },
  "pool": {
   "src": "pool.jpg",
-  "alt": "Vertical gardens set between stone walls beside a swimming pool"
+  "alt": "Living walls between stone pillars along a swimming pool"
  },
  "bathroom": {
   "src": "bathroom.jpg",
@@ -53,13 +53,7 @@
  },
  "sun-city": {
   "src": "sun-city.jpg",
-  "alt": "Planted tree structure in the Sun City Entertainment Centre",
-  "crop": [
-   560,
-   0,
-   1200,
-   800
-  ]
+  "alt": "Planted steel tree beneath the skylight of the Sun City Entertainment Centre"
  },
  "laboratory": {
   "src": "laboratory.jpg",
@@ -123,7 +117,7 @@
  },
  "piano": {
   "src": "piano.jpg",
-  "alt": "Living wall wrapping a window beside an upright piano"
+  "alt": "Living wall framing a window beside an upright piano"
  },
  "billboard": {
   "src": "billboard.jpg",
@@ -173,17 +167,17 @@
   "src": "art-terrace.jpg",
   "alt": "Artificial green panels along a restaurant terrace"
  },
- "part-panel": {
-  "src": "part-panel.jpg",
-  "alt": "Modiwall back panel with vertical water channels"
+ "piece-panel": {
+  "src": "piece-panel.jpg",
+  "alt": "The Modiwall panel, with its vertical water channels and the rails that join it to the next"
  },
- "part-grid": {
-  "src": "part-grid.jpg",
-  "alt": "Modiwall front grid that holds the clip-in pots"
+ "piece-grid": {
+  "src": "piece-grid.jpg",
+  "alt": "The Modiwall grid that holds the vessels"
  },
- "part-pot": {
-  "src": "part-pot.jpg",
-  "alt": "Three black Modiwall clip-in pots"
+ "piece-vessel": {
+  "src": "piece-vessel.jpg",
+  "alt": "Three Modiwall vessels, one turned to show its two hooks"
  },
  "press-pinehaven": {
   "src": "press-pinehaven.jpg",
@@ -192,5 +186,133 @@
  "press-suncity": {
   "src": "press-suncity.jpg",
   "alt": "African Design Magazine article on the Sun City green wall tree"
+ },
+ "zanzibar": {
+  "src": "zanzibar.jpg",
+  "alt": "Double-height living wall of fern, philodendron and begonia beside tall windows at Zanzibar"
+ },
+ "zanzibar-detail": {
+  "src": "zanzibar-detail.jpg",
+  "alt": "Fern, pothos, begonia and spider plant growing together on one wall"
+ },
+ "urns": {
+  "src": "urns.jpg",
+  "alt": "Vertical garden of grasses and silver succulents beside three water urns and a stone wall"
+ },
+ "water-blade": {
+  "src": "water-blade.jpg",
+  "alt": "Water falling from a steel spout in front of a planted wall"
+ },
+ "succulents": {
+  "src": "succulents.jpg",
+  "alt": "Coral succulents in rows of black vessels on an outdoor wall"
+ },
+ "terrace": {
+  "src": "terrace.jpg",
+  "alt": "Outdoor living wall of grasses, bulbine and succulents above a timber deck"
+ },
+ "white-court": {
+  "src": "white-court.jpg",
+  "alt": "Two living walls in a white-brick courtyard with a fireplace"
+ },
+ "glass-doors": {
+  "src": "glass-doors.jpg",
+  "alt": "Living walls in a courtyard, seen from a dining table through folding glass doors"
+ },
+ "fountain": {
+  "src": "fountain.jpg",
+  "alt": "Stone bowl fountain in front of a living wall"
+ },
+ "water-court": {
+  "src": "water-court.jpg",
+  "alt": "Fountain and planted column along a narrow courtyard pool"
+ },
+ "lanterns": {
+  "src": "lanterns.jpg",
+  "alt": "Living wall on a covered terrace beneath three iron lanterns"
+ },
+ "bronze": {
+  "src": "bronze.jpg",
+  "alt": "Bronze sculpture in front of a living wall at an entrance"
+ },
+ "foyer": {
+  "src": "foyer.jpg",
+  "alt": "Lime philodendron wall on a stone plinth, passing through a glass door"
+ },
+ "reflection": {
+  "src": "reflection.jpg",
+  "alt": "Planted column rising from a courtyard pool"
+ },
+ "atrium-water": {
+  "src": "atrium-water.jpg",
+  "alt": "Two living walls either side of a water feature in a glazed reception"
+ },
+ "looking-up": {
+  "src": "looking-up.jpg",
+  "alt": "Looking up along a living wall and a water feature to the ceiling of an atrium"
+ },
+ "water-base": {
+  "src": "water-base.jpg",
+  "alt": "Pebbles and a steel planter at the foot of a living wall and water feature"
+ },
+ "pinehaven-chairs": {
+  "src": "pinehaven-chairs.jpg",
+  "alt": "Armchairs below the living wall at Netcare Pinehaven Hospital"
+ },
+ "garden-shower": {
+  "src": "garden-shower.jpg",
+  "alt": "Living wall of bromeliad, peperomia and fern in an open-air shower"
+ },
+ "bromeliad": {
+  "src": "bromeliad.jpg",
+  "alt": "Red bromeliads above peperomia and wandering jew on a living wall"
+ },
+ "peperomia": {
+  "src": "peperomia.jpg",
+  "alt": "Peperomia leaves with deep silver and burgundy ridges"
+ },
+ "foliage": {
+  "src": "foliage.jpg",
+  "alt": "Variegated philodendron and alocasia on a living wall"
+ },
+ "fern": {
+  "src": "fern.jpg",
+  "alt": "Asparagus fern against blue-green fern fronds"
+ },
+ "monstera-fern": {
+  "src": "monstera-fern.jpg",
+  "alt": "Living wall of delicious monster below hanging sword fern"
+ },
+ "patterned-floor": {
+  "src": "patterned-floor.jpg",
+  "alt": "Double-height living wall on a patterned tile floor beside iron lanterns"
+ },
+ "desk-teal": {
+  "src": "desk-teal.jpg",
+  "alt": "Living wall on a teal wall behind a reception desk and a wing chair"
+ },
+ "courtyard-sky": {
+  "src": "courtyard-sky.jpg",
+  "alt": "Living wall under a glass roof beside courtyard steps"
+ },
+ "year-2019-05": {
+  "src": "year-2019-05.jpg",
+  "alt": "The Hollard wall in May 2019, newly planted"
+ },
+ "year-2019-08": {
+  "src": "year-2019-08.jpg",
+  "alt": "The Hollard wall in August 2019"
+ },
+ "year-2022-01": {
+  "src": "year-2022-01.jpg",
+  "alt": "The Hollard wall in January 2022"
+ },
+ "year-2023-04": {
+  "src": "year-2023-04.jpg",
+  "alt": "The Hollard wall in April 2023"
+ },
+ "year-2025-02": {
+  "src": "year-2025-02.jpg",
+  "alt": "The Hollard wall in February 2025"
  }
 }

@@ -249,3 +249,45 @@ body:has(main > :is(.book, .names, .tale)) { background: #030906; }
 body:has(main > :is(.book, .names, .tale)) .top:not(.is-stuck) { color: #fff; --lg-m: #fff; } body:has(main > :is(.book, .names, .tale)) .top.is-stuck { background: rgba(3, 9, 6, .94); box-shadow: 0 1px 0 rgba(255, 255, 255, .08); color: #fff; --lg-m: #fff; }
 
 @media (min-width: 801px) { .night__t h2 { font-size: clamp(2.8rem, 5.2vw, 6.2rem); } .night__t .lede { max-width: 17.5em; } .night::after { background: linear-gradient(90deg, rgba(3, 7, 9, .8), rgba(3, 7, 9, .58) 22%, transparent 37%); } }
+
+/* ---- the film ---- */
+.reel { position: relative; height: 210vh; background: #030906; color: #fff; }
+.reel__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }
+.reel__f { position: absolute; inset: 0; overflow: clip; background: #06130e; }
+.reel.is-live .reel__f { clip-path: inset(15% 17%); will-change: clip-path; }
+.reel video { width: 100%; height: 100%; object-fit: cover; display: block; will-change: transform; }
+.reel__vig { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgba(3, 9, 6, .62), transparent 30%), linear-gradient(180deg, rgba(3, 9, 6, .34), transparent 22%); }
+.reel__t { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 1.2rem; text-align: center; padding: 0 var(--gut); pointer-events: none; text-shadow: 0 2px 60px rgba(3, 9, 6, .75), 0 0 18px rgba(3, 9, 6, .35); }
+.reel__t h2 { font-family: var(--disp); font-weight: 400; font-size: clamp(3.4rem, 9vw, 10rem); line-height: .96; letter-spacing: -.03em; color: #fff; }
+.reel__t .lede { color: #fff; margin: 0; }
+.reel__b { position: absolute; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); right: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); bottom: clamp(1.4rem, 4vh, 2.8rem); display: flex; align-items: center; gap: .9rem; }
+.reel__p { background: rgba(6, 16, 12, .5); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .26); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.reel__p svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; } .reel__p .a { fill: currentColor; }
+.reel__p .b, .is-playing .reel__p .a { display: none; } .is-playing .reel__p .b { display: block; }
+.reel__s { position: static; margin: 0; } .reel__s span { display: inline; }
+.reel__l { flex: 1; height: 1px; background: rgba(255, 255, 255, .28); overflow: clip; } .reel__l i { display: block; height: 100%; background: var(--lime); transform: scaleX(0); transform-origin: 0 50%; }
+.reel:not(.is-live) { height: auto; } .reel:not(.is-live) :is(.reel__pin, .reel__f, .reel__t) { position: static; height: auto; } .reel:not(.is-live) .reel__t { padding-block: 4rem; } .reel:not(.is-live) :is(.reel__b, .reel__vig) { display: none; }
+@media (prefers-reduced-motion: reduce) { .reel { height: 100svh; } .reel.is-live .reel__f { clip-path: none; } .reel__t { place-content: start center; padding-top: calc(var(--top) + 3rem); } }
+@media (max-width: 800px) { .reel { height: 190vh; } .reel.is-live .reel__f { clip-path: inset(13% 7%); } .reel__l { display: none; } .reel__b { bottom: calc(5.6rem + env(safe-area-inset-bottom)); justify-content: center; } }
+
+/* ---- one wall, nearly six years ---- */
+.years { position: relative; height: 560vh; background: #030906; color: #fff; }
+.years__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }
+.years__f { position: absolute; inset: 0; background: #06130e; }
+.years__s { position: absolute; inset: 0; will-change: opacity, transform; } .years.is-live .years__s:not(:first-child) { opacity: 0; }
+.years__s :is(picture, img) { display: block; width: 100%; height: 100%; object-fit: cover; background: none; }
+.years__vig { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(3, 9, 6, .86), rgba(3, 9, 6, .5) 34%, transparent 62%), linear-gradient(0deg, rgba(3, 9, 6, .8), transparent 34%), linear-gradient(180deg, rgba(3, 9, 6, .55), transparent 22%); }
+.years__t { position: absolute; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); top: calc(var(--top) + clamp(1.5rem, 7vh, 5rem)); width: min(31rem, 44vw); display: grid; gap: 1.3rem; }
+.years__t h2 { font-family: var(--disp); font-weight: 400; font-size: clamp(2.9rem, 5vw, 5.6rem); line-height: .99; letter-spacing: -.028em; color: #fff; text-wrap: balance; } .years__t .lede { color: #dbe6e0; margin: 0; max-width: 25em; }
+.years__d { position: absolute; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); bottom: clamp(6rem, 15vh, 9rem); display: grid; }
+.years__d p { grid-area: 1 / 1; margin: 0; display: grid; gap: .3rem; opacity: 0; transform: translate3d(0, 1.1rem, 0); transition: opacity .5s, transform .9s var(--glide); } .years__d p.on { opacity: 1; transform: none; transition-delay: .16s; }
+.years__d b { font-family: var(--disp); font-weight: 400; font-size: clamp(2.6rem, 4.4vw, 4.8rem); line-height: 1; letter-spacing: -.02em; color: var(--lime); } .years__d span { font-size: 1.12rem; color: #e6eee9; }
+.years__m { position: absolute; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); right: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); bottom: clamp(1.2rem, 4vh, 2.6rem); display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.years__m button { width: 100%; min-height: 3rem; padding: .8rem 0 0; background: none; border: 0; border-top: 1px solid rgba(255, 255, 255, .3); color: #fff; font: inherit; font-size: .95rem; text-align: left; opacity: .66; cursor: pointer; position: relative; transition: opacity .4s; }
+.years__m button::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: var(--lime); transform: scaleX(0); transform-origin: 0 50%; transition: transform .9s var(--glide); }
+.years__m button:is([aria-current], :hover, :focus-visible) { opacity: 1; } .years__m [aria-current]::before { transform: none; }
+.years:not(.is-live) { height: auto; } .years:not(.is-live) :is(.years__pin, .years__f, .years__s, .years__t) { position: static; height: auto; width: auto; } .years:not(.is-live) :is(.years__vig, .years__d, .years__m) { display: none; } .years:not(.is-live) .years__t { padding: 4rem var(--gut); }
+@media (max-width: 800px) {
+  .years__t { width: auto; right: var(--gut); } .years__vig { background: linear-gradient(0deg, rgba(3, 9, 6, .88), transparent 42%), linear-gradient(180deg, rgba(3, 9, 6, .9) 8%, rgba(3, 9, 6, .5) 34%, transparent 52%); }
+  .years__m { display: none; } .years__d { bottom: calc(7.2rem + env(safe-area-inset-bottom)); }
+}

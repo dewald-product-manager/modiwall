@@ -21,6 +21,31 @@
   </div>
 </section>
 
+<section class="reel" data-reel aria-labelledby="reel-h">
+  <div class="reel__pin">
+    <div class="reel__f" data-reel-f>
+      <video controls playsinline preload="none" poster="/video/kept.jpg" width="1280" height="720" aria-label="A short film of Modiwall living walls, with piano and strings and no speech">
+        <source src="/video/kept-tall.mp4" type='video/mp4; codecs="av01.0.08M.08, mp4a.40.2"' media="(max-aspect-ratio: 4/5)">
+        <source src="/video/kept-tall-h264.mp4" type='video/mp4; codecs="avc1.64001f, mp4a.40.2"' media="(max-aspect-ratio: 4/5)">
+        <source src="/video/kept.mp4" type='video/mp4; codecs="av01.0.08M.08, mp4a.40.2"'>
+        <source src="/video/kept-h264.mp4" type='video/mp4; codecs="avc1.64001f, mp4a.40.2"'>
+      </video>
+      <div class="reel__vig" aria-hidden="true"></div>
+    </div>
+    <div class="reel__t" data-reel-t><h2 id="reel-h">Kept, in motion.</h2><p class="lede">Our own walls, filmed where they live.</p></div>
+    <div class="reel__b"><button class="round reel__p" type="button" data-reel-play aria-label="Play the film"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="a" d="M8 5.5v13l10-6.5z"/><path class="b" d="M8 5.5v13M16 5.5v13"/></svg></button><button class="sound reel__s" type="button" data-reel-sound aria-pressed="false"><i aria-hidden="true"><b></b></i><span>Play with music</span></button><i class="reel__l" aria-hidden="true"><i data-reel-line></i></i></div>
+  </div>
+</section>
+
+<section class="years" data-years aria-labelledby="yr-h">
+  <div class="years__pin">
+    <div class="years__f"><div class="years__s" data-year>{{img year-2019-05 | (min-width:900px) 92vw, 190vw}}</div><div class="years__s" data-year>{{img year-2019-08 | (min-width:900px) 92vw, 190vw}}</div><div class="years__s" data-year>{{img year-2022-01 | (min-width:900px) 92vw, 190vw}}</div><div class="years__s" data-year>{{img year-2023-04 | (min-width:900px) 92vw, 190vw}}</div><div class="years__s" data-year>{{img year-2025-02 | (min-width:900px) 92vw, 190vw}}</div><div class="years__vig" aria-hidden="true"></div></div>
+    <div class="years__t"><h2 id="yr-h">The same wall, nearly six years on.</h2><p class="lede">Planted for Hollard in May 2019, and photographed over the years that followed, to February 2025.</p></div>
+    <div class="years__d" aria-live="polite"><p data-year-say class="on"><b>May 2019</b><span>Planted.</span></p><p data-year-say><b>August 2019</b><span>Three months.</span></p><p data-year-say><b>January 2022</b><span>Two years and eight months.</span></p><p data-year-say><b>April 2023</b><span>Nearly four years.</span></p><p data-year-say><b>February 2025</b><span>Nearly six years.</span></p></div>
+    <ol class="years__m" aria-label="Go to a year"><li><button type="button" data-year-at><span>May 2019</span></button></li><li><button type="button" data-year-at><span>August 2019</span></button></li><li><button type="button" data-year-at><span>January 2022</span></button></li><li><button type="button" data-year-at><span>April 2023</span></button></li><li><button type="button" data-year-at><span>February 2025</span></button></li></ol>
+  </div>
+</section>
+
 <section class="sec jr__more dusk dusk--b" aria-labelledby="jr-h">
   <div class="wrap"><div class="head"><h2 id="jr-h">From the journal</h2><a class="link" href="/journal.html">All stories</a></div>{{js:stories(['why-living-walls-fail', 'living-wall-cost-south-africa', 'indoor-living-wall-light'])}}</div>
 </section>

@@ -1,2 +1,18 @@
 tools/render/*/
 __pycache__/
+
+# the CAD parts are private: the repository is public
+*.stl
+*.STL
+*.step
+*.STEP
+*.stp
+*.3mf
+
+# raw material as it arrives; finished pictures go to src/originals
+/wetransfer_*/
+/*.png
+/*.jpg
+/*.psd
+/*.mp4
+/*.pdf

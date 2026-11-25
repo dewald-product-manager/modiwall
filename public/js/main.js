@@ -97,7 +97,7 @@ if (system) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(system, 1.1).then(() => import('./system.js?v=cc8ce2b0')).then((m) => m.initSystem(system));
+quiet(system, 1.1).then(() => import('./system.js?v=60c0976b')).then((m) => m.initSystem(system));
 }, { rootMargin: '260% 0px' });
 near.observe(system);
 }
@@ -410,6 +410,10 @@ const el = $(sel);
 if (!el) continue;
 if (reduced) el.classList.add('is-flat');
 else (file === './book.js?v=5e726720' ? import('./book.js?v=5e726720') : import('./tale.js?v=41f43b10')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+}
+for (const [sel, fn] of [['[data-reel]', 'reel'], ['[data-years]', 'years']]) {
+const el = $(sel);
+if (el) import('./reel.js?v=61d99f51').then((m) => m[fn](el));
 }
 const form = $('[data-form]');
 if (form) import('./form.js?v=aeb4d5d6').then((m) => m.initForm(form));

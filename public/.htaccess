@@ -6,6 +6,7 @@ ErrorDocument 403 /404.html
 AddDefaultCharset utf-8
 AddType image/avif .avif
 AddType image/webp .webp
+AddType video/mp4 .mp4
 AddType font/woff2 .woff2
 AddType application/manifest+json .webmanifest
 
@@ -53,7 +54,7 @@ RewriteRule \.(php\d?|phtml|phar|cgi|pl)(/|$) - [F,L]
   Header always unset X-Powered-By
   <FilesMatch "\.html$">
     # keep in step with the meta tag in src/partials/shell.html; this one adds what a meta tag cannot
-    Header set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; manifest-src 'self'; require-trusted-types-for 'script'; trusted-types modiwall; frame-ancestors 'none'; upgrade-insecure-requests"
+    Header set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; form-action 'self'; base-uri 'none'; manifest-src 'self'; require-trusted-types-for 'script'; trusted-types modiwall; frame-ancestors 'none'; upgrade-insecure-requests"
     Header set Cache-Control "public, max-age=0, must-revalidate"
   </FilesMatch>
   # an SVG opened on its own is a document: let it draw, never run anything

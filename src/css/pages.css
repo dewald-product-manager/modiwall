@@ -10,7 +10,7 @@
   from { clip-path: polygon(calc(var(--a)*6) 0, 100% 0, 100% 100%, calc(var(--a)*3) 100%, calc(var(--a)*3) calc(var(--b)*4), calc(var(--a)*4) calc(var(--b)*4), calc(var(--a)*4) calc(var(--b)*2), calc(var(--a)*5) calc(var(--b)*2), calc(var(--a)*5) calc(var(--b)*1), calc(var(--a)*6) calc(var(--b)*1)); }
 }
 .pieces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.5rem, 4vw, 5rem); }
-.pieces img { width: 100%; aspect-ratio: 17 / 12; object-fit: contain; background: none; mix-blend-mode: multiply; }
+.pieces img { width: 100%; aspect-ratio: 17 / 12; object-fit: cover; }
 .pieces article { display: grid; gap: .6rem; align-content: start; }
 @media (max-width: 800px) { .pieces { grid-template-columns: 1fr; } }
 .gap { height: clamp(3rem, 6vw, 6rem); }

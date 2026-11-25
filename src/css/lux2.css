@@ -69,7 +69,6 @@
 .ch__img { position: relative; overflow: clip; }
 .ch__par { position: absolute; inset: -9% 0; transform: translateY(calc((1 - var(--come)) * 13% + var(--over) * -5%)) scale(calc(1.14 - var(--come) * .1)); will-change: transform; }
 .ch__par picture, .ch__par img { width: 100%; height: 100%; object-fit: cover; }
-.ch--b .ch__par { inset: 0 4% 0 0; } .ch--b .ch__par img { object-fit: contain; } .ch--b :is(picture, img) { background: none; } .ch--b .ch__img { overflow: visible; }
 @media (max-width: 900px) {
   .ch { height: auto; min-height: 100svh; position: sticky; top: auto; bottom: 0; }
   .ch__in { grid-template-columns: 1fr; grid-template-rows: minmax(38svh, 1fr) auto; min-height: 100svh; height: auto; transform-origin: 50% 100%; }

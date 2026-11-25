@@ -6,7 +6,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 
 const ROOT = resolve('public');
 const PORT = Number(process.env.PORT) || 4173;
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.avif': 'image/avif', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.xml': 'application/xml', '.txt': 'text/plain', '.webmanifest': 'application/manifest+json' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.avif': 'image/avif', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.xml': 'application/xml', '.txt': 'text/plain', '.webmanifest': 'application/manifest+json' };
 const htaccess = readFileSync(join(ROOT, '.htaccess'), 'utf8');
 const header = (name, block = htaccess) => block.match(new RegExp(`Header (?:always )?set ${name} "([^"]+)"`))?.[1];
 const SAFE = Object.fromEntries(['Strict-Transport-Security', 'X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy', 'Cross-Origin-Opener-Policy', 'Cross-Origin-Resource-Policy', 'X-Permitted-Cross-Domain-Policies'].map((h) => [h, header(h)]).filter(([, v]) => v));
@@ -27,6 +27,16 @@ createServer((req, res) => {
     code = 404;
   }
   const type = TYPES[extname(file)] || 'application/octet-stream';
-  res.writeHead(code, { 'content-type': type, ...SAFE, ...(type.startsWith('text/html') && CSP ? { 'content-security-policy': CSP } : {}) });
+  const head = { 'content-type': type, ...SAFE, ...(type.startsWith('text/html') && CSP ? { 'content-security-policy': CSP } : {}) };
+  const size = statSync(file).size;
+  const part = code === 200 && /^bytes=(\d+)-(\d*)$/.exec(req.headers.range ?? '');
+  if (part && Number(part[1]) < size) { // films are asked for in pieces
+    const from = Number(part[1]);
+    const to = Math.min(size - 1, part[2] ? Number(part[2]) : size - 1);
+    res.writeHead(206, { ...head, 'accept-ranges': 'bytes', 'content-range': `bytes ${from}-${to}/${size}`, 'content-length': to - from + 1 });
+    createReadStream(file, { start: from, end: to }).on('error', () => res.end()).pipe(res);
+    return;
+  }
+  res.writeHead(code, { ...head, 'accept-ranges': 'bytes', 'content-length': size });
   createReadStream(file).on('error', () => res.end()).pipe(res);
 }).listen(PORT, '127.0.0.1', () => console.log(`http://localhost:${PORT}`));

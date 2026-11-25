@@ -463,6 +463,12 @@ for (const [sel, file, fn] of [['[data-book]', './book.js', 'initBook'], ['[data
   else (file === './book.js' ? import('./book.js') : import('./tale.js')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
 }
 
+/* ---- the film, and one wall through the years ---- */
+for (const [sel, fn] of [['[data-reel]', 'reel'], ['[data-years]', 'years']]) {
+  const el = $(sel);
+  if (el) import('./reel.js').then((m) => m[fn](el));
+}
+
 /* ---- quote form ---- */
 const form = $('[data-form]');
 if (form) import('./form.js').then((m) => m.initForm(form));

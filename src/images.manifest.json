@@ -12,17 +12,17 @@
   "avg": "#898774"
  },
  "monstera": {
-  "alt": "Dense living wall of pothos and delicious monster in a home",
-  "w": 1680,
-  "h": 2240,
+  "alt": "Living wall of pothos and delicious monster in a home",
+  "w": 1950,
+  "h": 2600,
   "widths": [
    480,
    800,
    1280,
-   1680
+   1920
   ],
   "fallback": 800,
-  "avg": "#6d7964"
+  "avg": "#6a7763"
  },
  "dining": {
   "alt": "Living wall behind a dining table in a South African home",
@@ -52,21 +52,8 @@
  },
  "reception-water": {
   "alt": "Double-height reception with living wall columns either side of a water feature",
-  "w": 1500,
-  "h": 2000,
-  "widths": [
-   480,
-   800,
-   1280,
-   1500
-  ],
-  "fallback": 800,
-  "avg": "#928c8a"
- },
- "courtyard-bands": {
-  "alt": "Courtyard living wall planted in bands of fern, lime and burgundy foliage",
-  "w": 2000,
-  "h": 1500,
+  "w": 1950,
+  "h": 2600,
   "widths": [
    480,
    800,
@@ -74,7 +61,20 @@
    1920
   ],
   "fallback": 800,
-  "avg": "#8a9080"
+  "avg": "#7d7272"
+ },
+ "courtyard-bands": {
+  "alt": "Courtyard living wall planted in bands of fern, lime and burgundy foliage",
+  "w": 2600,
+  "h": 2031,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#808577"
  },
  "courtyard-frame": {
   "alt": "Framed outdoor vertical garden above a stone bench",
@@ -116,17 +116,17 @@
   "avg": "#6d6e68"
  },
  "pool": {
-  "alt": "Vertical gardens set between stone walls beside a swimming pool",
-  "w": 1777,
-  "h": 1332,
+  "alt": "Living walls between stone pillars along a swimming pool",
+  "w": 2600,
+  "h": 1532,
   "widths": [
    480,
    800,
    1280,
-   1777
+   1920
   ],
   "fallback": 800,
-  "avg": "#457e79"
+  "avg": "#4f726d"
  },
  "bathroom": {
   "alt": "Living wall behind glass in a marble bathroom",
@@ -167,15 +167,16 @@
   "avg": "#4f5740"
  },
  "sun-city": {
-  "alt": "Planted tree structure in the Sun City Entertainment Centre",
-  "w": 600,
+  "alt": "Planted steel tree beneath the skylight of the Sun City Entertainment Centre",
+  "w": 1056,
   "h": 800,
   "widths": [
    480,
-   600
+   800,
+   1056
   ],
-  "fallback": 600,
-  "avg": "#62616b"
+  "fallback": 800,
+  "avg": "#62606b"
  },
  "laboratory": {
   "alt": "Long living wall above the benches in a working laboratory",
@@ -218,8 +219,8 @@
  },
  "retirement-lounge": {
   "alt": "Living wall behind a sofa in a retirement village reception",
-  "w": 2000,
-  "h": 1500,
+  "w": 2600,
+  "h": 1911,
   "widths": [
    480,
    800,
@@ -227,7 +228,7 @@
    1920
   ],
   "fallback": 800,
-  "avg": "#736756"
+  "avg": "#756858"
  },
  "slats": {
   "alt": "Lime pothos living wall against a timber slat screen",
@@ -270,8 +271,8 @@
  },
  "pinehaven": {
   "alt": "Living green wall in the atrium of Netcare Pinehaven Hospital",
-  "w": 2048,
-  "h": 1365,
+  "w": 2600,
+  "h": 1733,
   "widths": [
    480,
    800,
@@ -279,25 +280,25 @@
    1920
   ],
   "fallback": 800,
-  "avg": "#767974"
+  "avg": "#6f716e"
  },
  "pinehaven-tall": {
   "alt": "Waiting area below the living wall at Netcare Pinehaven Hospital",
-  "w": 1788,
-  "h": 2682,
+  "w": 1733,
+  "h": 2600,
   "widths": [
    480,
    800,
    1280,
-   1788
+   1733
   ],
   "fallback": 800,
-  "avg": "#808781"
+  "avg": "#787d79"
  },
  "pinehaven-lounge": {
   "alt": "Seating in front of the living wall at Netcare Pinehaven Hospital",
-  "w": 2048,
-  "h": 1365,
+  "w": 2600,
+  "h": 1733,
   "widths": [
    480,
    800,
@@ -305,7 +306,7 @@
    1920
   ],
   "fallback": 800,
-  "avg": "#908f82"
+  "avg": "#84847b"
  },
  "stairs": {
   "alt": "Living wall beside a steel staircase in a double-volume home",
@@ -370,16 +371,17 @@
   "avg": "#6b735b"
  },
  "piano": {
-  "alt": "Living wall wrapping a window beside an upright piano",
-  "w": 1024,
-  "h": 1365,
+  "alt": "Living wall framing a window beside an upright piano",
+  "w": 2600,
+  "h": 2085,
   "widths": [
    480,
    800,
-   1024
+   1280,
+   1920
   ],
   "fallback": 800,
-  "avg": "#79756c"
+  "avg": "#747069"
  },
  "billboard": {
   "alt": "Technician on ropes planting a living billboard",
@@ -526,38 +528,44 @@
   "fallback": 640,
   "avg": "#67665f"
  },
- "part-panel": {
-  "alt": "Modiwall back panel with vertical water channels",
-  "w": 850,
-  "h": 600,
+ "piece-panel": {
+  "alt": "The Modiwall panel, with its vertical water channels and the rails that join it to the next",
+  "w": 1700,
+  "h": 1200,
   "widths": [
    480,
-   800
+   800,
+   1280,
+   1700
   ],
   "fallback": 800,
-  "avg": "#989899"
+  "avg": "#1d2d24"
  },
- "part-grid": {
-  "alt": "Modiwall front grid that holds the clip-in pots",
-  "w": 850,
-  "h": 600,
+ "piece-grid": {
+  "alt": "The Modiwall grid that holds the vessels",
+  "w": 1700,
+  "h": 1200,
   "widths": [
    480,
-   800
+   800,
+   1280,
+   1700
   ],
   "fallback": 800,
-  "avg": "#919091"
+  "avg": "#26382e"
  },
- "part-pot": {
-  "alt": "Three black Modiwall clip-in pots",
-  "w": 850,
-  "h": 600,
+ "piece-vessel": {
+  "alt": "Three Modiwall vessels, one turned to show its two hooks",
+  "w": 1700,
+  "h": 1200,
   "widths": [
    480,
-   800
+   800,
+   1280,
+   1700
   ],
   "fallback": 800,
-  "avg": "#838283"
+  "avg": "#1b2f25"
  },
  "press-pinehaven": {
   "alt": "African Design Magazine article on the green wall at Netcare Pinehaven",
@@ -580,5 +588,421 @@
   ],
   "fallback": 480,
   "avg": "#a09f95"
+ },
+ "zanzibar": {
+  "alt": "Double-height living wall of fern, philodendron and begonia beside tall windows at Zanzibar",
+  "w": 2053,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6a7064"
+ },
+ "zanzibar-detail": {
+  "alt": "Fern, pothos, begonia and spider plant growing together on one wall",
+  "w": 2219,
+  "h": 2108,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#3f4b38"
+ },
+ "urns": {
+  "alt": "Vertical garden of grasses and silver succulents beside three water urns and a stone wall",
+  "w": 2600,
+  "h": 1824,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#777168"
+ },
+ "water-blade": {
+  "alt": "Water falling from a steel spout in front of a planted wall",
+  "w": 2600,
+  "h": 1733,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#63574f"
+ },
+ "succulents": {
+  "alt": "Coral succulents in rows of black vessels on an outdoor wall",
+  "w": 2600,
+  "h": 2013,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#695c53"
+ },
+ "terrace": {
+  "alt": "Outdoor living wall of grasses, bulbine and succulents above a timber deck",
+  "w": 2600,
+  "h": 1760,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#626a5a"
+ },
+ "white-court": {
+  "alt": "Two living walls in a white-brick courtyard with a fireplace",
+  "w": 2600,
+  "h": 1929,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#797c73"
+ },
+ "glass-doors": {
+  "alt": "Living walls in a courtyard, seen from a dining table through folding glass doors",
+  "w": 2600,
+  "h": 1387,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6d7066"
+ },
+ "fountain": {
+  "alt": "Stone bowl fountain in front of a living wall",
+  "w": 1891,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1891
+  ],
+  "fallback": 800,
+  "avg": "#706c59"
+ },
+ "water-court": {
+  "alt": "Fountain and planted column along a narrow courtyard pool",
+  "w": 1950,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#757165"
+ },
+ "lanterns": {
+  "alt": "Living wall on a covered terrace beneath three iron lanterns",
+  "w": 1950,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6a6b5f"
+ },
+ "bronze": {
+  "alt": "Bronze sculpture in front of a living wall at an entrance",
+  "w": 2600,
+  "h": 1833,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#7a766b"
+ },
+ "foyer": {
+  "alt": "Lime philodendron wall on a stone plinth, passing through a glass door",
+  "w": 2600,
+  "h": 1853,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#72755a"
+ },
+ "reflection": {
+  "alt": "Planted column rising from a courtyard pool",
+  "w": 1794,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1794
+  ],
+  "fallback": 800,
+  "avg": "#6e6e63"
+ },
+ "atrium-water": {
+  "alt": "Two living walls either side of a water feature in a glazed reception",
+  "w": 2600,
+  "h": 1950,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#79706f"
+ },
+ "looking-up": {
+  "alt": "Looking up along a living wall and a water feature to the ceiling of an atrium",
+  "w": 2600,
+  "h": 1733,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#767869"
+ },
+ "water-base": {
+  "alt": "Pebbles and a steel planter at the foot of a living wall and water feature",
+  "w": 2600,
+  "h": 1462,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#676b5d"
+ },
+ "pinehaven-chairs": {
+  "alt": "Armchairs below the living wall at Netcare Pinehaven Hospital",
+  "w": 1969,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#777971"
+ },
+ "garden-shower": {
+  "alt": "Living wall of bromeliad, peperomia and fern in an open-air shower",
+  "w": 2600,
+  "h": 1733,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#5d685f"
+ },
+ "bromeliad": {
+  "alt": "Red bromeliads above peperomia and wandering jew on a living wall",
+  "w": 1733,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1733
+  ],
+  "fallback": 800,
+  "avg": "#535a44"
+ },
+ "peperomia": {
+  "alt": "Peperomia leaves with deep silver and burgundy ridges",
+  "w": 2119,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6c6164"
+ },
+ "foliage": {
+  "alt": "Variegated philodendron and alocasia on a living wall",
+  "w": 2600,
+  "h": 1733,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#4c522b"
+ },
+ "fern": {
+  "alt": "Asparagus fern against blue-green fern fronds",
+  "w": 1990,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#42714c"
+ },
+ "monstera-fern": {
+  "alt": "Living wall of delicious monster below hanging sword fern",
+  "w": 2600,
+  "h": 1973,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#595f54"
+ },
+ "patterned-floor": {
+  "alt": "Double-height living wall on a patterned tile floor beside iron lanterns",
+  "w": 2010,
+  "h": 2600,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#7e8380"
+ },
+ "desk-teal": {
+  "alt": "Living wall on a teal wall behind a reception desk and a wing chair",
+  "w": 1600,
+  "h": 1200,
+  "widths": [
+   480,
+   800,
+   1280,
+   1600
+  ],
+  "fallback": 800,
+  "avg": "#687063"
+ },
+ "courtyard-sky": {
+  "alt": "Living wall under a glass roof beside courtyard steps",
+  "w": 2600,
+  "h": 2053,
+  "widths": [
+   480,
+   800,
+   1280,
+   1920
+  ],
+  "fallback": 800,
+  "avg": "#6a7275"
+ },
+ "year-2019-05": {
+  "alt": "The Hollard wall in May 2019, newly planted",
+  "w": 1800,
+  "h": 1320,
+  "widths": [
+   480,
+   800,
+   1280,
+   1800
+  ],
+  "fallback": 800,
+  "avg": "#656b59"
+ },
+ "year-2019-08": {
+  "alt": "The Hollard wall in August 2019",
+  "w": 1800,
+  "h": 1320,
+  "widths": [
+   480,
+   800,
+   1280,
+   1800
+  ],
+  "fallback": 800,
+  "avg": "#576b44"
+ },
+ "year-2022-01": {
+  "alt": "The Hollard wall in January 2022",
+  "w": 1800,
+  "h": 1320,
+  "widths": [
+   480,
+   800,
+   1280,
+   1800
+  ],
+  "fallback": 800,
+  "avg": "#6f794f"
+ },
+ "year-2023-04": {
+  "alt": "The Hollard wall in April 2023",
+  "w": 1800,
+  "h": 1320,
+  "widths": [
+   480,
+   800,
+   1280,
+   1800
+  ],
+  "fallback": 800,
+  "avg": "#68784e"
+ },
+ "year-2025-02": {
+  "alt": "The Hollard wall in February 2025",
+  "w": 1800,
+  "h": 1320,
+  "widths": [
+   480,
+   800,
+   1280,
+   1800
+  ],
+  "fallback": 800,
+  "avg": "#6a7f57"
  }
 }

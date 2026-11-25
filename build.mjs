@@ -98,11 +98,12 @@ const helpers = {
   clients: () => [['netcare', 'Netcare', 4.9, 600, 479], ['hollard', 'Hollard', 2.9, 600, 159], ['sun-city', 'Sun City', 3.9, 600, 237], ['virgin-active', 'Virgin Active', 4.2, 600, 286], ['old-mutual', 'Old Mutual', 2.35, 600, 132], ['bidvest', 'Bidvest TopTurf', 4.1, 600, 313], ['nedbank-golf', 'Nedbank Golf Challenge', 5.6, 600, 600], ['torrecid', 'Torrecid', 2.9, 600, 176]]
     .map(([f, name, h, w, hh]) => `<li class="cl cl--${f}"><img src="/img/clients/${f}.svg" width="${w}" height="${hh}" alt="${name}" loading="lazy" decoding="async"></li>`).join(''),
   // every wall: hung in the corridor by corridor.js, and laid out on the page below it
-  cards: (items) => items.map(([name, place, title]) => {
+  // every wall on the page; those marked 'page' are not also hung in the corridor
+  cards: (items) => items.map(([name, place, title, only]) => {
     const im = images[name];
     const at = (w) => `/img/${name}-${im.widths.includes(w) ? w : im.widths.at(-1)}.avif`;
     const where = { home: 'Private home', health: 'Healthcare', work: 'Office', hospitality: 'Hospitality and retail' }[place];
-    return `<li data-place="${place}"><a href="${full(name)}" data-lightbox data-frame data-cursor="View" data-title="${esc(title)}" data-where="${where}" data-ratio="${(im.w / im.h).toFixed(3)}" data-hang="${at(800)}" data-hang-l="${at(1280)}"><span class="cards__p">${picture(name, '(min-width:1000px) 30vw, (min-width:560px) 46vw, 92vw')}</span><span class="tile__cap2"><b>${title}</b><span>${where}</span></span></a></li>`;
+    return `<li data-place="${place}"><a href="${full(name)}" data-lightbox${only ? '' : ' data-frame'} data-cursor="View" data-title="${esc(title)}" data-where="${where}" data-ratio="${(im.w / im.h).toFixed(3)}" data-hang="${at(800)}" data-hang-l="${at(1280)}"><span class="cards__p">${picture(name, '(min-width:1000px) 30vw, (min-width:560px) 46vw, 92vw')}</span><span class="tile__cap2"><b>${title}</b><span>${where}</span></span></a></li>`;
   }).join('\n'),
   faq: (list) => list.map(([q, a]) => `<details class="faq"><summary>${q}</summary><div class="faq__a"><div><p>${a}</p></div></div></details>`).join('\n'),
 };
@@ -185,7 +186,7 @@ for (const file of pages) {
   // Every page sits in one folder, so relative links work on modiwall.com, GitHub Pages or any subfolder.
   // 404.html can be served from any depth and stays absolute.
   if (file !== '404.html') {
-    html = html.replace(/\b(href|src|action|data-peek|data-img|data-hang|data-hang-l)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
+    html = html.replace(/\b(href|src|action|poster|data-peek|data-img|data-hang|data-hang-l)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
       .replace(/\bsrcset="([^"]+)"/g, (_, v) => `srcset="${v.replace(/(^|, )\//g, '$1')}"`);
   }
   writeFileSync(`${OUT}/${file}`, html);
