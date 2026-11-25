@@ -20,7 +20,7 @@ cpSync('src/static', OUT, { recursive: true });
 
 /* ---- css + js ---- */
 const minCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
-const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2', 'lux3'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
+const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2', 'lux3', 'lux4'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
 mkdirSync(`${OUT}/css`, { recursive: true });
 mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);
@@ -67,31 +67,42 @@ const words = (raw) => raw.replace(/^<!--[\s\S]*?-->/, '').replace(/<[^>]+>/g, '
 const posts = readdirSync('src/pages').filter((f) => /^journal-.+\.html$/.test(f)).map((f) => {
   const raw = read(`src/pages/${f}`);
   const m = metaOf(raw);
-  return { slug: f.slice(8, -5), url: `/${f}`, words: words(raw), minutes: Math.max(1, Math.round(words(raw) / 220)), description: m.description, ...m.post };
+  return { slug: f.slice(8, -5), url: `/${f}`, words: words(raw), minutes: Math.max(1, Math.ceil(words(raw) / 220)), description: m.description, ...m.post };
 });
 const postOf = Object.fromEntries(posts.map((p) => [p.slug, p]));
 const longDate = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const storyCard = (p, sizes, big = false) => `<a class="story${big ? ' story--lead' : ''}" href="${p.url}" data-cursor="Read"><span class="story__p">${picture(p.image, sizes)}</span><span class="story__t"><small>${p.topic}, ${p.minutes} min read</small><b>${p.head}</b><span>${p.stand}</span></span></a>`;
 
-const ORDER = ['living-wall-cost-south-africa', 'living-wall-bathroom', 'why-living-walls-fail', 'pool-and-boundary-wall-garden', 'indoor-living-wall-light', 'living-or-artificial-wall', 'do-plants-clean-the-air', 'living-wall-architects-brief', 'two-gold-walls'];
+// the journal in chapters: what each is called, what it is for, and its stories in order
+const CHAPTERS = [
+  ['rooms', 'The rooms', 'Where a wall belongs, and what it does there.', ['feature-wall-ideas', 'living-wall-bathroom', 'patio-vertical-garden', 'pool-and-boundary-wall-garden']],
+  ['plants', 'Plants', 'What grows, where, and in which light.', ['best-indoor-living-wall-plants', 'best-outdoor-living-wall-plants', 'indoor-living-wall-light']],
+  ['keeping', 'Living with one', 'Water, power, insects and the years.', ['how-to-water-a-living-wall', 'living-wall-lifespan', 'why-living-walls-fail', 'living-wall-load-shedding', 'living-wall-mosquitoes']],
+  ['before', 'Before you build', 'What to ask, and what to draw first.', ['living-wall-cost-south-africa', 'living-wall-damp', 'living-wall-weight', 'living-or-artificial-wall', 'living-wall-architects-brief']],
+  ['evidence', 'The evidence', 'What has been measured, and what has been won.', ['vertical-garden-health-benefits', 'do-plants-clean-the-air', 'two-gold-walls']],
+];
+const ORDER = CHAPTERS.flatMap((c) => c[3]);
+posts.sort((a, c) => ORDER.indexOf(a.slug) - ORDER.indexOf(c.slug));
+posts.forEach((p) => { if (!ORDER.includes(p.slug)) throw new Error(`Story in no chapter: ${p.slug}`); });
 // the first words of an article, as plain text
 const opening = (slug) => {
   const raw = read(`src/pages/journal-${slug}.html`).replace(/^<!--[\s\S]*?-->/, '');
   const paras = [...raw.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).filter((t) => t.length > 60);
-  return paras.slice(0, 3).join(' ').split(' ').slice(0, 120).join(' ');
+  return paras.slice(0, 6).join(' ').split(' ').slice(0, 210).join(' ');
 };
 const helpers = {
-  // every story as a line in the index, carrying what the book sets on its pages
-  index: (lead) => [postOf[lead], ...posts.filter((p) => p.slug !== lead).sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug))].map((p) => {
+  // the stories in their chapters, each carrying what the book sets on its pages
+  index: () => CHAPTERS.map(([id, name, sub, slugs]) => `<section class="jg" id="${id}" aria-labelledby="${id}-h"><div class="jg__h"><h3 id="${id}-h">${name}</h3><p>${sub}</p>${id === 'plants' ? `<a class="link" href="/plants.html">Our plants</a><div class="jg__sp" aria-hidden="true">${['marble', 'bulb', 'fern', 'setc'].map((k) => `<img src="/img/plants/${k}.avif" width="720" height="720" alt="" loading="lazy" decoding="async">`).join('')}</div>` : ''}</div><ul class="jg__l">${slugs.map((slug, n) => {
+    const p = postOf[slug];
     const im = images[p.image];
     const at = (w) => `/img/${p.image}-${im.widths.includes(w) ? w : im.widths.at(-1)}.avif`;
-    return `<li><a href="${p.url}" data-story data-cursor="Read" data-peek="${at(800)}" data-head="${esc(p.head)}" data-stand="${esc(p.stand)}" data-topic="${esc(p.topic)}" data-minutes="${p.minutes}" data-img="${at(1280)}" data-open="${esc(opening(p.slug))}"><span>${p.topic}</span><b>${p.head}</b><span>${p.minutes} min</span></a></li>`;
-  }).join('\n'),
+    return `<li${n ? '' : ' class="jg__one"'}><a class="jc" href="${p.url}" data-story data-cursor="Read" data-group="${id}" data-group-name="${name}" data-group-say="${sub}" data-head="${esc(p.head)}" data-stand="${esc(p.stand)}" data-alt="${esc(im.alt)}" data-minutes="${p.minutes}" data-img="${at(1280)}" data-open="${esc(opening(slug))}"><span class="jc__p">${picture(p.image, n ? '(min-width:900px) 32vw, 100vw' : '(min-width:900px) 66vw, 100vw')}</span><span class="jc__t"><b>${p.head}</b><span>${p.stand}</span><small>${p.minutes} minute read</small></span></a></li>`;
+  }).join('')}</ul></section>`).join('\n'),
+  chapters: () => CHAPTERS.map(([id, name]) => `<li><a href="#${id}">${name}</a></li>`).join(''),
   // who lives with a wall, one name to each clearing in the leaves
   names: () => helpers.clientList.map(([f, name, h, w, hh, note]) => `<li class="nm" data-name><img src="/img/clients/${f}.svg" width="${w}" height="${hh}" alt="${name}" style-h="${h}" class="nm--${f}" decoding="async">${note ? `<p>${note}</p>` : ''}</li>`).join('\n').replace(/ style-h="[^"]*"/g, ''),
   nameMarks: () => helpers.clientList.map(([, name]) => `<li><button type="button" data-mark-at>${name}</button></li>`).join(''),
   clientList: [['netcare', 'Netcare', 4.9, 600, 479, 'An atrium at Pinehaven Hospital that lives on daylight alone. SALI gold, 2016.'], ['sun-city', 'Sun City', 3.9, 600, 237, 'A steel tree under a skylight, clad in planted panels. SALI gold, 2017.'], ['hollard', 'Hollard', 2.9, 600, 159], ['virgin-active', 'Virgin Active', 4.2, 600, 286], ['old-mutual', 'Old Mutual', 2.35, 600, 132], ['bidvest', 'Bidvest TopTurf', 4.1, 600, 313, 'Built both of our gold award walls with us.'], ['nedbank-golf', 'Nedbank Golf Challenge', 5.6, 600, 600], ['torrecid', 'Torrecid', 2.9, 600, 176]],
-  journal: (lead) => `${storyCard(postOf[lead], '(min-width:900px) 60vw, 100vw', true)}<ul class="stories">${posts.filter((p) => p.slug !== lead).sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)).map((p) => `<li>${storyCard(p, '(min-width:900px) 40vw, 100vw')}</li>`).join('')}</ul>`,
   stories: (slugs) => `<ul class="stories stories--3">${slugs.map((x) => `<li>${storyCard(postOf[x], '(min-width:900px) 30vw, 100vw')}</li>`).join('')}</ul>`,
   gallery,
   // optical heights, so every client carries the same weight on the page
@@ -182,6 +193,9 @@ for (const file of pages) {
   }
   let body = expand(source, ctx);
   let html = expand(read('src/partials/shell.html'), ctx).replace('<!--BODY-->', () => body);
+  // each drawing of the mark on a page gets masks of its own
+  let marks = 0;
+  html = html.replace(/<svg class="[^"]*\blg\b[^"]*"[\s\S]*?<\/svg>/g, (m) => { marks++; return m.replace(/\blgm-/g, `lgm${marks}-`); });
   html = html.replace(new RegExp(`(<a[^>]*href="${path}")(?=[^>]*data-nav)`, 'g'), '$1 aria-current="page"').replace(/\n\s*\n+/g, '\n');
   // Every page sits in one folder, so relative links work on modiwall.com, GitHub Pages or any subfolder.
   // 404.html can be served from any depth and stays absolute.

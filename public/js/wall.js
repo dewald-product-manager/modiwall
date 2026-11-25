@@ -4,8 +4,9 @@ import { programs, picture, texture } from './gl.js?v=da570bfd';
 const MAX_CELLS = 900;
 const CELL = 0.25; // metres to one growing cell
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-export const STYLE_NAMES = ['forest', 'fern', 'jungle'];
-const SIZE = { forest: [3.6, 2.4, 2304], fern: [2.4, 1.6, 1536], jungle: [2.4, 1.6, 1536] }; // metres across, metres high, pixels the leaf table is written in
+export const STYLE_NAMES = ['in-midday', 'in-morning', 'in-evening', 'ex-morning', 'ex-midday', 'ex-evening'];
+const SIZE = { 'in-midday': [3.6, 2.4, 2304] }; // metres across, metres high, pixels the leaf table is written in
+const sizeOf = (name) => SIZE[name] ?? [2.4, 1.6, 1536];
 const COMMON = `#version 300 es
 precision highp float; precision highp int;
 uniform vec2 uRes, uOrigin, uGrid, uPlate, uPar, uCentre;
@@ -13,14 +14,15 @@ uniform float uM, uCell, uS, uT, uGust, uTilt, uAmb, uKey, uZoom;
 uniform vec3 uPtr, uTint;
 uniform vec3 uRip[4];
 uniform vec4 uLamp; uniform vec2 uWater;
-uniform sampler2D uTex, uCells, uAux, uId;
+uniform vec4 uTile;
+uniform sampler2D uTex, uCells, uAux, uId, uLight;
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
 `;
 const LEAF_VS = `${COMMON}
 layout(location=0) in vec2 aG; layout(location=1) in vec4 aR; layout(location=2) in vec4 aB; layout(location=3) in vec4 aZ; layout(location=4) in vec2 aS;
 uniform vec2 uShade; uniform float uN; uniform int uRips; uniform sampler2D uHull;
-out vec2 vUv; out vec2 vPx; flat out float vId; out float vYoung; out float vFace; out float vZ; out float vT; flat out float vA; flat out float vSeed; out float vSun; flat out float vLit;
+out vec2 vUv; out vec2 vPx; flat out float vId; out float vYoung; out float vFace; out float vZ; out float vT; flat out float vA; flat out float vSeed; out float vSun; out vec2 vRest; out float vOpen; out float vUnder;
 void main(){
 vec2 q = (aR.xy - uOrigin) / uCell;
 float g = texture(uCells, q / uGrid).r;
@@ -44,6 +46,8 @@ float ca = cos(curl + spring);
 float sc = abs(aS.x);
 vec2 p = (dir * along * ca + ac * across * mix(.46, 1., unroll)) * gl * sc;
 p.x *= sign(aS.x); float cr = cos(aS.y), sr = sin(aS.y); p = vec2(p.x * cr + p.y * sr, p.y * cr - p.x * sr);
+vec2 at0 = b * sc; at0.x *= sign(aS.x); at0 = vec2(at0.x * cr + at0.y * sr, at0.y * cr - at0.x * sr);
+vRest = (aR.xy + at0 - uTile.xy) / uTile.zw;                  // where this point lies in the finished wall
 float z = (aZ.x * uM / 500.) * mix(.25, 1., gl) + sin(curl) * along * gl * sc;
 vec2 px = aR.xy + p;
 float sw = sin(uT*.62 - px.x*.0052 + px.y*.0034) * (.6 + .4*sin(uT*.23 + px.x*.002));
@@ -72,13 +76,14 @@ vSun = mix(.6, 1.2, smoothstep(.3, .7, tree)) + exp(-beam*beam) * .34;
 vPx = px; vId = aZ.z; vYoung = 1. - smoothstep(.35, 1., k); vFace = ca; vZ = zt; vT = t; vSeed = seed;
 vec2 ua = q + vec2(-.35, -1.1), ub = q + vec2(-.9, -.35);
 float over = min(texture(uCells, ua / uGrid).r * step(0., ua.y), texture(uCells, ub / uGrid).r * step(0., ub.x));
-vLit = mix(max(aZ.w, .58 + .3 * zt), aZ.w, over * over);
+vOpen = 1. - over * over;
+vec2 ud = q + vec2(0., .62); vUnder = 1. - (ud.y < uGrid.y ? texture(uCells, ud / uGrid).r : 0.);
 vec2 cl = px / uRes * 2. - 1.;
-gl_Position = k <= .001 || vA <= .001 ? vec4(2., 2., 2., 1.) : vec4(cl.x, -cl.y, (float(gl_InstanceID) + 1.) / uN * 1.98 - .99, 1.);
+gl_Position = k <= .001 || vA <= .001 ? vec4(2., 2., 2., 1.) : vec4(cl.x, -cl.y, .98 - clamp((aZ.x + 120.) / 760., 0., 1.) * 1.94 + (float(gl_InstanceID) + 1.) / uN * 2e-4, 1.);   // true depth, leaf by leaf
 }`;
 const LEAF_FS = `${COMMON}
 uniform float uMask;
-in vec2 vUv; in vec2 vPx; flat in float vId; in float vYoung; in float vFace; in float vZ; in float vT; flat in float vA; flat in float vSeed; in float vSun; flat in float vLit; out vec4 o;
+in vec2 vUv; in vec2 vPx; flat in float vId; in float vYoung; in float vFace; in float vZ; in float vT; flat in float vA; flat in float vSeed; in float vSun; in vec2 vRest; in float vOpen; in float vUnder; out vec4 o;
 float at(vec2 uv){ ivec2 n = textureSize(uId, 0); ivec2 p = ivec2(floor(uv * vec2(n))); p = ((p % n) + n) % n; vec4 c = texelFetch(uId, p, 0); return floor(c.r * 255. + .5) + floor(c.g * 255. + .5) * 256. == vId ? .25 : 0.; }
 float cover(){ vec2 n = vec2(textureSize(uId, 0)), a = dFdx(vUv), b = dFdy(vUv); a *= max(1., .95 / max(length(a * n), .01)); b *= max(1., .95 / max(length(b * n), .01)); return at(vUv + a * .125 + b * .375) + at(vUv - a * .125 - b * .375) + at(vUv + a * .375 - b * .125) + at(vUv - a * .375 + b * .125); }
 void main(){
@@ -100,11 +105,11 @@ vec2 ld = vPx - uLamp.xy; float fall = uLamp.w / (1. + dot(ld, ld) / (uLamp.z * 
 vec2 ln = normalize(ld + .01); float lf = clamp(.82 - dot(n, vec2(ln.x, -ln.y)) * .75 + vZ * .25, .25, 1.4);
 col *= vec3(uAmb) * mix(vec3(.55, .78, 1.15), vec3(1.), uAmb) + vec3(1.5, 1.2, .8) * fall * lf;
 col = col / (1. + max(col - .78, 0.) * .9);
-float own = fract(sin(vId * 12.9898 + floor(vSeed * 97.)) * 43758.5);
-float thrown = smoothstep(.40, .64, noise(w * 5.2 + own * 3.) * .7 + own * .42);
-float lit = vLit * mix(1., .74 + .26 * thrown, x.r) * mix(mix(.46, 1., smoothstep(0., .5, vT)), 1., vLit * .55);
-lit = mix(lit, 1., vYoung * .55);
-col *= mix(vec3(.20, .30, .27), vec3(1.06, 1.03, .98), lit) * (.16 + .92 * lit);
+vec3 L = texture(uLight, vRest).rgb; L *= L * 2.;
+L = mix(L, max(L, vec3(.50 + .42 * vZ)) , vOpen * .85);
+L *= 1. - vUnder * .42 * (1. - vZ * .75) * smoothstep(.0, .8, vT * .6 + .4);   // it turns under at its foot
+L = mix(L, vec3(1.), vYoung * .5);
+col *= L;
 o = vec4(clamp(col * uTint, 0., 1.), al);
 }`;
 const QUAD_VS = `#version 300 es
@@ -137,7 +142,7 @@ let plants;
 const OWN = 600; // pixels to a metre in the plants drawn on their own
 async function plate(name) {
 const get = (f) => fetch(url(f)).then((r) => r.arrayBuffer());
-const [bin, lit, own] = await Promise.all([get(`${name}.bin`), get(`${name}-lit.bin`), (plants ??= Promise.all([picture(url('plants.avif')), picture(url('plants-aux.avif')), picture(url('plants-id.webp'), true), get('plants.bin'), get('plants-hull.bin')]))]);
+const [bin, lit, light, own] = await Promise.all([get(`${name}.bin`), get(`${name}-lit.bin`), picture(url(`${name}-light.avif`)), (plants ??= Promise.all([picture(url('plants.avif')), picture(url('plants-aux.avif')), picture(url('plants-id.webp'), true), get('plants.bin'), get('plants-hull.bin')]))]);
 const t = new Int16Array(bin);
 const [n, np] = t;
 const b = new Int16Array(own[3]);
@@ -145,15 +150,16 @@ const [ns, , aw, ah] = b;
 return {
 own: own.slice(0, 3),
 hull: new Uint8Array(own[4]),
+light,
 lit: new Uint8Array(lit), // every leaf's light, then whether it is ever seen
 plants: t.subarray(2 + n * 8, 2 + n * 8 + np * 6), // what stands where
 kinds: b.subarray(4, 4 + ns * 4),
 leaves: b.subarray(4 + ns * 4),
 aw,
 ah,
-w: SIZE[name][2],
-h: (SIZE[name][2] * SIZE[name][1]) / SIZE[name][0],
-metres: SIZE[name][0],
+w: sizeOf(name)[2],
+h: (sizeOf(name)[2] * sizeOf(name)[1]) / sizeOf(name)[0],
+metres: sizeOf(name)[0],
 };
 }
 export const loadPlate = (name) => (plates[name] ??= plate(name));
@@ -169,7 +175,7 @@ if (faces[name]) return faces[name];
 const p = await loadPlate(name);
 const how = [{ mip: true }, {}, { near: true }];
 const put = (list) => Promise.all(list.map((img, i) => texture(gl, img, { wrap: 'both', ...how[i] })));
-faces[name] = { ...p, o: await (ownTex ??= put(p.own)) };
+faces[name] = { ...p, o: await (ownTex ??= put(p.own)), l: await texture(gl, p.light, { wrap: 'both', mip: true }) };
 return faces[name];
 };
 let face = await upload(STYLE_NAMES[style]);
@@ -355,7 +361,7 @@ if (restock) stock();
 const S = ((L.m / CELL) * face.metres) / face.w; // css px to one table px
 const common = ({ p, u }) => {
 gl.useProgram(p);
-for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uCells', 5], ['uShadow', 6], ['uHull', 7]]) if (u[n]) gl.uniform1i(u[n], i);
+for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uCells', 5], ['uShadow', 6], ['uHull', 7], ['uLight', 8]]) if (u[n]) gl.uniform1i(u[n], i);
 gl.uniform2f(u.uRes, L.w, L.h);
 gl.uniform2f(u.uOrigin, L.ox, L.oy);
 gl.uniform2f(u.uGrid, L.cols, L.rows);
@@ -387,6 +393,9 @@ if (!S0.n) return;
 face.o.forEach((t, i) => bind(i, t));
 common(prog);
 const { u } = prog;
+bind(8, face.l);
+bind(0, face.o[0]);
+gl.uniform4f(u.uTile, L.ox + (anchor[0] * L.m) / CELL, L.oy + (anchor[1] * L.m) / CELL, face.w * S, face.h * S);
 gl.uniform2f(u.uPlate, face.aw, face.ah);
 if (u.uMask) gl.uniform1f(u.uMask, mask);
 gl.uniform1f(u.uN, S0.n + 1);

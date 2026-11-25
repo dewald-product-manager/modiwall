@@ -432,7 +432,7 @@ void main(){
 const FS = `#version 300 es
 precision highp float; precision highp sampler2DShadow;
 in vec3 vP, vN, vO; in vec2 vUv; in vec4 vX; in vec4 vS; in float vOcc;
-uniform vec3 uEye, uSun; uniform float uKind, uT, uWet, uFade, uPx; uniform sampler2DShadow uSh; uniform float uOn, uSee; uniform sampler2D uTx, uLcd, uLeaf, uLeafN;
+uniform vec3 uEye, uSun; uniform float uKind, uT, uWet, uFade, uPx; uniform sampler2DShadow uSh; uniform float uOn, uSee; uniform vec3 uSlab; uniform sampler2D uTx, uLcd, uLeaf, uLeafN;
 out vec4 o;
 vec2 cell(float k){ return k < 10.5 ? vec2(0., 0.) : k < 11.5 ? vec2(.5, 0.) : k < 13.5 ? vec2(0., .5) : vec2(.5, .5); }
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -463,20 +463,34 @@ void main(){
   if (dot(N, V) < 0. && uKind > 9.5) N = -N;
   vec3 alb = vec3(.016); float rough = .44, f0 = .045, trans = 0., occ = 1.; vec3 tcol = vec3(0.), emit = vec3(0.);
 #ifdef HARD
-  if (uKind < .5) {                                   // limewashed wall
+  if (uKind < .5) {                                   // a niche: fluted plaster, and a smooth slab with light let in behind its edge
     float t = noise(vP.xy * 1.1 + noise(vP.xy * .5) * 2.) * .6 + noise(vP.xy * 5.) * .25 + noise(vP.xy * 31.) * .1;
-    alb = mix(vec3(.019, .05, .04), vec3(.034, .078, .062), t); rough = .95; f0 = .02;
-    N = normalize(N + vec3(noise(vP.xy * 9.) - .5, noise(vP.xy * 9. + 7.) - .5, 0.) * .12);
+    vec2 q = abs(vP.xy - vec2(0., uSlab.z)) - uSlab.xy; float d = length(max(q, 0.)) + min(max(q.x, q.y), 0.);
+    float out_ = smoothstep(-.02, .06, d), w = vP.x / .56, f = fract(w) - .5;
+    float flute = smoothstep(.0, .012, d) * smoothstep(60., 24., distance(uEye, vP));
+    N = normalize(vec3(-f * 1.9 * flute * smoothstep(.5, .44, abs(f)), 0., 1.) + vec3(noise(vP.xy * 9.) - .5, noise(vP.xy * 9. + 7.) - .5, 0.) * .07);
+    alb = mix(vec3(.022, .058, .046), vec3(.034, .080, .064), t); alb *= 1. - flute * .5 * smoothstep(.40, .5, abs(f)); alb = mix(alb * 1.12, alb, out_);
+    rough = .9; f0 = .02;
+    float glow = out_ * exp(-max(d, 0.) * 1.15) * (.75 + .25 * smoothstep(-6., 5., vP.y));
+    emit = vec3(1., .80, .50) * glow * .12 * (.55 + .45 * (1. - abs(f) * 1.5 * flute)) + vec3(.62, .95, .30) * glow * glow * .03;
+    occ = 1. - .55 * exp(-abs(min(d, 0.)) * 14.) * (1. - out_);
   } else if (uKind < 1.5) {                           // moulded polypropylene, a fine spark-eroded texture
     float gr = smoothstep(26., 9., distance(uEye, vP)); vec3 g = vP * 85.; N = normalize(N + (vec3(noise(g.xy), noise(g.yz + 3.), noise(g.zx + 9.)) - .5) * .035 * gr);
     alb = vec3(.021, .023, .022); rough = .39; occ = vUv.x * vUv.x * .6 + vUv.x * .4;
-  } else if (uKind < 2.5) { alb = vec3(.06); rough = .34; f0 = .3; } // blackened steel
+  } else if (uKind < 2.5) {
+    alb = vec3(.06); rough = .34; f0 = .3;             // blackened steel
+    if (uKind > 2.1) {                                 // the reservoir: brushed stainless
+      float br = noise(vec2(vO.x * 1.3, vO.y * 150. + vO.z * 150.)) * .6 + noise(vec2(vO.x * 5., vO.y * 420. + vO.z * 420.)) * .4; float far = smoothstep(34., 12., distance(uEye, vP));
+      N = normalize(N + vec3(0., (br - .5) * .20, (br - .5) * .10) * far); alb = vec3(.095, .098, .098) * (.86 + .28 * br); rough = .40 + .1 * br; f0 = .40;
+    }
+  }
   else if (uKind > 3.1 && uKind < 3.5) {              // water lying in the reservoir
     vec2 w = vP.xz * 3.; float t1 = noise(w + uT * .5), t2 = noise(w * 1.9 - uT * .7 + 5.);
     float ring = length(vP.xz - vec2(-3.02, .25)); float rp = sin(ring * 22. - uT * 7.) * exp(-ring * 1.6) * uOn;
     N = normalize(vec3((t1 - .5) * .22 + rp * .12, 1., (t2 - .5) * .22));
     vec3 R = reflect(-V, N); float fr = .03 + .97 * pow(1. - max(dot(N, V), 0.), 5.);
-    o = vec4(pow(aces((studio(R, .08) * fr + vec3(.02, .10, .085)) * 1.2), vec3(.4545)) * .85, .6) * uSee; return;
+    float wl = abs(fract(vP.z * 7. + sin(vP.x * 2.2 + uT * .9) * .16) - .5) * 2.; float ink = smoothstep(.90, .98, wl) * .55 + rp * .25;
+    o = vec4(mix(vec3(.03, .30, .26), vec3(.74, 1., .84), ink) * (.16 + ink * .6), .16 + ink * .6) * uSee; return;
   }
   else if (uKind < 3.5) {                             // water in the channels
     float s = noise(vec2(vUv.x * 5., vUv.y * 16. + uT * 3.4)) * .6 + noise(vec2(vUv.x * 9. + 4., vUv.y * 38. + uT * 6.)) * .4;
@@ -507,7 +521,14 @@ void main(){
     alb = vec3(.013, .0145, .014); rough = .34;
     float f = fract(vUv.y * .9 - uT * .75); emit = vec3(.34, .74, .015) * smoothstep(.5, .0, abs(f - .5) * 2.4) * pow(max(dot(N, V), 0.), 3.) * uWet * .34 * smoothstep(-2.6, -2.3, vP.y);
   } else if (uKind < 8.5) { alb = vec3(.56, .57, .56); rough = .42; f0 = .04; }   // the timer's white casing
-  else { alb = vec3(.115, .118, .12); rough = .5; }                               // its keys
+  else if (uKind < 9.1) { alb = vec3(.115, .118, .12); rough = .5; }                // its keys
+  else {                                                                            // drawn, not built: a blueprint
+    vec3 w = fwidth(N); float crease = smoothstep(.08, .42, length(w)), rim = smoothstep(.45, .0, abs(dot(N, V)));
+    vec3 k = abs(fract(vO / .085 - .5) - .5) / max(fwidth(vO / .085), vec3(1e-4)); float ring = (1. - smoothstep(.6, 1.3, k.x)) * smoothstep(.95, .6, abs(N.x));
+    float ln = max(max(crease, rim * .9), ring * .34);
+    vec3 c = mix(vec3(.006, .050, .042), vec3(.70, 1., .80), ln) + vec3(.02, .10, .08) * (N.y * .5 + .5);
+    o = vec4(pow(c, vec3(.4545)), 1.) * uSee; return;
+  }
 #else
   {
     float u = vUv.x * 2. - 1., v = vUv.y, au = abs(u), s = vX.y;
@@ -542,7 +563,7 @@ void main(){
   float sh = shade();
   float ndl = dot(N, uSun), ndv = max(dot(N, V), .02);
   vec3 sun = vec3(1., .95, .86) * 3.3;
-  vec2 pool = (vP.xy - vec2(.2, .3)) / vec2(6.2, 5.4); float spot = exp(-dot(pool, pool) * uFade);
+  vec2 pool = (vP.xy - vec2(.2, .3)) / vec2(6.2, 5.4); float spot = exp(-dot(pool, pool) * uFade * .8);
   vec3 H = normalize(uSun + V); float a2 = rough * rough * rough * rough, nh = max(dot(N, H), 0.);
   float D = a2 / (3.14159 * pow(nh * nh * (a2 - 1.) + 1., 2.)); float k = (rough + 1.) * (rough + 1.) / 8.;
   float G = 1. / ((max(ndl, .0) * (1. - k) + k) * (ndv * (1. - k) + k));
@@ -559,7 +580,17 @@ void main(){
   c = aces(c * 1.28);
   o = vec4(pow(c, vec3(.4545)) + (hash(gl_FragCoord.xy + 3.) - .5) / 200., 1.);
 #ifdef HARD
-  if (uSee < .995) { float edge = pow(1. - abs(dot(N, V)), 3.); o *= uSee + (1. - uSee) * edge * .5; }
+  if (uSee < .995) {                                  // the steel gives way to its own drawing
+    vec3 c0 = vec3(-.15, -3.68, .22), h0 = vec3(3.45, .68, .60), q = abs(abs(vO - c0) - h0); if (vO.y > -3.01) q = vec3(1.);
+    vec3 px = max(fwidth(vO), vec3(1e-4)); vec3 e3 = smoothstep(vec3(2.2), vec3(.8), q / px); float edge = max(max(e3.x * e3.y, e3.y * e3.z), e3.x * e3.z);
+    vec3 g1 = abs(fract(vO / .25 - .5) - .5) * .25 / px, g2 = abs(fract(vO - .5) - .5) / px; vec3 an = abs(normalize(vN));
+    float fine = max((1. - smoothstep(.3, 1.1, g1.x)) * (1. - an.x), max((1. - smoothstep(.3, 1.1, g1.y)) * (1. - an.y), (1. - smoothstep(.3, 1.1, g1.z)) * (1. - an.z)));
+    float bold = max((1. - smoothstep(.4, 1.3, g2.x)) * (1. - an.x), (1. - smoothstep(.4, 1.3, g2.z)) * (1. - an.z));
+    float lid = vO.y > -3.01 ? smoothstep(.75, 1., 1. - abs(dot(normalize(vN), V))) : 0.;
+    float ln = clamp(max(max(edge, lid), max(fine * .16, bold * .30)), 0., 1.); float al = max(ln, .10);
+    vec4 bp = vec4(mix(vec3(.02, .20, .17), vec3(.74, 1., .84), ln) * al, al);
+    o = mix(bp, o, uSee);
+  }
 #endif
 }`;
 const SFS = `#version 300 es
@@ -914,7 +945,7 @@ export async function initSystem(sec) {
   }
 
   const SUN = norm([-0.52, 0.66, 0.78]);
-  const keys = [[0, -0.66, 0.34, 15.5, 0], [0.1, -0.5, 0.24, 14.4, 0], [0.18, -0.4, 0.2, 14.2, 0], [0.27, -0.62, 0.16, 15, 0], [0.36, -0.34, 0.1, 13.4, 0.1], [0.5, -0.5, 0.24, 13.2, 0.1], [0.58, -0.3, 0.12, 14.6, -0.2], [0.645, -0.86, 0.15, 19, -0.72], [0.72, -0.8, 0.12, 18.6, -0.72], [0.8, -0.3, 0.07, 16, -0.2], [0.93, -0.26, 0.03, 34, 0], [1, -0.12, 0.02, 35, 0]];
+  const keys = [[0, -0.66, 0.34, 15.5, 0], [0.1, -0.5, 0.24, 14.4, 0], [0.18, -0.4, 0.2, 14.2, 0], [0.27, -0.62, 0.16, 15, 0], [0.36, -0.34, 0.1, 13.4, 0.1], [0.5, -0.5, 0.24, 13.2, 0.1], [0.58, -0.3, 0.12, 14.6, -0.2], [0.645, -0.86, 0.15, 19, -0.72], [0.72, -0.8, 0.12, 18.6, -0.72], [0.8, -0.3, 0.07, 16, -0.2], [0.93, -0.26, 0.03, 42, 0], [1, -0.12, 0.02, 43, 0]];
   const cam = (p) => {
     let i = 0;
     while (i < keys.length - 2 && p > keys[i + 1][0]) i++;
@@ -986,8 +1017,8 @@ export async function initSystem(sec) {
       draw(parts.timer, 6, tm);
       draw(parts.timerPlate, 8, tm);
       draw(parts.timerLead, 1, tm);
-      if (xray > 0.01) draw(parts.pump, 1, pumpAt(pm));
-      if (xray < 0.01 || (sun && xray < 0.5)) draw(parts.tank, 1, pm);
+      if (xray > 0.01 && !sun) draw(parts.pump, 9.3, pumpAt(pm));
+      if (xray < 0.01 || (sun && xray < 0.5)) draw(parts.tank, 2.2, pm);
       if (!sun) {
         draw(parts.timerKeys, 9, tm);
       }
@@ -1008,7 +1039,7 @@ export async function initSystem(sec) {
       if (wet > 0.01) draw(parts.streams, 3);
       if (xray > 0.01) {
         draw(parts.pool, 3.3, down, 1, 1, xray);
-        draw(parts.tank, 1, down, 1, 1, 1 - 0.8 * xray);
+        draw(parts.tank, 2.2, down, 1, 1, 1 - xray);
       }
       gl.depthMask(true);
       gl.disable(gl.BLEND);
@@ -1087,6 +1118,7 @@ export async function initSystem(sec) {
       gl.uniform1i(u.uSh, 0);
       gl.uniform1i(u.uTx, 1);
       gl.uniform1i(u.uLcd, 4);
+      gl.uniform3f(u.uSlab, 2.72 + span(p, 0.79, 0.93) * 5.0, 2.72 + span(p, 0.79, 0.93) * 5.0, 0);
       gl.uniform1f(u.uOn, running ? 1 : 0);
       gl.uniform1i(u.uLeafN, 3);
       gl.uniform1f(u.uPx, 1 / SIZE);

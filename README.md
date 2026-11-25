@@ -1,14 +1,15 @@
 # Modiwall website
 
-Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefaces are Italiana (display), Gloock (statements and list titles) and Montserrat (text), from Google Fonts, served from this site.
+Static site in plain HTML, CSS and JavaScript. No frameworks, no cookies. Typefaces are Jost (light and regular) (statements and list titles) and Montserrat (text), from Google Fonts, served from this site.
 
 | Folder | What it holds |
 | --- | --- |
 | `src/pages` | One file per page. The JSON comment at the top sets title, description and structured data. |
 | `src/partials` | Header, footer, logo, closing call to action, visualiser. |
-| `src/css`, `src/js` | Styles and behaviour. `frame.js` is the one frame loop every moving thing shares, `gl.js` gets pictures and shaders on to the graphics card without stalling the page, `wall.js` is the living wall (every leaf is its own geometry), `room.js` the rooms lit one lamp at a time (`materials.js` and the evening scene use it), `atelier.js` the commission room, `visualise.js` is "See it on your wall", `system.js` is the real-time 3D system, built on the CAD parts (`tools/cad.py` turns the STL exports into `src/static/img/system/parts.bin`; the STL files themselves stay out of git because this repository is public), `corridor.js` is the walk through the projects, `form.js` is the commission, `book.js` is the journal as a book, `tale.js` the care story and the clients among the leaves, `pointer.js` is the pointer, `boot.js` runs before first paint. |
+| `src/css`, `src/js` | Styles and behaviour. `frame.js` is the one frame loop every moving thing shares, `gl.js` gets pictures and shaders on to the graphics card without stalling the page, `wall.js` is the living wall (every leaf is its own geometry), `room.js` the rooms lit one lamp at a time (`materials.js` and the evening scene use it), `atelier.js` the commission room, `visualise.js` is "See it on your wall", `system.js` is the real-time 3D system, built on the CAD parts (`tools/cad.py` turns the STL exports into `src/static/img/system/parts.bin`; the STL files themselves stay out of git because this repository is public), `corridor.js` is the walk through the projects, `form.js` is the commission, `book.js` is the journal as a book, `tale.js` the clients among the leaves, `visit.js` the care visit, `plants.js` the six plantings, `cut.js` the wall cut through, `home.js` the home page scenes, `pointer.js` is the pointer, `boot.js` runs before first paint. |
 | `src/originals` | Master photos. |
-| `src/wall` | Rendered plantings (`python tools/wall.py` exports them). |
+| `src/wall` | Six rendered plantings, interior and exterior by morning, midday and evening (`python tools/wall.py` exports them). |
+| `src/brand` | The logo as drawn. `src/partials/mark-paths.html`, the icons and `img/modiwall-logo.svg` carry the same outlines. |
 | `src/static/img/room` | Rendered rooms and hall. `tools/render` makes these and the plantings. |
 | `src/foliage` | Older plant cut-outs, kept as masters. |
 | `src/static` | Copied as is: fonts, icons, `.htaccess`, `robots.txt`, the form handler. |
@@ -32,8 +33,8 @@ Plants and rooms are rendered, not photographed: see `tools/render/README.md`.
 
 ## Add a journal story
 
-Copy any `src/pages/journal-*.html`. The header holds the title, description, headline, topic, photo, date, author, sources and
-three related stories; the body is plain HTML. Add its slug to `ORDER` in `build.mjs`. The index, feed (`feed.xml`), sitemap,
+Copy any `src/pages/journal-*.html` and add its slug to a chapter in `CHAPTERS` in `build.mjs`. The header holds the title, description, headline, topic, photo, date, author, sources and
+three related stories; the body is plain HTML. The index, feed (`feed.xml`), sitemap,
 breadcrumbs and article data are made by the build.
 
 ## Preview on GitHub Pages

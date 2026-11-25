@@ -26,14 +26,25 @@ if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('.b
 /* ---- header: hides going down, returns going up ---- */
 const top = $('[data-top]');
 let lastY = 0;
+let run = 0; // how far the page has moved without turning back
 let ticking = false;
 function onScroll() {
   const y = page.y = scrollY;
   top.classList.toggle('is-stuck', y > 40);
-  top.classList.toggle('is-away', y > 500 && y > lastY + 2);
+  const d = y - lastY;
+  run = d * run < 0 ? d : run + d;
+  // away after a little movement down, back only after a clear movement up, and never part-way through a pinned scene
+  if (y < 420) top.classList.remove('is-away');
+  else if (run > 14) top.classList.add('is-away');
+  else if (run < -90 && !pinned()) top.classList.remove('is-away');
   lastY = y;
   ticking = false;
 }
+const scenes = $$('[data-rooms], [data-night], [data-names], [data-visit], [data-cut], [data-years], [data-hall-page]');
+const pinned = () => innerWidth > 800 && scenes.some((s) => {
+  const b = box(s);
+  return page.y > b.top + 4 && page.y < b.top + b.height - innerHeight - 4;
+});
 addEventListener('scroll', () => {
   if (!ticking) {
     ticking = true;
@@ -122,16 +133,10 @@ if (system) {
   near.observe(system);
 }
 
-/* ---- rooms: keep keyboard focus and the sideways track together ---- */
-const rooms = $('[data-rooms]');
-if (rooms) {
-  const track = $('[data-track]', rooms);
-  track.addEventListener('focusin', (e) => {
-    if (getComputedStyle(track).animationName === 'none' || innerWidth <= 800 || !e.target.matches(':focus-visible')) return;
-    const a = e.target.closest('li') ?? e.target;
-    const f = Math.min(1, Math.max(0, (a.offsetLeft - innerWidth * 0.2) / (track.scrollWidth - innerWidth)));
-    scrollTo({ top: rooms.offsetTop + f * (rooms.offsetHeight - innerHeight), behavior: 'smooth' });
-  });
+/* ---- the rooms, the record, who it is for ---- */
+for (const [sel, fn] of [['[data-rooms]', 'rooms'], ['[data-record]', 'record'], ['[data-who]', 'who']]) {
+  const el = $(sel);
+  if (el) import('./home.js').then((m) => m[fn](el));
 }
 
 /* ---- lists that show a photo beside the pointer ---- */
@@ -404,7 +409,7 @@ if (shots.length) {
     at = (i + list.length) % list.length;
     const a = list[at];
     img.src = a.href;
-    img.alt = $('img', a).alt;
+    img.alt = $('img', a)?.alt ?? a.dataset.title ?? '';
     cap.textContent = a.dataset.title ?? $('.tile__cap', a)?.textContent ?? img.alt;
     img.classList.remove('swap');
     void img.offsetWidth;
@@ -420,7 +425,7 @@ if (shots.length) {
       img.classList.remove('swap');
       box.showModal();
     };
-    if (!document.startViewTransition || reduced) return open();
+    if (!thumb || !document.startViewTransition || reduced) return open();
     // the photo you clicked grows into the full-screen one
     root.classList.add('morph');
     thumb.style.viewTransitionName = 'shot';
@@ -455,12 +460,44 @@ if (shots.length) {
   }, { passive: true });
 }
 
-/* ---- the journal as a book; a visit told by a wall; names among the leaves ---- */
-for (const [sel, file, fn] of [['[data-book]', './book.js', 'initBook'], ['[data-tale]', './tale.js', 'careTale'], ['[data-names]', './tale.js', 'clearing']]) {
+/* ---- the journal as a book; names among the leaves ---- */
+for (const [sel, file, fn] of [['[data-book]', './book.js', 'initBook'], ['[data-names]', './tale.js', 'clearing']]) {
   const el = $(sel);
   if (!el) continue;
   if (reduced) el.classList.add('is-flat');
   else (file === './book.js' ? import('./book.js') : import('./tale.js')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+}
+
+/* ---- a visit, the plants, and the wall cut through ---- */
+const visit = $('[data-visit]');
+if (visit) import('./visit.js').then((x) => x.initVisit(visit));
+const plants = $('[data-plants]');
+if (plants) import('./plants.js').then((x) => x.initPlants(plants));
+const cut = $('[data-cut]');
+if (cut) {
+  const near = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    near.disconnect();
+    quiet(cut, 1).then(() => import('./cut.js')).then((x) => x.initCut(cut)).catch(() => cut.classList.add('is-flat'));
+  }, { rootMargin: '200% 0px' });
+  near.observe(cut);
+}
+
+/* ---- the artificial palette: one range at a time ---- */
+const pals = $('[data-pals]');
+if (pals) {
+  const show = (b) => {
+    $$('button', pals).forEach((x) => x.setAttribute('aria-pressed', x === b));
+    let n = 0;
+    $$('[data-pal]').forEach((c) => {
+      const hide = c.dataset.pal !== b.dataset.palAt;
+      const came = c.hidden && !hide;
+      c.hidden = hide;
+      if (came && !reduced) c.animate([{ opacity: 0, transform: 'translateY(1.4rem)' }, { opacity: 1, transform: 'none' }], { duration: 850, delay: (n++ % 4) * 70, easing: 'cubic-bezier(.19,.8,.22,1)', fill: 'backwards' });
+    });
+  };
+  pals.addEventListener('click', (e) => e.target.closest('button') && show(e.target.closest('button')));
+  show($('button', pals));
 }
 
 /* ---- the film, and one wall through the years ---- */

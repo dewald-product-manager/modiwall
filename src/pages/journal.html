@@ -14,15 +14,17 @@
       <button class="book__b" type="button" data-book-go="1" aria-label="Next page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
       <a class="book__read" data-book-open href="/journal.html">Read this story</a>
     </div>
+    <div class="book__tools">
+      <button class="book__t" type="button" data-book-list hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg><span>Contents</span></button>
+      <button class="book__t book__keep" type="button" data-book-keep aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-5-4.500L7 21z"/></svg><span>Bookmark this page</span></button>
+    </div>
   </div>
 </section>
 
-<section class="sec dusk idx" aria-labelledby="ix-h">
+<section class="sec jx" aria-labelledby="ix-h">
   <div class="wrap">
-    <div class="head"><h2 id="ix-h">Every story</h2></div>
-    <ol class="idx__l" data-peeks>
-{{js:index('vertical-garden-health-benefits')}}
-    </ol>
+    <div class="jx__top"><h2 id="ix-h">Every story</h2><nav aria-label="Chapters"><ul>{{js:chapters()}}</ul></nav></div>
+{{js:index()}}
   </div>
 </section>
 

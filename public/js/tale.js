@@ -1,5 +1,5 @@
 
-import { createWall } from './wall.js?v=ac56706e';
+import { createWall } from './wall.js?v=d99e9af5';
 import { page, scene, box, follow, clamp, smooth } from './frame.js?v=c5329617';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hash = (n) => {
@@ -36,109 +36,6 @@ s.opacity = (inn * (1 - out)).toFixed(3);
 s.transform = `translate3d(0,${((1 - inn) * 1.5 - out * 1.2).toFixed(3)}rem,0)`;
 const b = (1 - inn + out * 0.8) * 9;
 s.filter = b > 0.06 ? `blur(${b.toFixed(2)}px)` : 'none';
-}
-export async function careTale(sec) {
-const steps = beats(sec, '[data-beat]');
-const marks = beats(sec, '[data-mark-at]');
-const inner = sec.querySelector('[data-inner]');
-if (reduced) {
-sec.classList.add('is-flat');
-return;
-}
-const G = await full(sec, { px: 104, anchor: [0.4, 0.3] });
-const { W } = G;
-const N = steps.length;
-const was = [];
-const p = { x: -1, v: 0 };
-const lx = { x: 0, v: 0 };
-const ly = { x: 0, v: 0 };
-const amb = { x: 0.1, v: 0 };
-const lamp = { x: 0, v: 0 };
-const zoom = { x: 1.1, v: 0 };
-const hole = { x: 0, v: 0 };
-const water = { x: 0, v: 0 };
-let wt = 0;
-let mx = null;
-let my = 0;
-let tired = [];
-let at = -1;
-function layout() {
-if (!G.fit()) return;
-for (let i = 0; i < G.n; i++) W.plant(i, true, hash(i) * 0.5);
-tired = [];
-const seeds = [[0.62, 0.3], [0.82, 0.58], [0.5, 0.74], [0.9, 0.2], [0.7, 0.86]];
-for (let i = 0; i < G.n; i++) for (const [a, b] of seeds) {
-const d = Math.hypot((G.x(i) - a * G.w) / G.m, (G.y(i) - b * G.h) / G.m);
-if (d < 1.25 + hash(i + 3) * 0.75 && !tired.includes(i)) tired.push(i);
-}
-tired.sort((a, b) => hash(a) - hash(b));
-at = -1;
-}
-layout();
-let timer;
-new ResizeObserver(() => {
-clearTimeout(timer);
-timer = setTimeout(layout, 160);
-}).observe(sec.querySelector('[data-stage]'));
-sec.addEventListener('pointermove', (e) => {
-if (e.pointerType !== 'mouse') return;
-mx = e.clientX;
-my = e.clientY;
-}, { passive: true });
-sec.classList.add('is-ready');
-W.run(sec, (dt, top, h) => {
-const b = box(sec);
-const to = clamp((page.y - b.top) / Math.max(1, b.height - page.h));
-if (p.x < 0) p.x = to;
-const x = follow(p, to, dt, 200) * N;
-const k = Math.min(N - 1, Math.floor(x));
-steps.forEach((n, i) => say(steps, was, i, i === 0 ? 1 : smooth(clamp((x - i - 0.06) / 0.22)), i === N - 1 ? 0 : smooth(clamp((x - i - 0.84) / 0.2))));
-if (k !== at) {
-at = k;
-marks.forEach((n, i) => n.classList.toggle('on', i === k));
-sec.dataset.at = k;
-}
-const gone = smooth(clamp((x - 1.1) / 0.6));
-const back = smooth(clamp((x - 2.12) / 0.6));
-const a = Math.round(tired.length * back);
-const c = Math.round(tired.length * gone);
-if (x < 3.9) tired.forEach((i, n) => W.plant(i, n < a || n >= c));
-const opened = smooth(clamp((x - 4.0) / 0.16)) * (1 - smooth(clamp((x - 4.86) / 0.16)));
-const narrow = G.w < 800;
-const hx = G.w * (narrow ? 0.5 : 0.68);
-const hy = G.h * (narrow ? 0.34 : 0.5);
-const R = Math.min(G.w * (narrow ? 0.34 : 0.19), G.h * 0.3);
-if (x > 3.9) for (let i = 0; i < G.n; i++) {
-const d = Math.hypot(G.x(i) - hx, G.y(i) - hy) + (hash(i + 9) - 0.5) * G.m * 0.8;
-if (d < R * 1.12) W.plant(i, opened < 0.5);
-}
-follow(hole, opened, dt, 520);
-if (inner) {
-inner.style.opacity = clamp(hole.x * 1.4 - 0.4).toFixed(3);
-inner.style.transform = `translate3d(${(hx - R * 1.25).toFixed(1)}px,${(hy - R * 1.25).toFixed(1)}px,0) scale(${(0.94 + hole.x * 0.06).toFixed(4)})`;
-inner.style.width = inner.style.height = `${(R * 2.5).toFixed(1)}px`;
-}
-const day = [0.36, 0.52, 0.6, 0.56, 0.46, 1];
-const f = clamp(x - k);
-follow(amb, day[k] + ((day[Math.min(N - 1, k + 1)] - day[k]) * smooth(clamp((f - 0.7) / 0.3))), dt, 420);
-follow(lamp, k === 0 ? 0.95 : k === N - 1 ? 0 : 0.5, dt, 520);
-const t = performance.now() / 1000;
-let gx = G.w * (narrow ? 0.5 : 0.66) + Math.sin(t * 0.46) * G.w * 0.2;
-let gy = G.h * 0.42 + Math.sin(t * 0.71 + 1) * G.h * 0.2;
-if (k === 4) [gx, gy] = [hx, hy - R * 0.3];
-if (mx !== null && k !== 4) {
-gx = mx;
-gy = my - top - (page.y - b.top > 0 ? page.y - b.top : 0);
-gy = my;
-}
-W.lamp = { x: follow(lx, gx, dt, 380), y: follow(ly, gy, dt, 380), r: Math.min(G.w, G.h) * 0.27, on: lamp.x };
-W.amb = amb.x;
-W.zoom = follow(zoom, 1.09 - 0.09 * (x / N) - (k === 2 ? -0.06 * Math.sin(f * Math.PI) : 0), dt, 520);
-follow(water, k === 3 ? Math.sin(clamp((f - 0.05) / 0.9) * Math.PI) : 0, dt, 260);
-wt = (wt + dt / 3600) % 1;
-W.water = { y: -0.25 * G.h + wt * 1.5 * G.h, s: water.x };
-W.gust += ((k === 1 ? 0.5 : 0) + Math.min(1.2, Math.abs(page.v) * 0.3) - W.gust) * (1 - Math.exp(-dt / 260));
-});
 }
 export async function clearing(sec) {
 const names = beats(sec, '[data-name]');

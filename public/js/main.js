@@ -19,14 +19,24 @@ b.addEventListener('pointerleave', () => { b.style.translate = ''; });
 });
 const top = $('[data-top]');
 let lastY = 0;
+let run = 0; // how far the page has moved without turning back
 let ticking = false;
 function onScroll() {
 const y = page.y = scrollY;
 top.classList.toggle('is-stuck', y > 40);
-top.classList.toggle('is-away', y > 500 && y > lastY + 2);
+const d = y - lastY;
+run = d * run < 0 ? d : run + d;
+if (y < 420) top.classList.remove('is-away');
+else if (run > 14) top.classList.add('is-away');
+else if (run < -90 && !pinned()) top.classList.remove('is-away');
 lastY = y;
 ticking = false;
 }
+const scenes = $$('[data-rooms], [data-night], [data-names], [data-visit], [data-cut], [data-years], [data-hall-page]');
+const pinned = () => innerWidth > 800 && scenes.some((s) => {
+const b = box(s);
+return page.y > b.top + 4 && page.y < b.top + b.height - innerHeight - 4;
+});
 addEventListener('scroll', () => {
 if (!ticking) {
 ticking = true;
@@ -86,30 +96,24 @@ if (e.target.matches('picture') && l.classList.contains('in')) l.classList.add('
 }));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=ac56706e').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=d99e9af5').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=333d3c2f').then((m) => m.initVisualiser(vis));
+if (vis) import('./visualise.js?v=1aa3d066').then((m) => m.initVisualiser(vis));
 const system = $('[data-system]');
 if (system) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(system, 1.1).then(() => import('./system.js?v=60c0976b')).then((m) => m.initSystem(system));
+quiet(system, 1.1).then(() => import('./system.js?v=f446d86f')).then((m) => m.initSystem(system));
 }, { rootMargin: '260% 0px' });
 near.observe(system);
 }
-const rooms = $('[data-rooms]');
-if (rooms) {
-const track = $('[data-track]', rooms);
-track.addEventListener('focusin', (e) => {
-if (getComputedStyle(track).animationName === 'none' || innerWidth <= 800 || !e.target.matches(':focus-visible')) return;
-const a = e.target.closest('li') ?? e.target;
-const f = Math.min(1, Math.max(0, (a.offsetLeft - innerWidth * 0.2) / (track.scrollWidth - innerWidth)));
-scrollTo({ top: rooms.offsetTop + f * (rooms.offsetHeight - innerHeight), behavior: 'smooth' });
-});
+for (const [sel, fn] of [['[data-rooms]', 'rooms'], ['[data-record]', 'record'], ['[data-who]', 'who']]) {
+const el = $(sel);
+if (el) import('./home.js?v=37aad70b').then((m) => m[fn](el));
 }
 const peek = $('[data-peeks]');
 if (peek && !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -161,7 +165,7 @@ $$('[data-strip]').forEach((strip) => {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(strip, 0.7).then(() => import('./wall.js?v=ac56706e')).then((m) => m.stripWall(strip)).catch(() => strip.remove());
+quiet(strip, 0.7).then(() => import('./wall.js?v=d99e9af5')).then((m) => m.stripWall(strip)).catch(() => strip.remove());
 }, { rootMargin: '200% 0px' });
 near.observe(strip);
 });
@@ -170,7 +174,7 @@ if (night) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(night, 1).then(() => import('./room.js?v=8bb69bd7')).then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
+quiet(night, 1).then(() => import('./room.js?v=d173187c')).then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
 }, { rootMargin: '220% 0px' });
 near.observe(night);
 }
@@ -185,7 +189,7 @@ let begun = false;
 const begin = () => {
 if (begun) return;
 begun = true;
-import('./materials.js?v=652eb9c9').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+import('./materials.js?v=c5d90df1').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
 };
 if (!navigator.connection?.saveData) addEventListener('load', () => setTimeout(() => (window.requestIdleCallback ?? setTimeout)(begin), 3600));
 const near = new IntersectionObserver(([e]) => {
@@ -356,7 +360,7 @@ const show = (i) => {
 at = (i + list.length) % list.length;
 const a = list[at];
 img.src = a.href;
-img.alt = $('img', a).alt;
+img.alt = $('img', a)?.alt ?? a.dataset.title ?? '';
 cap.textContent = a.dataset.title ?? $('.tile__cap', a)?.textContent ?? img.alt;
 img.classList.remove('swap');
 void img.offsetWidth;
@@ -372,7 +376,7 @@ show(list.indexOf(a));
 img.classList.remove('swap');
 box.showModal();
 };
-if (!document.startViewTransition || reduced) return open();
+if (!thumb || !document.startViewTransition || reduced) return open();
 root.classList.add('morph');
 thumb.style.viewTransitionName = 'shot';
 const full = new Image();
@@ -405,11 +409,39 @@ const d = e.changedTouches[0].clientX - sx;
 if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
-for (const [sel, file, fn] of [['[data-book]', './book.js?v=5e726720', 'initBook'], ['[data-tale]', './tale.js?v=41f43b10', 'careTale'], ['[data-names]', './tale.js?v=41f43b10', 'clearing']]) {
+for (const [sel, file, fn] of [['[data-book]', './book.js?v=c2bc8c26', 'initBook'], ['[data-names]', './tale.js?v=2e0bf3ac', 'clearing']]) {
 const el = $(sel);
 if (!el) continue;
 if (reduced) el.classList.add('is-flat');
-else (file === './book.js?v=5e726720' ? import('./book.js?v=5e726720') : import('./tale.js?v=41f43b10')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+else (file === './book.js?v=c2bc8c26' ? import('./book.js?v=c2bc8c26') : import('./tale.js?v=2e0bf3ac')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+}
+const visit = $('[data-visit]');
+if (visit) import('./visit.js?v=37ee7a39').then((x) => x.initVisit(visit));
+const plants = $('[data-plants]');
+if (plants) import('./plants.js?v=6609481b').then((x) => x.initPlants(plants));
+const cut = $('[data-cut]');
+if (cut) {
+const near = new IntersectionObserver(([e]) => {
+if (!e.isIntersecting) return;
+near.disconnect();
+quiet(cut, 1).then(() => import('./cut.js?v=a739831c')).then((x) => x.initCut(cut)).catch(() => cut.classList.add('is-flat'));
+}, { rootMargin: '200% 0px' });
+near.observe(cut);
+}
+const pals = $('[data-pals]');
+if (pals) {
+const show = (b) => {
+$$('button', pals).forEach((x) => x.setAttribute('aria-pressed', x === b));
+let n = 0;
+$$('[data-pal]').forEach((c) => {
+const hide = c.dataset.pal !== b.dataset.palAt;
+const came = c.hidden && !hide;
+c.hidden = hide;
+if (came && !reduced) c.animate([{ opacity: 0, transform: 'translateY(1.4rem)' }, { opacity: 1, transform: 'none' }], { duration: 850, delay: (n++ % 4) * 70, easing: 'cubic-bezier(.19,.8,.22,1)', fill: 'backwards' });
+});
+};
+pals.addEventListener('click', (e) => e.target.closest('button') && show(e.target.closest('button')));
+show($('button', pals));
 }
 for (const [sel, fn] of [['[data-reel]', 'reel'], ['[data-years]', 'years']]) {
 const el = $(sel);

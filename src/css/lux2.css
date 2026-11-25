@@ -1,8 +1,8 @@
 /* Second finishing layer: the strong face, readable lists, the walk, logos by lamplight, the commission. */
-@font-face { font-family: Gloock; src: url(../fonts/gloock.woff2) format('woff2'); font-display: swap; }
-:root { --strong: Gloock, 'Italiana Fallback', Georgia, serif; }
+@font-face { font-family: Jost; src: url(../fonts/jost.woff2) format('woff2'); font-display: swap; }
+:root { --strong: Jost, 'Jost Fallback', 'Century Gothic', sans-serif; }
 
-/* ---- who speaks in which voice: Italiana for the few big lines, Gloock wherever something is being said plainly ---- */
+/* ---- one letter in two weights: light for the big lines, regular wherever something is being said plainly ---- */
 .head h2, .split__head h2, .rows h3, .who h3, .press b, .award__t h3, .evid h3, .pieces h3, .faq summary, .section-cut li b, .sys__steps h3, .cards b, .spec b, .h-page, .sent h2, .compare thead th { font-family: var(--strong); font-weight: 400; letter-spacing: -.012em; }
 .head { border-top: 0; padding-top: 0; align-items: end; }
 .head h2, .split__head h2 { font-size: clamp(2.3rem, 4.9vw, 4.9rem); line-height: 1.02; }
@@ -253,11 +253,11 @@
 .sys__notes > div::before { content: ''; position: absolute; width: 8px; height: 8px; margin: -4px; background: var(--lime); border-radius: 50%; }
 .sys__notes i { position: absolute; left: 0; top: 0; height: 1px; background: rgba(255, 255, 255, .7); transform-origin: 0 50%; }
 .sys__notes span { position: absolute; white-space: nowrap; font-size: 1rem; font-weight: 500; text-shadow: 0 1px 12px #041b14, 0 0 4px #041b14; }
-.no-webgl .sys__stage { background: url(../img/wall/forest-s.avif) 100% 50% / 56% 100% no-repeat; }
+.no-webgl .sys__stage { background: url(../img/planting.avif) 100% 50% / 56% 100% no-repeat; }
 @media (max-width: 800px) { .sys__stage::after { background: linear-gradient(180deg, rgba(4, 27, 20, .92), rgba(4, 27, 20, .62) 34%, transparent 54%); } .sys__notes { display: none; } }
 @media (prefers-reduced-motion: reduce) { .sys__stage { position: relative; height: auto; min-height: 100vh; } }
 :root:not(.js) .com { grid-template-columns: minmax(0, 64rem); min-height: 0; }
-:root:not(.js) .hero__canvas, .hero.no-webgl .hero__canvas { background: url(../img/wall/forest-s.avif) 50% 50% / cover; -webkit-mask: linear-gradient(100deg, transparent 52%, #000 72%); mask: linear-gradient(100deg, transparent 52%, #000 72%); }
+:root:not(.js) .hero__canvas, .hero.no-webgl .hero__canvas { background: url(../img/planting.avif) 50% 50% / cover; -webkit-mask: linear-gradient(100deg, transparent 52%, #000 72%); mask: linear-gradient(100deg, transparent 52%, #000 72%); }
 @media (max-width: 800px) { :root:not(.js) .hero__canvas, .hero.no-webgl .hero__canvas { -webkit-mask: linear-gradient(180deg, transparent 54%, #000 72%); mask: linear-gradient(180deg, transparent 54%, #000 72%); } }
 
 /* ---- the journal ---- */

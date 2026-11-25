@@ -334,8 +334,20 @@ export async function initVisualiser(root) {
     while (state.cols * state.rows > 200) state[axis === 'cols' ? 'rows' : 'cols']--;
     size();
   }));
-  root.querySelectorAll('[data-vis-style]').forEach((i) => i.addEventListener('change', () => {
+  const styles = [...root.querySelectorAll('[data-vis-style]')];
+  styles.forEach((i) => i.addEventListener('change', () => {
     state.style = Number(i.value);
+    size();
+  }));
+  // plants for a room, or for the open air: the same hour of the day in either
+  const OTHER = [4, 3, 5, 1, 0, 2];
+  const places = [...root.querySelectorAll('[data-vis-place]')];
+  places.forEach((b) => b.addEventListener('click', () => {
+    if (b.getAttribute('aria-pressed') === 'true') return;
+    places.forEach((x) => x.setAttribute('aria-pressed', x === b));
+    styles.forEach((i) => { i.closest('label').hidden = i.closest('label').dataset.area !== b.dataset.visPlace; });
+    state.style = OTHER[state.style];
+    styles.find((i) => Number(i.value) === state.style).checked = true;
     size();
   }));
 

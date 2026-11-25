@@ -1,5 +1,5 @@
 
-import { frameWall } from './wall.js?v=ac56706e';
+import { frameWall } from './wall.js?v=d99e9af5';
 const STEP = 0.5; // metres per panel
 function quadMatrix(w, h, [a, b, c, d]) { // a top left, b top right, c bottom right, d bottom left
 const dx1 = b.x - c.x;
@@ -311,8 +311,19 @@ state[axis] = Math.min(max, Math.max(2, state[axis] + Number(by)));
 while (state.cols * state.rows > 200) state[axis === 'cols' ? 'rows' : 'cols']--;
 size();
 }));
-root.querySelectorAll('[data-vis-style]').forEach((i) => i.addEventListener('change', () => {
+const styles = [...root.querySelectorAll('[data-vis-style]')];
+styles.forEach((i) => i.addEventListener('change', () => {
 state.style = Number(i.value);
+size();
+}));
+const OTHER = [4, 3, 5, 1, 0, 2];
+const places = [...root.querySelectorAll('[data-vis-place]')];
+places.forEach((b) => b.addEventListener('click', () => {
+if (b.getAttribute('aria-pressed') === 'true') return;
+places.forEach((x) => x.setAttribute('aria-pressed', x === b));
+styles.forEach((i) => { i.closest('label').hidden = i.closest('label').dataset.area !== b.dataset.visPlace; });
+state.style = OTHER[state.style];
+styles.find((i) => Number(i.value) === state.style).checked = true;
 size();
 }));
 paint();

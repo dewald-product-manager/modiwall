@@ -9,7 +9,7 @@
     <button class="vis__corner" type="button" data-corner aria-label="Bottom right corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Bottom left corner. Move with the arrow keys"></button>
     <div class="vis__tools"><button type="button" data-vis-evening aria-pressed="false">Evening</button><button type="button" data-vis-bare>Hold to compare</button><button type="button" data-vis-save>Save picture</button></div>
-    <div class="vis__wait"><svg class="mark lg lg-wait" viewBox="235 100 1526 1140" aria-label="Loading" role="img">{{> mark-paths}}</svg></div>
+    <div class="vis__wait"><svg class="mark lg lg-wait" viewBox="0 0 768 571" aria-label="Loading" role="img">{{> mark-paths}}</svg></div>
   </div>
   <div class="vis__panel">
     <div class="vis__src">
@@ -19,11 +19,17 @@
     <div class="vis__opts">
       <div class="vis__dim"><span>Width</span><button class="step" type="button" data-vis-step="cols,-1" aria-label="Narrower">−</button><button class="step" type="button" data-vis-step="cols,1" aria-label="Wider">+</button></div>
       <div class="vis__dim"><span>Height</span><button class="step" type="button" data-vis-step="rows,-1" aria-label="Lower">−</button><button class="step" type="button" data-vis-step="rows,1" aria-label="Taller">+</button></div>
-      <fieldset class="vis__style"><legend class="vh">Planting</legend>
-        <label><input type="radio" name="planting" value="0" checked data-vis-style><span>Forest</span></label>
-        <label><input type="radio" name="planting" value="1" data-vis-style><span>Fern</span></label>
-        <label><input type="radio" name="planting" value="2" data-vis-style><span>Jungle</span></label>
-      </fieldset>
+      <div class="vis__plants">
+        <div class="seg" role="group" aria-label="Where the wall is"><button type="button" data-vis-place="in" aria-pressed="true">Interior plants</button><button type="button" data-vis-place="ex" aria-pressed="false">Exterior plants</button></div>
+        <fieldset class="vis__style"><legend class="vh">Planting</legend>
+          <label data-area="in"><input type="radio" name="planting" value="1" data-vis-style><span>Morning</span></label>
+          <label data-area="in"><input type="radio" name="planting" value="0" checked data-vis-style><span>Midday</span></label>
+          <label data-area="in"><input type="radio" name="planting" value="2" data-vis-style><span>Evening</span></label>
+          <label data-area="ex" hidden><input type="radio" name="planting" value="3" data-vis-style><span>Morning</span></label>
+          <label data-area="ex" hidden><input type="radio" name="planting" value="4" data-vis-style><span>Midday</span></label>
+          <label data-area="ex" hidden><input type="radio" name="planting" value="5" data-vis-style><span>Evening</span></label>
+        </fieldset>
+      </div>
     </div>
     <div class="vis__end"><p role="status"><span data-vis-out></span> <span class="vis__area" data-vis-area></span></p><a class="btn btn--line" data-vis-cta href="/get-a-quote.html">Commission this wall</a></div>
     <p class="vis__msg" role="alert" data-vis-msg></p>

@@ -110,7 +110,23 @@ let on = false;
 let touched = false;
 let since = 0;
 const to = [1, 0, 0, 0];
+const mine = [0.75, 0.62, 0.84, 1.5]; // how bright each light is set
+const most = [1.5, 1, 1, 2];
 R.w = [0.2, 0, 0, 0];
+const pin = sec.querySelector('.night__pin') ?? sec;
+sec.querySelectorAll('[data-dim-at]').forEach((r) => {
+const k = Number(r.dataset.dimAt);
+const show = () => r.style.setProperty('--v', `${r.value}%`);
+show();
+r.addEventListener('input', () => {
+mine[k] = (r.value / 100) * most[k];
+show();
+touched = true;
+if (!on) set(true);
+since = 9999;
+if (reduced) still();
+});
+});
 const place = () => {
 const tall = R.size.w < R.size.h;
 R.view[0] = tall ? 0.66 : 0.5;
@@ -129,7 +145,7 @@ if (reduced) still();
 });
 function still() {
 place();
-R.w = on ? [0.75, 0.62, 0.84, 1.5] : [1.35, 0, 0, 0];
+R.w = on ? [...mine] : [1.35, 0, 0, 0];
 R.view[2] = 1;
 R.draw(0);
 }
@@ -137,7 +153,7 @@ sec.classList.add('wall-ready');
 if (reduced) {
 set(true);
 still();
-new ResizeObserver(still).observe(canvas);
+new ResizeObserver(still).observe(pin);
 return;
 }
 const zoom = { x: 1.1, v: 0 };
@@ -147,11 +163,11 @@ let lit = '';
 R.run(sec, (dt, top, h) => {
 if (!on && !touched && top < page.h * 0.22 && top + h > page.h * 0.6) set(true);
 since += dt;
-to[0] = on ? 0.75 : 1.35;
-to[3] = on && since > 120 ? 1.5 : 0;
-to[1] = on && since > 620 ? 0.62 : 0;
-to[2] = on && since > 1250 ? 0.84 : 0;
-for (let i = 0; i < 4; i++) R.w[i] = follow(lamp[i], to[i], dt, on ? warm[i] : warm[i] * 0.7);
+to[0] = on ? mine[0] : 1.35;
+to[3] = on && since > 120 ? mine[3] : 0;
+to[1] = on && since > 620 ? mine[1] : 0;
+to[2] = on && since > 1250 ? mine[2] : 0;
+for (let i = 0; i < 4; i++) R.w[i] = follow(lamp[i], to[i], dt, since > 4000 && on ? 160 : on ? warm[i] : warm[i] * 0.7);
 place();
 R.view[2] = follow(zoom, 1.1 - Math.min(1, Math.max(0, 1 - top / page.h)) * 0.07, dt, 480);
 const k = R.w[2].toFixed(2);
