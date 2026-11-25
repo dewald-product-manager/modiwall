@@ -3,23 +3,19 @@
 "description": "Modiwall living walls are planted for Netcare, Sun City, Virgin Active, Hollard, Old Mutual and more, with two South African Landscapers Institute gold awards.",
 "crumb": "Clients and awards"
 } -->
-<section class="ph">
-  <div class="ph__img">{{eager sun-city | (min-width:800px) 66vw, 100vw}}</div>
-  <div class="ph__t">
-    <h1>In good company</h1>
-    <p class="lede">Hospitals, insurers, resorts and head offices.</p>
+<section class="names" data-names aria-labelledby="lit-h">
+  <div class="names__pin" data-stage>
+    <canvas class="names__c" data-wall aria-hidden="true"></canvas>
+    <div class="names__vig" aria-hidden="true"></div>
+    <div class="names__t"><h1 id="lit-h">In good company</h1><p class="lede">Hospitals, insurers, resorts and head offices. Part the leaves.</p></div>
+    <ul class="names__l" aria-label="Clients">
+{{js:names()}}
+    </ul>
+    <ol class="names__m" aria-label="Go to a client">{{js:nameMarks()}}</ol>
   </div>
 </section>
 
-<section class="lit" data-lit aria-labelledby="lit-h">
-  <div class="lit__glow" data-lit-glow aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="lit__h"><h2 id="lit-h">Who lives with one</h2><p class="lede">Move the light across the wall.</p></div>
-    <div class="lit__w" data-lit-wall><ul class="logos" aria-label="Clients">{{js:clients()}}</ul><ul class="logos lit__on" aria-hidden="true">{{js:clients().replace(/alt="[^"]*"/g, 'alt=""')}}</ul></div>
-  </div>
-</section>
-
-<section class="sec cases" aria-labelledby="aw-h">
+<section class="sec cases dusk" aria-labelledby="aw-h">
   <div class="wrap">
     <div class="head"><h2 id="aw-h">Two walls, two golds</h2><p class="lede">Both awards are from the South African Landscapers Institute, for walls built with Modiwall by Bidvest TopTurf.</p></div>
     <article class="case">
@@ -33,7 +29,7 @@
   </div>
 </section>
 
-<section class="sec" id="press" aria-labelledby="pr-h">
+<section class="sec dusk dusk--b" id="press" aria-labelledby="pr-h">
   <div class="wrap">
     <div class="head"><h2 id="pr-h">On the record</h2><p class="lede">Awards, print and research in which Modiwall is named.</p></div>
     <div class="pages" data-slots>

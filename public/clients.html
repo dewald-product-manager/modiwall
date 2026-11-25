@@ -30,8 +30,8 @@
 <link rel="preload" href="fonts/italiana.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/gloock.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/montserrat-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=0e6a5081">
-<script type="module" src="js/main.js?v=8855443f"></script>
+<link rel="stylesheet" href="css/site.css?v=6caa0f06">
+<script type="module" src="js/main.js?v=9b1a3b1a"></script>
 <link rel="modulepreload" href="js/html.js?v=fd61fe77">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"HomeAndConstructionBusiness","@id":"https://www.modiwall.com/#business","name":"Modiwall Vertical Gardens","url":"https://www.modiwall.com/","logo":"https://www.modiwall.com/img/icon-512.png","image":"https://www.modiwall.com/img/og.jpg","telephone":"+27768740299","email":"info@modiwall.com","foundingDate":"2012","description":"Modiwall designs, makes, installs and maintains living vertical gardens and artificial green walls across South Africa.","address":{"@type":"PostalAddress","addressLocality":"Centurion","addressRegion":"Pretoria, Gauteng","addressCountry":"ZA"},"areaServed":[{"@type":"Country","name":"South Africa"},{"@type":"Continent","name":"Africa"}],"knowsAbout":["vertical gardens","living walls","green walls","artificial green walls","biophilic design"],"sameAs":["https://www.facebook.com/modiwall","https://www.instagram.com/modiwall_gardens/","https://www.linkedin.com/company/modiwall-vertical-gardens/","https://www.youtube.com/@modiwallverticalgardens3531"]},{"@type":"WebSite","@id":"https://www.modiwall.com/#site","url":"https://www.modiwall.com/","name":"Modiwall","inLanguage":"en-ZA","publisher":{"@id":"https://www.modiwall.com/#business"}},{"@type":"WebPage","@id":"https://www.modiwall.com/clients.html#page","url":"https://www.modiwall.com/clients.html","name":"Clients and Awards | Modiwall Vertical Gardens","description":"Modiwall living walls are planted for Netcare, Sun City, Virgin Active, Hollard, Old Mutual and more, with two South African Landscapers Institute gold awards.","inLanguage":"en-ZA","isPartOf":{"@id":"https://www.modiwall.com/#site"},"about":{"@id":"https://www.modiwall.com/#business"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://www.modiwall.com/img/og.jpg","width":1200,"height":630,"caption":"Courtyard living wall planted in bands of fern, lime and burgundy foliage"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.modiwall.com/"},{"@type":"ListItem","position":2,"name":"Clients and awards","item":"https://www.modiwall.com/clients.html"}]}]}</script>
 <link rel="alternate" type="application/rss+xml" title="Modiwall Journal" href="feed.xml">
@@ -72,21 +72,25 @@
   </div>
 </div>
 <main id="main">
-<section class="ph">
-  <div class="ph__img"><picture><source type="image/avif" srcset="img/sun-city-480.avif 480w, img/sun-city-600.avif 600w" sizes="(min-width:800px) 66vw, 100vw"><img src="img/sun-city-600.jpg" width="600" height="800" alt="Planted tree structure in the Sun City Entertainment Centre" fetchpriority="high" decoding="async"></picture></div>
-  <div class="ph__t">
-    <h1>In good company</h1>
-    <p class="lede">Hospitals, insurers, resorts and head offices.</p>
+<section class="names" data-names aria-labelledby="lit-h">
+  <div class="names__pin" data-stage>
+    <canvas class="names__c" data-wall aria-hidden="true"></canvas>
+    <div class="names__vig" aria-hidden="true"></div>
+    <div class="names__t"><h1 id="lit-h">In good company</h1><p class="lede">Hospitals, insurers, resorts and head offices. Part the leaves.</p></div>
+    <ul class="names__l" aria-label="Clients">
+<li class="nm" data-name><img src="img/clients/netcare.svg" width="600" height="479" alt="Netcare" class="nm--netcare" decoding="async"><p>An atrium at Pinehaven Hospital that lives on daylight alone. SALI gold, 2016.</p></li>
+<li class="nm" data-name><img src="img/clients/sun-city.svg" width="600" height="237" alt="Sun City" class="nm--sun-city" decoding="async"><p>A steel tree under a skylight, clad in planted panels. SALI gold, 2017.</p></li>
+<li class="nm" data-name><img src="img/clients/hollard.svg" width="600" height="159" alt="Hollard" class="nm--hollard" decoding="async"></li>
+<li class="nm" data-name><img src="img/clients/virgin-active.svg" width="600" height="286" alt="Virgin Active" class="nm--virgin-active" decoding="async"></li>
+<li class="nm" data-name><img src="img/clients/old-mutual.svg" width="600" height="132" alt="Old Mutual" class="nm--old-mutual" decoding="async"></li>
+<li class="nm" data-name><img src="img/clients/bidvest.svg" width="600" height="313" alt="Bidvest TopTurf" class="nm--bidvest" decoding="async"><p>Built both of our gold award walls with us.</p></li>
+<li class="nm" data-name><img src="img/clients/nedbank-golf.svg" width="600" height="600" alt="Nedbank Golf Challenge" class="nm--nedbank-golf" decoding="async"></li>
+<li class="nm" data-name><img src="img/clients/torrecid.svg" width="600" height="176" alt="Torrecid" class="nm--torrecid" decoding="async"></li>
+    </ul>
+    <ol class="names__m" aria-label="Go to a client"><li><button type="button" data-mark-at>Netcare</button></li><li><button type="button" data-mark-at>Sun City</button></li><li><button type="button" data-mark-at>Hollard</button></li><li><button type="button" data-mark-at>Virgin Active</button></li><li><button type="button" data-mark-at>Old Mutual</button></li><li><button type="button" data-mark-at>Bidvest TopTurf</button></li><li><button type="button" data-mark-at>Nedbank Golf Challenge</button></li><li><button type="button" data-mark-at>Torrecid</button></li></ol>
   </div>
 </section>
-<section class="lit" data-lit aria-labelledby="lit-h">
-  <div class="lit__glow" data-lit-glow aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="lit__h"><h2 id="lit-h">Who lives with one</h2><p class="lede">Move the light across the wall.</p></div>
-    <div class="lit__w" data-lit-wall><ul class="logos" aria-label="Clients"><li class="cl cl--netcare"><img src="img/clients/netcare.svg" width="600" height="479" alt="Netcare" loading="lazy" decoding="async"></li><li class="cl cl--hollard"><img src="img/clients/hollard.svg" width="600" height="159" alt="Hollard" loading="lazy" decoding="async"></li><li class="cl cl--sun-city"><img src="img/clients/sun-city.svg" width="600" height="237" alt="Sun City" loading="lazy" decoding="async"></li><li class="cl cl--virgin-active"><img src="img/clients/virgin-active.svg" width="600" height="286" alt="Virgin Active" loading="lazy" decoding="async"></li><li class="cl cl--old-mutual"><img src="img/clients/old-mutual.svg" width="600" height="132" alt="Old Mutual" loading="lazy" decoding="async"></li><li class="cl cl--bidvest"><img src="img/clients/bidvest.svg" width="600" height="313" alt="Bidvest TopTurf" loading="lazy" decoding="async"></li><li class="cl cl--nedbank-golf"><img src="img/clients/nedbank-golf.svg" width="600" height="600" alt="Nedbank Golf Challenge" loading="lazy" decoding="async"></li><li class="cl cl--torrecid"><img src="img/clients/torrecid.svg" width="600" height="176" alt="Torrecid" loading="lazy" decoding="async"></li></ul><ul class="logos lit__on" aria-hidden="true"><li class="cl cl--netcare"><img src="img/clients/netcare.svg" width="600" height="479" alt="" loading="lazy" decoding="async"></li><li class="cl cl--hollard"><img src="img/clients/hollard.svg" width="600" height="159" alt="" loading="lazy" decoding="async"></li><li class="cl cl--sun-city"><img src="img/clients/sun-city.svg" width="600" height="237" alt="" loading="lazy" decoding="async"></li><li class="cl cl--virgin-active"><img src="img/clients/virgin-active.svg" width="600" height="286" alt="" loading="lazy" decoding="async"></li><li class="cl cl--old-mutual"><img src="img/clients/old-mutual.svg" width="600" height="132" alt="" loading="lazy" decoding="async"></li><li class="cl cl--bidvest"><img src="img/clients/bidvest.svg" width="600" height="313" alt="" loading="lazy" decoding="async"></li><li class="cl cl--nedbank-golf"><img src="img/clients/nedbank-golf.svg" width="600" height="600" alt="" loading="lazy" decoding="async"></li><li class="cl cl--torrecid"><img src="img/clients/torrecid.svg" width="600" height="176" alt="" loading="lazy" decoding="async"></li></ul></div>
-  </div>
-</section>
-<section class="sec cases" aria-labelledby="aw-h">
+<section class="sec cases dusk" aria-labelledby="aw-h">
   <div class="wrap">
     <div class="head"><h2 id="aw-h">Two walls, two golds</h2><p class="lede">Both awards are from the South African Landscapers Institute, for walls built with Modiwall by Bidvest TopTurf.</p></div>
     <article class="case">
@@ -99,7 +103,7 @@
     </article>
   </div>
 </section>
-<section class="sec" id="press" aria-labelledby="pr-h">
+<section class="sec dusk dusk--b" id="press" aria-labelledby="pr-h">
   <div class="wrap">
     <div class="head"><h2 id="pr-h">On the record</h2><p class="lede">Awards, print and research in which Modiwall is named.</p></div>
     <div class="pages" data-slots>

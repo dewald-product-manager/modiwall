@@ -190,3 +190,62 @@ body:has(main > .com) .top { background: #fbfaf7; }
 .dusk .cards a:is(:hover, :focus-visible) .cards__p::after { opacity: 0; }
 body:has(main > .hall) { background: #030906; }
 body:has(main > .hall) .top.is-stuck { background: rgba(3, 9, 6, .94); box-shadow: 0 1px 0 rgba(255, 255, 255, .08); color: #fff; --lg-m: #fff; }
+
+/* ---- client names never move or double: light is all that changes ---- */
+.lit .logos li:hover img { transform: none; opacity: .36; } .lit .lit__on li:hover img { opacity: 1 !important; transform: none; }
+.lit .logos img { transition: none; } .lit__spot .lit__on li { box-shadow: none; }
+
+/* ---- the journal, as a book ---- */
+.book { --turns: 12; position: relative; height: calc(var(--turns) * 62vh + 100vh); background: #070503; color: #fff; }
+.book__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }
+.book__c { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.4s; touch-action: pan-y; } .book.is-ready .book__c { opacity: 1; }
+.book__pin::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at 50% 48%, transparent 52%, rgba(3, 5, 4, .62)), linear-gradient(180deg, rgba(3, 5, 4, .6), transparent 16%); }
+.book__intro { position: absolute; z-index: 2; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); top: 50%; margin-top: -7rem; max-width: 24vw; display: grid; gap: 1.2rem; pointer-events: none; will-change: transform, opacity; }
+.book__intro h1 { font-size: clamp(3.4rem, 7vw, 8rem); line-height: .95; letter-spacing: -.03em; } .book__intro .lede { color: #dfe6e0; max-width: 17em; }
+.book__bar { position: absolute; z-index: 3; inset: auto 0 clamp(1rem, 2.6vh, 1.8rem); display: flex; justify-content: center; align-items: center; gap: .8rem; font-size: .98rem; }
+.book__bar p { min-width: 7.5rem; text-align: center; margin: 0; color: #e7ece8; text-shadow: 0 1px 12px #000; }
+.book__b { width: 2.9rem; height: 2.9rem; border: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(5, 10, 8, .5); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); transition: background-color .4s; } .book__b:hover { background: rgba(255, 255, 255, .16); }
+.book__b svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.book__read { display: inline-grid; place-items: center; min-height: 2.9rem; padding: 0 1.5rem; border-radius: 99px; background: #fff; color: var(--deep); font-weight: 500; text-decoration: none; margin-left: .6rem; opacity: 0; visibility: hidden; transform: translate3d(0, .5rem, 0); transition: opacity .5s, transform .8s var(--glide), visibility 0s .5s; }
+.has-story .book__read { opacity: 1; visibility: visible; transform: none; transition: opacity .5s, transform .8s var(--glide); }
+.book.is-flat, :root:not(.js) .book { height: auto; } :is(.book.is-flat, :root:not(.js) .book) :is(.book__c, .book__bar) { display: none; } :is(.book.is-flat, :root:not(.js) .book) .book__pin { position: static; height: auto; } :is(.book.is-flat, :root:not(.js) .book) .book__intro { position: static; max-width: none; margin: 0; padding: 11rem var(--gut) 4rem; opacity: 1 !important; visibility: visible !important; }
+@media (max-width: 800px) { .book__intro { left: var(--gut); right: var(--gut); top: calc(var(--top) + .6rem); margin: 0; max-width: none; gap: .4rem; } .book__intro h1 { font-size: 2.6rem; } .book__intro .lede { font-size: 1rem; } .book__bar { bottom: 6.2rem; gap: .4rem; } .book__bar p { min-width: 5.4rem; } .book__read { padding: 0 1.1rem; margin-left: .2rem; } }
+.idx__l { display: grid; border-top: 1px solid rgba(255, 255, 255, .16); }
+.idx__l a { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 3.4fr) auto; gap: 1rem 2rem; align-items: baseline; padding: clamp(1.1rem, 2.2vw, 1.9rem) 0; border-bottom: 1px solid rgba(255, 255, 255, .16); text-decoration: none; color: #fff; }
+.idx__l b { font-family: var(--strong); font-weight: 400; font-size: clamp(1.5rem, 2.6vw, 2.7rem); line-height: 1.1; letter-spacing: -.012em; transition: transform 1s var(--glide); } .idx__l a:hover b { transform: translate3d(.8rem, 0, 0); } .idx__l span { color: #a9bdb3; }
+@media (max-width: 700px) { .idx__l a { grid-template-columns: 1fr auto; } .idx__l b { grid-column: 1 / -1; grid-row: 2; } }
+
+/* ---- names among the leaves ---- */
+.names { position: relative; height: 860vh; background: #030906; color: #fff; }
+.names__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; background: radial-gradient(60% 60% at 50% 45%, #0b2019, #030906 70%); }
+.names__c, .tale__c { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.4s; } .is-ready :is(.names__c, .tale__c) { opacity: 1; }
+.names__vig { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgba(3, 9, 6, .92), rgba(3, 9, 6, .5) 18%, transparent 40%), linear-gradient(180deg, rgba(3, 9, 6, .7), transparent 18%), radial-gradient(90% 90% at 50% 45%, transparent 50%, rgba(3, 9, 6, .6)); }
+.names__t { position: absolute; z-index: 3; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); bottom: clamp(6.6rem, 14vh, 9rem); display: grid; gap: .5rem; pointer-events: none; }
+.names__t h1 { font-size: clamp(2.6rem, 5vw, 5.6rem); line-height: 1; letter-spacing: -.025em; } .names__t .lede { color: #dbe6e0; margin: 0; }
+.names__l { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.nm { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: 1.5rem; text-align: center; visibility: hidden; will-change: transform, opacity; }
+.nm img { width: auto; max-width: 100%; height: clamp(4rem, 8.6vw, 8.6rem); background: none; filter: brightness(0) invert(1); } .nm--old-mutual, .nm--hollard, .nm--torrecid { height: clamp(2.6rem, 5vw, 5rem) !important; } .nm--nedbank-golf { height: clamp(6.4rem, 12vw, 12rem) !important; }
+.nm p { max-width: min(22em, 62vw); margin: 0; font-size: 1.05rem; line-height: 1.5; color: #e6eeea; text-shadow: 0 1px 14px #030906; }
+.names__m { position: absolute; z-index: 3; inset: auto 0 clamp(1.6rem, 4vh, 2.8rem); max-width: var(--max); margin-inline: auto; padding: 0 var(--gut); display: flex; gap: clamp(.6rem, 1.6vw, 2rem); overflow-x: auto; scrollbar-width: none; }
+.names__m button { border: 0; background: none; color: #fff; padding: .7rem 0; min-height: 2.75rem; font: inherit; font-size: .98rem; white-space: nowrap; opacity: .6; border-top: 1px solid rgba(255, 255, 255, .4); transition: opacity .5s, border-color .5s; } .names__m li { flex: 1 0 auto; } .names__m button { width: 100%; text-align: left; } .names__m button:is(.on, :hover) { opacity: 1; border-color: #fff; }
+:is(.names, .tale).is-flat, :root:not(.js) :is(.names, .tale) { height: auto; } :is(.is-flat, :root:not(.js) *) > :is(.names__pin, .tale__pin) { position: static; height: auto; padding: calc(var(--top) + 4rem) var(--gut) 4rem; }
+:is(.names.is-flat, :root:not(.js) .names) :is(.names__c, .names__m, .names__vig) { display: none; } :is(.names.is-flat, :root:not(.js) .names) .names__l { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 3.5rem 2rem; margin-top: 4rem; } :is(.names.is-flat, :root:not(.js) .names) .nm { position: static; translate: none; visibility: visible; width: auto !important; align-content: start; } :is(.names.is-flat, :root:not(.js) .names) .names__t { position: static; }
+@media (max-width: 800px) { .names__t { bottom: 12.5rem; right: var(--gut); } .names__m { bottom: 6.4rem; gap: 1.4rem; } }
+.cases.dusk { background: #030906; } .dusk .case dl div, .dusk .press li > * { border-color: rgba(255, 255, 255, .16); } .dusk :is(.case dt, .case dd, .press b, .press a, .press span, .case__t h3) { color: #fff; } .dusk :is(.case dd, .press span, .case__t .lede) { color: #cfdcd5; } .dusk .link { color: #fff; } .dusk .story small, .dusk .story__t > span { color: #cfdcd5; } .dusk .pages a { box-shadow: 0 30px 70px rgba(0, 0, 0, .5); }
+
+/* ---- one visit, told by the wall ---- */
+.tale { position: relative; height: 760vh; background: #030906; color: #fff; }
+.tale__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; background: #030906; }
+.tale__vig { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(3, 9, 6, .93), rgba(3, 9, 6, .74) 26%, rgba(3, 9, 6, .2) 52%, transparent 66%), linear-gradient(0deg, rgba(3, 9, 6, .72), transparent 24%), linear-gradient(180deg, rgba(3, 9, 6, .6), transparent 16%); }
+.tale__in { position: absolute; left: 0; top: 0; z-index: 0; opacity: 0; will-change: transform, opacity; } .tale__c { z-index: 1; } .tale__vig { z-index: 2; }
+.tale__in img { width: 100%; height: 100%; object-fit: cover; background: none; -webkit-mask: radial-gradient(closest-side, #000 62%, transparent); mask: radial-gradient(closest-side, #000 62%, transparent); }
+.tale__t { position: absolute; z-index: 3; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); top: 0; bottom: 0; width: min(34rem, 42vw); display: grid; align-items: center; }
+.tale__t > div { grid-area: 1 / 1; display: grid; gap: 1.5rem; justify-items: start; will-change: transform, opacity; } .tale__t > div:not(:first-child) { visibility: hidden; }
+.tale__t :is(h1, h2) { font-family: var(--disp); font-weight: 400; font-size: clamp(3rem, 5.6vw, 6.6rem); line-height: .99; letter-spacing: -.028em; text-wrap: balance; color: #fff; } .tale__t .lede { color: #dbe6e0; max-width: 27em; margin: 0; } .tale__t p { margin: 0; }
+.tale__m { position: absolute; z-index: 3; right: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); top: 50%; translate: 0 -50%; display: grid; gap: .9rem; text-align: right; font-size: .98rem; } .tale__m li { opacity: .5; transition: opacity .6s; text-shadow: 0 1px 12px #030906; } .tale__m li.on { opacity: 1; }
+:is(.tale.is-flat, :root:not(.js) .tale) :is(.tale__c, .tale__m, .tale__in, .tale__vig) { display: none; } :is(.tale.is-flat, :root:not(.js) .tale) .tale__t { position: static; width: auto; max-width: 44rem; gap: 4rem; } :is(.tale.is-flat, :root:not(.js) .tale) .tale__t > div { grid-area: auto; visibility: visible !important; opacity: 1 !important; }
+@media (max-width: 800px) { .tale__vig { background: linear-gradient(0deg, rgba(3, 9, 6, .95) 18%, rgba(3, 9, 6, .6) 46%, transparent 66%), linear-gradient(180deg, rgba(3, 9, 6, .6), transparent 16%); } .tale__t { width: auto; right: var(--gut); align-items: end; padding-bottom: 8rem; } .tale__t :is(h1, h2) { font-size: clamp(2.5rem, 11vw, 3.8rem); } .tale__t > div { gap: .9rem; } .tale__m { display: none; } }
+body:has(main > :is(.book, .names, .tale)) { background: #030906; }
+body:has(main > :is(.book, .names, .tale)) .top:not(.is-stuck) { color: #fff; --lg-m: #fff; } body:has(main > :is(.book, .names, .tale)) .top.is-stuck { background: rgba(3, 9, 6, .94); box-shadow: 0 1px 0 rgba(255, 255, 255, .08); color: #fff; --lg-m: #fff; }
+
+@media (min-width: 801px) { .night__t h2 { font-size: clamp(2.8rem, 5.2vw, 6.2rem); } .night__t .lede { max-width: 17.5em; } .night::after { background: linear-gradient(90deg, rgba(3, 7, 9, .8), rgba(3, 7, 9, .58) 22%, transparent 37%); } }

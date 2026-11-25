@@ -18,7 +18,7 @@ def denoise(c,A,levels=4,kl=3.2,keep=0.):
                 s+=r(x)*ww[...,None]; w+=ww; sv+=r(v)*ww*ww
         x=s/w[...,None]; v=sv/np.maximum(w*w,1e-9)
     return (x*(1-keep)+orig*keep)*alb
-def avif(a,f,q=58): Image.fromarray((np.clip(a,0,1)*255+.5).astype('u1')).save(f'{OUT}/{f}.avif',quality=q,speed=4)
+def avif(a,f,q=58,ss='4:2:0'): Image.fromarray((np.clip(a,0,1)*255+.5).astype('u1')).save(f'{OUT}/{f}.avif',quality=q,speed=4,subsampling=ss)
 def small(a,w): return np.asarray(Image.fromarray((np.clip(a,0,1)*255+.5).astype('u1')).resize((w,round(a.shape[0]*w/a.shape[1])),Image.LANCZOS),float)/255
 def data(k,v):
     D={}
@@ -33,7 +33,7 @@ def glare(x):
 def groups(name,src,ng,lens=False):
     a,al,c=rt.load(src); A=rt.aov(src); sc=[]
     for g in range(ng):
-        x=denoise(a[...,g,:],A,keep=.12); x=glare(x) if lens else x; s=float(max(np.percentile(x.max(-1),99.96),.03)); s=min(s,7. if lens and g==2 else 3. if lens else 6.); sc.append(round(s,4)); e=(np.clip(x/s,0,1))**(1/2.4); avif(e,f'{name}-{g}',56); avif(small(e,1600),f'{name}-{g}-s',54)
+        x=denoise(a[...,g,:],A,kl=2.0 if lens else 3.2,keep=.22 if lens else .12); x=glare(x) if lens else x; s=float(max(np.percentile(x.max(-1),99.96),.03)); s=min(s,7. if lens and (name,g) in(('mat',2),('night',1)) else 4. if lens else 6.); sc.append(round(s,4)); e=(np.clip(x/s,0,1))**(1/2.4); avif(e,f'{name}-{g}-l',60,'4:4:4' if lens else '4:2:0'); avif(small(e,2560),f'{name}-{g}',60); avif(small(e,1600),f'{name}-{g}-s',58)
         rt.save(f'out/ex_{name}_{g}.png',x,.9)
     t=np.clip(A[...,0,3],0,40); near,far=np.percentile(t,1),np.percentile(t,99); d=1-np.clip((1/near-1/np.clip(t,near,far))/(1/near-1/far),0,1); avif(np.repeat(small(np.repeat(d[...,None],3,2),960)[...,:1],3,2),f'{name}-d',60)
     data(name,sc); print(name,sc,{f:os.path.getsize(f'{OUT}/{f}')//1024 for f in os.listdir(OUT) if f.startswith(name)})
@@ -52,4 +52,4 @@ def hall():
         if n=='elev': X=A[...,3,0]; d=np.clip((X+2.15+.15)/.5,0,1); Image.fromarray((gaussian_filter(d,2.2)*255+.5).astype('u1')).resize((1512,651),Image.LANCZOS).convert('RGB').save(f'{OUT}/hall-depth.avif',quality=84,speed=4)
     data('hall',sc); print(sc,{f:os.path.getsize(f'{OUT}/{f}')//1024 for f in os.listdir(OUT) if f.startswith('hall')})
 if __name__=='__main__':
-    for j in sys.argv[1].split(','): {'mat':lambda:groups('mat','rb_mat',4,True),'night':lambda:groups('night','rb_night',4),'hall':hall,'in':lambda:rooms('in'),'out':lambda:rooms('out'),'both':lambda:rooms('both')}[j]()
+    for j in sys.argv[1].split(','): {'mat':lambda:groups('mat','rb_mat',4,True),'night':lambda:groups('night','rb_night',4,True),'hall':hall,'in':lambda:rooms('in'),'out':lambda:rooms('out'),'both':lambda:rooms('both')}[j]()

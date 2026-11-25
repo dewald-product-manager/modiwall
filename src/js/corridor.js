@@ -23,12 +23,15 @@ void main(){ vP = aP; vUv = aUv; vec3 p = aP; if (uFlip > .5) p.y = ${(FLOOR * 2
 
 const COMMON = `
 precision highp float;
-const vec3 FOG = vec3(.010, .020, .016);
+const vec3 FOG = vec3(.020, .033, .027);
 uniform vec3 uCam; uniform float uT, uFlip;
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float soft(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+// mist that lies along the floor and drifts
+vec3 mist(vec3 p){ float d = distance(p, uCam); float n = soft(p.xz * vec2(.9, .55) + vec2(uT * .05, uT * .11)) * .6 + soft(p.xz * 2.1 - vec2(uT * .09, uT * .04)) * .4; return vec3(.050, .066, .054) * smoothstep(.25, .85, n) * exp(-(p.y - (-1.35)) * 2.3) * (1. - exp(-d * .16)) * smoothstep(26., 6., d); }
 float fogOf(vec3 p){ return 1. - exp(-pow(distance(p, uCam) * .046, 1.6)); }
 vec3 film(vec3 c){ c *= vec3(1.26, 1.24, 1.22); c = c * (c * 2.51 + .03) / (c * (c * 2.43 + .59) + .14); return mix(c * 12.92, 1.055 * pow(max(c, vec3(1e-5)), vec3(1. / 2.4)) - .055, step(.0031308, c)); }
 vec3 lin(vec3 c, float s){ return pow(c, vec3(2.4)) * s; }
-float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 `;
 
 /* kind 0 side wall, 1 ceiling, 2 end, 3 planted bay in relief, 4 stone portal */
@@ -91,7 +94,7 @@ void main(){
     vec2 fr = abs(vec2(dz, vP.y - .14)) - vec2(1.06, .80);       // the frame's soft shadow, thrown down
     col *= 1. - mine * .5 * exp(-length(max(fr, 0.)) * 6.);
   }
-  vec3 c = mix(film(col), FOG, fog);
+  vec3 c = mix(film(col), FOG, fog) + mist(vP);
   o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
 
@@ -133,10 +136,27 @@ void main(){
   vec3 m = textureLod(uMirror, st, lod).rgb * .58 + textureLod(uMirror, st + vec2(0., .010), lod + .9).rgb * .27 + textureLod(uMirror, st - vec2(0., .014), lod + 1.6).rgb * .15;
   float f = .16 + .74 * pow(1. - max(v.y, 0.), 2.6);
   vec3 c = film(base * .8) * (1. - f * .5) + m * f * (.82 + grain * 1.6);
-  c = mix(c, FOG, fogOf(vP));
+  c = mix(c, FOG, fogOf(vP)) + mist(vP) * 1.25;
   o = vec4(c + (hash(gl_FragCoord.xy + uT) - .5) / 220., 1.);
 }`;
 
+const GLOW_VS = `#version 300 es
+layout(location=0) in vec3 aP; layout(location=1) in vec3 aU; uniform mat4 uVP; out vec3 vP, vU;
+void main(){ vP = aP; vU = aU; gl_Position = uVP * vec4(aP, 1.); }`;
+/* light hanging in the air: 0 under a lamp, 1 over the planting, 2 about the line in the ceiling */
+const GLOW_FS = `#version 300 es
+${COMMON}
+in vec3 vP, vU; out vec4 o;
+void main(){
+  float x = abs(vU.x * 2. - 1.), y = vU.y, a; vec3 c = vec3(1., .86, .64);
+  if (vU.z < .5) { a = pow(1. - x, 1.8) * smoothstep(.0, .42, y) * smoothstep(1., .35, y) * .085; }
+  else if (vU.z < 1.5) { a = smoothstep(1., .55, x) * pow(1. - y, 2.2) * .13; c = vec3(1., .93, .74); }
+  else { a = pow(1. - x, 2.6) * .10; c = vec3(1., .92, .78); }
+  float n = soft(vec2(vP.z * 1.3 + uT * .06, vP.y * 2. - uT * .16)) * .6 + soft(vec2(vP.z * 4. - uT * .1, vP.y * 5. + uT * .07)) * .4;
+  a *= .55 + .9 * n;                                                     // air is never still
+  float d = distance(vP, uCam); a *= smoothstep(.35, 1.5, d) * (1. - fogOf(vP));
+  o = vec4(c * a, 0.);
+}`;
 const DUST_VS = `#version 300 es
 layout(location=0) in vec4 aD;
 uniform mat4 uVP; uniform vec3 uCam; uniform float uT, uPx;
@@ -191,12 +211,13 @@ export async function initCorridor(sec, frames, open) {
   let picP;
   let floorP;
   let dustP;
+  let glowP;
   let T;
   try {
-    const making = programs(gl, [[WALL_VS, WALL_FS], [WALL_VS, PIC_FS], [WALL_VS, FLOOR_FS], [DUST_VS, DUST_FS]], 'hall');
+    const making = programs(gl, [[WALL_VS, WALL_FS], [WALL_VS, PIC_FS], [WALL_VS, FLOOR_FS], [DUST_VS, DUST_FS], [GLOW_VS, GLOW_FS]], 'hall');
     making.catch(() => {});
     const pics = await Promise.all(['elev', 'depth', 'ceil', 'floor'].map((f) => picture(new URL(`../img/room/hall-${f}.avif`, import.meta.url).href)));
-    [wallP, picP, floorP, dustP] = await making;
+    [wallP, picP, floorP, dustP, glowP] = await making;
     T = [];
     for (const p of pics) {
       T.push(await texture(gl, p, { mip: true, wrap: 's', sharp: 8 }));
@@ -215,6 +236,15 @@ export async function initCorridor(sec, frames, open) {
   gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0);
   gl.enableVertexAttribArray(1);
   gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12);
+  const glowVao = gl.createVertexArray();
+  gl.bindVertexArray(glowVao);
+  const glowB = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, glowB);
+  for (const k of [0, 1]) {
+    gl.enableVertexAttribArray(k);
+    gl.vertexAttribPointer(k, 3, gl.FLOAT, false, 24, k * 12);
+  }
+  let glowN = 0;
   const dustVao = gl.createVertexArray();
   gl.bindVertexArray(dustVao);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
@@ -287,6 +317,25 @@ export async function initCorridor(sec, frames, open) {
     });
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+    const g = [];
+    const sheet = (kind, a, b, c, d) => {
+      for (const [p, x, y] of [[a, 0, 0], [b, 1, 0], [c, 0, 1], [c, 0, 1], [b, 1, 0], [d, 1, 1]]) g.push(...p, x, y, kind);
+    };
+    for (let n = -1; n <= list.length; n++) {
+      const z = -n * GAP;
+      const sd = n % 2 ? 1 : -1; // the side the photo hangs on
+      if (n >= 0 && n < list.length) for (const dz of [-0.8, 0, 0.8]) {
+        const x0 = sd * (HALF - 0.72);
+        const x1 = sd * (HALF - 0.06);
+        sheet(0, [x0, ROOF, z + dz - 0.04], [x0, ROOF, z + dz + 0.04], [x1, 0.1, z + dz - 0.46], [x1, 0.1, z + dz + 0.46]);
+        sheet(0, [x0 - 0.04, ROOF, z + dz], [x0 + 0.04, ROOF, z + dz], [x1 - 0.4 * sd, 0.1, z + dz], [x1, 0.1, z + dz]);
+      }
+      for (const off of [0.26, 0.4]) sheet(1, [-sd * (HALF - off), ROOF + 0.06, z - 1.6], [-sd * (HALF - off), ROOF + 0.06, z + 1.6], [-sd * (HALF - off - 0.1), -0.4, z - 1.6], [-sd * (HALF - off - 0.1), -0.4, z + 1.6]);
+    }
+    sheet(2, [-0.5, ROOF - 0.004, z0], [0.5, ROOF - 0.004, z0], [-0.5, ROOF - 0.004, z1], [0.5, ROOF - 0.004, z1]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, glowB);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g), gl.STATIC_DRAW);
+    glowN = g.length / 6;
     sec.style.setProperty('--len', list.length);
     dirty = false;
   }
@@ -430,6 +479,9 @@ export async function initCorridor(sec, frames, open) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.depthMask(false);
+    gl.bindVertexArray(glowVao);
+    common(glowP, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, glowN);
     gl.bindVertexArray(dustVao);
     common(dustP, 0);
     gl.uniform1f(dustP.u.uPx, dpr);

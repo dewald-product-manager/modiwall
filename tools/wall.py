@@ -18,5 +18,7 @@ for name in ("forest", "fern", "jungle", "plants"):
             small.save(os.path.join(out, f"{name}{part}{suffix}.avif"), quality=q, speed=4, subsampling="4:4:4" if name == "plants" else "4:2:0")
     for suffix, _ in sizes:
         shutil.copyfile(os.path.join(src, f"{name}-id{suffix}.webp"), os.path.join(out, f"{name}-id{suffix}.webp"))
-    shutil.copyfile(os.path.join(src, name + ".bin"), os.path.join(out, name + ".bin"))
+    for f in (name + ".bin", name + "-lit.bin", name + "-hull.bin"):
+        if os.path.exists(os.path.join(src, f)):
+            shutil.copyfile(os.path.join(src, f), os.path.join(out, f))
 print("plantings ready")

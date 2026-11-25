@@ -4,9 +4,26 @@
 "crumb": "Journal",
 "pageType": "Blog"
 } -->
-<section class="jr" aria-labelledby="jr-h">
-  <div class="wrap jr__top"><h1 id="jr-h">Journal</h1><p class="lede">Short reads on walls, rooms and the plants that share them.</p></div>
-  <div class="wrap">{{js:journal('vertical-garden-health-benefits')}}</div>
+<section class="book" data-book aria-labelledby="jr-h">
+  <div class="book__pin">
+    <canvas class="book__c" data-book-canvas aria-hidden="true"></canvas>
+    <div class="book__intro" data-book-intro><h1 id="jr-h">Journal</h1><p class="lede">Short reads on walls, rooms and the plants that share them.</p></div>
+    <div class="book__bar">
+      <button class="book__b" type="button" data-book-go="-1" aria-label="Previous page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <p data-book-at></p>
+      <button class="book__b" type="button" data-book-go="1" aria-label="Next page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <a class="book__read" data-book-open href="/journal.html">Read this story</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec dusk idx" aria-labelledby="ix-h">
+  <div class="wrap">
+    <div class="head"><h2 id="ix-h">Every story</h2></div>
+    <ol class="idx__l" data-peeks>
+{{js:index('vertical-garden-health-benefits')}}
+    </ol>
+  </div>
 </section>
 
 {{> cta}}

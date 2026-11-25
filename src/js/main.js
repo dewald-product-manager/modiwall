@@ -306,9 +306,10 @@ $$('[data-lit]').forEach((sec) => {
   box(sec);
   box(wall);
   const measure = () => {
-    half = spot.offsetWidth / 2;
-    names.style.width = `${wall.clientWidth}px`;
-    names.style.height = `${wall.clientHeight}px`;
+    half = Math.round(spot.offsetWidth / 2);
+    const r = wall.getBoundingClientRect();
+    names.style.width = `${r.width}px`;
+    names.style.height = `${r.height}px`;
   };
   new ResizeObserver(measure).observe(wall);
   sec.addEventListener('pointermove', (e) => {
@@ -330,10 +331,11 @@ $$('[data-lit]').forEach((sec) => {
     }
     drift += ((alone ? 1 : 0) - drift) * (1 - Math.exp(-dt / 500)); // hand to lamp and back without a jerk
     const lag = 170 + drift * 520;
-    const px = follow(x, tx, dt, lag) * b.width;
-    const py = follow(y, ty, dt, lag) * b.height;
-    spot.style.transform = `translate3d(${(px - half).toFixed(2)}px,${(py - half).toFixed(2)}px,0)`;
-    names.style.transform = `translate3d(${(half - px).toFixed(2)}px,${(half - py).toFixed(2)}px,0)`;
+    // whole pixels, so the lit names lie exactly over the unlit ones
+    const px = Math.round(follow(x, tx, dt, lag) * b.width);
+    const py = Math.round(follow(y, ty, dt, lag) * b.height);
+    spot.style.transform = `translate3d(${px - half}px,${py - half}px,0)`;
+    names.style.transform = `translate3d(${half - px}px,${half - py}px,0)`;
     glow.style.transform = `translate3d(${(b.left - a.left + px).toFixed(1)}px,${(b.top - a.top + py).toFixed(1)}px,0)`;
   });
 });
@@ -451,6 +453,14 @@ if (shots.length) {
     const d = e.changedTouches[0].clientX - sx;
     if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
   }, { passive: true });
+}
+
+/* ---- the journal as a book; a visit told by a wall; names among the leaves ---- */
+for (const [sel, file, fn] of [['[data-book]', './book.js', 'initBook'], ['[data-tale]', './tale.js', 'careTale'], ['[data-names]', './tale.js', 'clearing']]) {
+  const el = $(sel);
+  if (!el) continue;
+  if (reduced) el.classList.add('is-flat');
+  else (file === './book.js' ? import('./book.js') : import('./tale.js')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
 }
 
 /* ---- quote form ---- */

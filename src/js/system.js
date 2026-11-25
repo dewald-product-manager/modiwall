@@ -509,7 +509,6 @@ export async function initSystem(sec) {
   const AT = [0, 0.18, 0.36, 0.58, 0.8, 1.001];
   const canvas = document.createElement('canvas');
   canvas.className = 'sys__canvas';
-  canvas.dataset.cursor = 'Turn';
   canvas.setAttribute('aria-hidden', 'true');
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: true, powerPreference: 'high-performance' });
   const told = [];
@@ -847,13 +846,38 @@ export async function initSystem(sec) {
   }
 
   /* turn it by hand; it settles back as you scroll on */
+  const cur = { x: -1, v: 0 };
   let from = null;
+  // only the model itself can be taken hold of: its outline on screen, with a little room round it
+  const held = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * 2 - 1;
+    const py = 1 - ((e.clientY - r.top) / r.height) * 2;
+    const far = cur.x > 0.86 ? 7.6 : 2.75;
+    const pts = [];
+    for (const x of [-far, far]) for (const y of [-far, far]) for (const z of [0, 1.3]) {
+      const c = [0, 1, 3].map((k) => VP[k] * x + VP[4 + k] * y + VP[8 + k] * z + VP[12 + k]);
+      pts.push([c[0] / c[2], c[1] / c[2]]);
+    }
+    // inside the hull of those eight points: no line through the pointer leaves them all on one side
+    const a = pts.map(([x, y]) => Math.atan2(y - py, x - px)).sort((m, n) => m - n);
+    let gap = a[0] + Math.PI * 2 - a[a.length - 1];
+    for (let i = 1; i < a.length; i++) gap = Math.max(gap, a[i] - a[i - 1]);
+    return gap < Math.PI;
+  };
   canvas.addEventListener('pointerdown', (e) => {
+    if (!held(e)) return;
     from = { x: e.clientX, y: e.clientY, tx: turn.tx, ty: turn.ty };
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!from) return;
+    if (!from) {
+      if (e.pointerType === 'mouse') {
+        if (held(e)) canvas.dataset.cursor = 'Turn';
+        else delete canvas.dataset.cursor;
+      }
+      return;
+    }
     turn.tx = Math.max(-1.1, Math.min(1.5, from.tx - (e.clientX - from.x) / 260));
     turn.ty = e.pointerType === 'mouse' ? Math.max(-0.4, Math.min(0.6, from.ty + (e.clientY - from.y) / 340)) : 0;
     turn.gust = 1;
@@ -861,7 +885,6 @@ export async function initSystem(sec) {
   for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, () => { from = null; });
 
   let lost = false;
-  const cur = { x: -1, v: 0 };
   let was = 0;
   const t0 = performance.now();
   try {

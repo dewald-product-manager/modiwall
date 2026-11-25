@@ -1,6 +1,7 @@
-/* Modiwall living wall. Every leaf here was modelled in 3D and lit by a path tracer, then cut into its own piece of
-   geometry. A leaf unfurls from its stem, ripens from lime to deep green, throws a soft shadow, moves with the air and
-   shifts in true perspective. One draw call per wall; no libraries. */
+/* Modiwall living wall. Every plant here was modelled in 3D and lit by a path tracer, then cut into leaves that are each
+   their own piece of geometry. A leaf unfurls from its stem, ripens from lime to deep green, throws a soft shadow, moves
+   with the air and shifts in true perspective. Each leaf carries its own light from the start, so nothing about a wall
+   changes once it has grown. One draw call per wall; no libraries. */
 
 import { page, scene, box, follow, clamp, smooth } from './frame.js';
 import { programs, picture, texture } from './gl.js';
@@ -17,7 +18,7 @@ uniform vec2 uRes, uOrigin, uGrid, uPlate, uPar, uCentre;
 uniform float uM, uCell, uS, uT, uGust, uTilt, uAmb, uKey, uZoom;
 uniform vec3 uPtr, uTint;
 uniform vec3 uRip[4];
-uniform vec4 uLamp;
+uniform vec4 uLamp; uniform vec2 uWater;
 uniform sampler2D uTex, uCells, uAux, uId;
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
@@ -25,21 +26,19 @@ float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return 
 /* aG: along and across the leaf 0..1.  aR root x,y (css px), plate root u,v (table px).  aB bounds from the root (table px).  aZ depth mm, seed, number */
 const LEAF_VS = `${COMMON}
 layout(location=0) in vec2 aG; layout(location=1) in vec4 aR; layout(location=2) in vec4 aB; layout(location=3) in vec4 aZ; layout(location=4) in vec2 aS;
-uniform vec2 uShade; uniform float uKind; // 0 the lit wall as a whole, 1 a plant on its own
-out vec2 vUv; out vec2 vPx; flat out float vId; out float vYoung; out float vFace; out float vZ; out float vT; flat out float vA; flat out float vSeed; out float vSun;
+uniform vec2 uShade; uniform float uN; uniform int uRips; uniform sampler2D uHull;
+out vec2 vUv; out vec2 vPx; flat out float vId; out float vYoung; out float vFace; out float vZ; out float vT; flat out float vA; flat out float vSeed; out float vSun; flat out float vLit;
 void main(){
   vec2 q = (aR.xy - uOrigin) / uCell;
-  float settled = texelFetch(uCells, ivec2(clamp(floor(q), vec2(0.), uGrid - 1.)), 0).g;
-  float g = uKind < .5 ? 1. : texture(uCells, q / uGrid).r;
+  float g = texture(uCells, q / uGrid).r;
   float seed = aZ.y, zt = clamp(aZ.x / 320., 0., 1.);
-  // the change from a plant on its own to the wall lit as one passes leaf by leaf, never as a haze
-  vA = uKind < .5 ? smoothstep(0., .22, settled * 1.4 - seed * .5) : 1. - smoothstep(0., .24, settled * 1.62 - .74 - seed * .5);
   float wait = seed * .30 + zt * .22;                          // leaves nearest the wall come first
   float k = clamp((g * 1.62 - wait) / 1.04, 0., 1.);
   float gl = mix(k * k * (3. - 2. * k), 1. - (1. - k) * (1. - k) * (1. - k), smoothstep(0., .6, k)); // leaves the stem gently, settles slowly
   float unroll = smoothstep(.02, .85, k);
-  vA *= smoothstep(.02, .24, k);
-  vec2 b = mix(aB.xy, aB.zw, aG);
+  vA = smoothstep(.02, .24, k);
+  vec2 hull = texelFetch(uHull, ivec2(int(aG.y * 4. + .5), int(aZ.z) - 1), 0).rg;       // only as wide as the leaf is here
+  vec2 b = mix(aB.xy, aB.zw, vec2(mix(hull.x, hull.y, aG.x), aG.y));
   vUv = (aR.zw + b) / uPlate;
   vec2 c = (aB.xy + aB.zw) * .5;
   vec2 dir = normalize(c + vec2(.001, .01));
@@ -63,10 +62,12 @@ void main(){
   vec2 pd = px - uPtr.xy; float d2 = dot(pd, pd);
   float pf = exp(-d2 / (uM * uM * .55)) * uPtr.z * t;
   vec2 push = normalize(pd + .01) * pf * min(16., len * .22);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < uRips; i++) {
     float age = uT - uRip[i].z;
     if (uRip[i].z > 0. && age < 2.8) { vec2 r = px - uRip[i].xy; float w = (length(r) - age * uM * 1.7) / (uM * .42); push += normalize(r + .01) * exp(-w*w) * (1. - age / 2.8) * t * min(14., len * .2); }
   }
+  float wet = exp(-pow((px.y - uWater.x) / (uM * .42), 2.)) * uWater.y;
+  push += vec2(sin(seed * 60. + uT * 5.) * .35, 1.) * wet * t * min(10., len * .12);
   p += vec2(-p.y, p.x) * rot + push;
   z -= pf * len * .25;
   px = aR.xy + p;
@@ -75,23 +76,27 @@ void main(){
   px = uCentre + (px - uCentre) * (1. + z / 3400.) * uZoom;
   // sunlight through a tree outside, and one slow beam that crosses the wall
   vec2 w = px / uM;
-  float tree = noise(w * 1.25 + vec2(uT * .075, uT * -.04) + noise(w * .7 - uT * .05) * 1.3) * .62 + noise(w * 3.1 - vec2(uT * .11, uT * .02)) * .38;
+  float tree = .5 + .25 * sin(w.x * 1.7 + uT * .21 + sin(w.y * 1.3 - uT * .13) * 1.6) + .25 * sin(w.y * 2.3 - uT * .17 + sin(w.x * 2.1 + uT * .11) * 1.4);
   float beam = (w.x*.62 + w.y*.78 - mod(uT * .30, (uRes.x + uRes.y) / uM + 8.) + 4.) / 1.9;
   vSun = mix(.6, 1.2, smoothstep(.3, .7, tree)) + exp(-beam*beam) * .34;
   vPx = px; vId = aZ.z; vYoung = 1. - smoothstep(.35, 1., k); vFace = ca; vZ = zt; vT = t; vSeed = seed;
+  // where nothing grows above a leaf yet, the light still reaches it
+  vec2 ua = q + vec2(-.35, -1.1), ub = q + vec2(-.9, -.35);
+  float over = min(texture(uCells, ua / uGrid).r * step(0., ua.y), texture(uCells, ub / uGrid).r * step(0., ub.x));
+  vLit = mix(max(aZ.w, .58 + .3 * zt), aZ.w, over * over);
   vec2 cl = px / uRes * 2. - 1.;
-  gl_Position = k <= .001 || vA <= .001 ? vec4(2., 2., 2., 1.) : vec4(cl.x, -cl.y, 0., 1.);
+  gl_Position = k <= .001 || vA <= .001 ? vec4(2., 2., 2., 1.) : vec4(cl.x, -cl.y, (float(gl_InstanceID) + 1.) / uN * 1.98 - .99, 1.);
 }`;
 const LEAF_FS = `${COMMON}
-uniform float uMask, uKind;
-in vec2 vUv; in vec2 vPx; flat in float vId; in float vYoung; in float vFace; in float vZ; in float vT; flat in float vA; flat in float vSeed; in float vSun; out vec4 o;
+uniform float uMask;
+in vec2 vUv; in vec2 vPx; flat in float vId; in float vYoung; in float vFace; in float vZ; in float vT; flat in float vA; flat in float vSeed; in float vSun; flat in float vLit; out vec4 o;
 float at(vec2 uv){ ivec2 n = textureSize(uId, 0); ivec2 p = ivec2(floor(uv * vec2(n))); p = ((p % n) + n) % n; vec4 c = texelFetch(uId, p, 0); return floor(c.r * 255. + .5) + floor(c.g * 255. + .5) * 256. == vId ? .25 : 0.; }
 float cover(){ vec2 n = vec2(textureSize(uId, 0)), a = dFdx(vUv), b = dFdy(vUv); a *= max(1., .95 / max(length(a * n), .01)); b *= max(1., .95 / max(length(b * n), .01)); return at(vUv + a * .125 + b * .375) + at(vUv - a * .125 - b * .375) + at(vUv + a * .375 - b * .125) + at(vUv - a * .375 + b * .125); }
 void main(){
   float al = cover();
-  if (al < .01) discard;
-  al = mix(al, min(1., al * 1.5), 1. - uMask);
-  if (uMask > .5) { o = vec4(al); return; }
+  if (uMask > .5) { if (al < .01) discard; o = vec4(min(1., al)); return; }
+  al = min(1., al * 1.5) * vA;
+  if (al < .06) discard;
   vec3 col = texture(uTex, vUv, -.5).rgb;
   vec3 x = texture(uAux, vUv).rgb; vec2 n = x.yz * 2. - 1.;
   vec2 w = vPx / uM;
@@ -100,65 +105,65 @@ void main(){
   // new growth is paler and lit through
   col = mix(col, pow(col, vec3(.72)) * vec3(1.16, 1.12, .62), vYoung * .62);
   col *= mix(.62, 1., clamp(vFace, 0., 1.));
+  // water passing: leaves darken, and every wet edge catches the light
+  float wetf = uWater.y * exp(-pow((vPx.y - uWater.x) / (uM * .5), 2.)), trail = uWater.y * smoothstep(uWater.x + uM * .2, uWater.x - uM * .4, vPx.y) * smoothstep(uWater.x - uM * 3.2, uWater.x - uM * .4, vPx.y);
+  float glint = pow(clamp(1. - abs(n.x * .7 + n.y * .5 - .34 + .12 * sin(vPx.x * .09 + vPx.y * .21 - uT * 6.)) * 2.4, 0., 1.), 5.);
+  col = col * (1. - .16 * max(wetf, trail)) + vec3(.75, .86, .9) * glint * (wetf * .55 + trail * .26) * smoothstep(.1, .5, vZ + .25);
   vec2 ld = vPx - uLamp.xy; float fall = uLamp.w / (1. + dot(ld, ld) / (uLamp.z * uLamp.z) * 1.35);
   vec2 ln = normalize(ld + .01); float lf = clamp(.82 - dot(n, vec2(ln.x, -ln.y)) * .75 + vZ * .25, .25, 1.4);
   col *= vec3(uAmb) * mix(vec3(.55, .78, 1.15), vec3(1.), uAmb) + vec3(1.5, 1.2, .8) * fall * lf;
   col = col / (1. + max(col - .78, 0.) * .9);
-  // a plant on its own still sits in the shade of its neighbours, deepest by the stem
-  if (uKind > .5) {
-    float own = fract(sin(vId * 12.9898 + floor(vSeed * 97.) ) * 43758.5);
-    float thrown = smoothstep(.42, .62, noise(w * 5.2 + own * 3.) * .7 + own * .42);      // a neighbour's shadow lies across some leaves
-    float sh = x.r * .58 * (1. - thrown) * (1. - smoothstep(.55, .95, vZ) * .7);
-    col *= (1. - sh) * mix(vec3(1.), vec3(1.07, 1.02, .84), sh * 1.5);
-    col *= mix(1., mix(.34, 1., smoothstep(0., .55, vT)) * mix(.52, 1., smoothstep(.05, .62, vZ)), 1. - vYoung * .7);
-  }
-  al *= vA;
-  o = vec4(clamp(col * uTint, 0., 1.) * al, al);
+  // the shade of its neighbours, worked out once for every leaf; deepest by the stem, and warmer where light comes through
+  float own = fract(sin(vId * 12.9898 + floor(vSeed * 97.)) * 43758.5);
+  float thrown = smoothstep(.40, .64, noise(w * 5.2 + own * 3.) * .7 + own * .42);
+  float lit = vLit * mix(1., .74 + .26 * thrown, x.r) * mix(mix(.46, 1., smoothstep(0., .5, vT)), 1., vLit * .55);
+  lit = mix(lit, 1., vYoung * .55);
+  col *= mix(vec3(.20, .30, .27), vec3(1.06, 1.03, .98), lit) * (.16 + .92 * lit);
+  o = vec4(clamp(col * uTint, 0., 1.), al);
 }`;
 const QUAD_VS = `#version 300 es
 layout(location=0) in vec2 aQ; out vec2 vQ; void main(){ vQ = aQ; gl_Position = vec4(aQ * 2. - 1., 0., 1.); }`;
 const BASE_FS = `${COMMON}
-uniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uAnchor;
+uniform sampler2D uShadow; uniform float uShadowOn;
 in vec2 vQ; out vec4 o;
 void main(){
   vec2 px = vec2(vQ.x, 1. - vQ.y) * uRes;
   vec2 wp = uCentre + (px - uCentre) / uZoom;
   vec2 q = (wp - uOrigin) / uCell;
   vec2 f = smoothstep(vec2(-.02), vec2(.16), q) * smoothstep(vec2(-.02), vec2(.16), uGrid - q);
-  vec2 cell = texture(uCells, q / uGrid).rg * f.x * f.y; float g = cell.r;
+  float g = texture(uCells, q / uGrid).r * f.x * f.y;
   float sh = uShadowOn > .5 ? texture(uShadow, vQ).r : 0.;
   // between the leaves: soil, stems and the dark of the vessels, then the wall itself
-  vec2 uv = (wp - uAnchor) / uS / uPlate;
-  float whole = smoothstep(.9, .995, cell.g);
-  vec3 c = texture(uTex, uv).rgb * mix(.17, .96, whole) * uAmb;
   float rag = noise(wp / uM * 11.) * .6 + noise(wp / uM * 27.) * .4;
+  vec3 c = mix(vec3(.010, .020, .012), vec3(.028, .052, .026), rag) * uAmb;
   float a = smoothstep(.7, .8, g - rag * .2);
-  a = max(a, whole);
   o = vec4(c * uTint * a, a) + vec4(0., 0., 0., sh * .46 * uAmb) * (1. - a);
 }`;
+const SOLID_VS = `#version 300 es
+layout(location=0) in vec2 aQ; void main(){ gl_Position = vec4(aQ * 2. - 1., .998, 1.); }`;
+const SOLID_FS = `#version 300 es
+precision lowp float; out vec4 o; void main(){ o = vec4(1.); }`;
 const BLUR_FS = `#version 300 es
 precision mediump float; uniform sampler2D uTex; uniform vec2 uStep; in vec2 vQ; out vec4 o;
 void main(){ float s = texture(uTex, vQ).r * .2; for (int i = 1; i < 6; i++) { float w = exp(-float(i*i) / 11.) * .2; s += (texture(uTex, vQ + uStep * float(i)).r + texture(uTex, vQ - uStep * float(i)).r) * w; } o = vec4(min(s * .72, 1.)); }`;
 
 const url = (f) => new URL(`../img/wall/${f}`, import.meta.url).href;
-const small = innerWidth * Math.min(2, devicePixelRatio || 1) < 1400;
 
 /* each planting is fetched once, however many walls use it */
 const plates = {};
 let plants;
 const OWN = 600; // pixels to a metre in the plants drawn on their own
 async function plate(name) {
-  const s = small ? '-s' : '';
-  const part = (n, v) => Promise.all([picture(url(`${n}${v}.avif`)), picture(url(`${n}-aux${v}.avif`)), picture(url(`${n}-id${v}.webp`), true), fetch(url(`${n}.bin`)).then((r) => r.arrayBuffer())]);
-  const [[tex, aux, id, bin], own] = await Promise.all([part(name, s), (plants ??= part('plants', ''))]);
+  const get = (f) => fetch(url(f)).then((r) => r.arrayBuffer());
+  const [bin, lit, own] = await Promise.all([get(`${name}.bin`), get(`${name}-lit.bin`), (plants ??= Promise.all([picture(url('plants.avif')), picture(url('plants-aux.avif')), picture(url('plants-id.webp'), true), get('plants.bin'), get('plants-hull.bin')]))]);
   const t = new Int16Array(bin);
   const [n, np] = t;
   const b = new Int16Array(own[3]);
   const [ns, , aw, ah] = b;
   return {
-    img: [tex, aux, id],
     own: own.slice(0, 3),
-    table: t.subarray(2, 2 + n * 8), // the lit wall, leaf by leaf
+    hull: new Uint8Array(own[4]),
+    lit: new Uint8Array(lit), // every leaf's light, then whether it is ever seen
     plants: t.subarray(2 + n * 8, 2 + n * 8 + np * 6), // what stands where
     kinds: b.subarray(4, 4 + ns * 4),
     leaves: b.subarray(4 + ns * 4),
@@ -173,9 +178,9 @@ export const loadPlate = (name) => (plates[name] ??= plate(name));
 
 /* ------------------------------------------------------------------ engine */
 export async function createWall(canvas, { style = 0, shadow = false, anchor = [0, 0] } = {}) {
-  const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false, powerPreference: 'high-performance' });
+  const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, depth: true, powerPreference: 'high-performance' });
   if (!gl) throw new Error('no webgl2');
-  const making = programs(gl, [[LEAF_VS, LEAF_FS], [QUAD_VS, BASE_FS], [QUAD_VS, BLUR_FS]], 'wall');
+  const making = programs(gl, [[LEAF_VS, LEAF_FS], [QUAD_VS, BASE_FS], [QUAD_VS, BLUR_FS], [SOLID_VS, SOLID_FS]], 'wall');
   making.catch(() => {});
   const faces = {};
   let ownTex;
@@ -184,15 +189,14 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
     const p = await loadPlate(name);
     const how = [{ mip: true }, {}, { near: true }];
     const put = (list) => Promise.all(list.map((img, i) => texture(gl, img, { wrap: 'both', ...how[i] })));
-    const [t, o] = await Promise.all([put(p.img), (ownTex ??= put(p.own))]);
-    faces[name] = { ...p, t, o };
+    faces[name] = { ...p, o: await (ownTex ??= put(p.own)) };
     return faces[name];
   };
   let face = await upload(STYLE_NAMES[style]);
-  const [leafP, baseP, blurP] = await making;
+  const [leafP, baseP, blurP, solidP] = await making;
 
   // the grid one leaf is bent on
-  const nx = 3;
+  const nx = 2;
   const ny = 4;
   const gridV = [];
   const gridI = [];
@@ -223,8 +227,8 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
     gl.bindVertexArray(null);
     return { vao, b, n: 0 };
   };
-  const wholeSet = set();
   const ownSet = set();
+  const edgeSet = shadow ? set() : null; // plants along an edge: the only ones whose shadow falls on the bare wall
   const quadVao = gl.createVertexArray();
   gl.bindVertexArray(quadVao);
   buf(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]));
@@ -240,14 +244,20 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
   for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
   for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
 
+  bind(7, gl.createTexture());
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, 5, face.hull.length / 10, 0, gl.RG, gl.UNSIGNED_BYTE, face.hull);
+  for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+
   const shade = shadow ? [0, 1].map(() => ({ t: gl.createTexture(), f: gl.createFramebuffer() })) : null;
   let shW = 0;
   let shH = 0;
-  let at = []; // every plant that could stand on the grid, furthest first: its cell, and where its leaves are in the pool
+  let at = []; // every plant that could stand on the grid, nearest first: its cell, and where its leaves are in the pool
   let pool = new Float32Array(0);
+  let seen = pool; // the same, without the leaves no one can see
   let pack = pool;
+  let pack2 = pool;
   let restock = true;
-  let lastT = 0;
   const born = new Float32Array(MAX_CELLS).fill(-1);
   const gone = new Float32Array(MAX_CELLS);
   let cells = new Float32Array(2); // how far each cell has grown, how far it has become part of the lit wall
@@ -270,6 +280,7 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
     py: { x: 0, v: 0 },
     lamp: { x: 0, y: 0, r: 1, on: 0 },
     amb: 1,
+    water: { y: -9999, s: 0 },
     key: 1,
     zoom: 1,
     tint: [1, 1, 1],
@@ -325,8 +336,6 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
         canvas.height = ch;
       }
       const now = reduced ? 60 : W.now();
-      const step = reduced ? 9 : Math.min(0.1, now - lastT);
-      lastT = now;
       if (!settled) {
         settled = true;
         const n = L.cols * L.rows;
@@ -347,9 +356,9 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
             } else if (k < 1) settled = false;
           }
           cells[i * 2] = g;
-          shut[i] = g > 0.988 && !gone[i] ? 1 : 0;
+          shut[i] = g > 0.995 && !gone[i] ? 1 : 0;
         }
-        // where every neighbour has closed in, a plant gives way to the wall lit as one
+        // where every neighbour has closed in, the leaves no one can see any more are left out; nothing else changes
         const open = (x, y) => {
           if (x < 0) return L.ox > -L.m;
           if (y < 0) return L.oy > -L.m;
@@ -361,11 +370,10 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
           const i = y * L.cols + x;
           let whole = shut[i];
           for (let b = -2; b < 3 && whole; b++) for (let a = -2; a < 3 && whole; a++) if (open(x + a, y + b)) whole = 0;
-          const was = still[i];
-          still[i] = whole ? Math.min(1, was + step / 2.3) : Math.max(0, was - step / 0.6);
-          if (still[i] !== whole) settled = false;
-          if ((was === 1) !== (still[i] === 1)) restock = true;
-          cells[i * 2 + 1] = still[i];
+          if (still[i] !== whole) {
+            still[i] = whole;
+            restock = true;
+          }
         }
         bind(5, cellTex);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, L.cols, L.rows, gl.RG, gl.FLOAT, cells);
@@ -374,7 +382,7 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
       const S = ((L.m / CELL) * face.metres) / face.w; // css px to one table px
       const common = ({ p, u }) => {
         gl.useProgram(p);
-        for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uCells', 5], ['uShadow', 6]]) if (u[n]) gl.uniform1i(u[n], i);
+        for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uCells', 5], ['uShadow', 6], ['uHull', 7]]) if (u[n]) gl.uniform1i(u[n], i);
         gl.uniform2f(u.uRes, L.w, L.h);
         gl.uniform2f(u.uOrigin, L.ox, L.oy);
         gl.uniform2f(u.uGrid, L.cols, L.rows);
@@ -394,23 +402,27 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
         gl.uniform2f(u.uPar, W.par.x, W.par.y);
         gl.uniform3f(u.uPtr, W.ptr.x, W.ptr.y, W.ptr.s);
         gl.uniform3fv(u.uRip, rip);
+        gl.uniform2f(u.uWater, W.water.y, W.water.s);
         gl.uniform4f(u.uLamp, W.lamp.x, W.lamp.y, W.lamp.r, W.lamp.on);
       };
       bind(5, cellTex);
+      const ripples = W.now() - Math.max(rip[2], rip[5], rip[8], rip[11]) < 3 ? 4 : 0;
       gl.disable(gl.DEPTH_TEST);
-      const leaves = (own, mask) => {
-        const q = own ? ownSet : wholeSet;
-        if (!q.n) return;
-        (own ? face.o : face.t).forEach((t, i) => bind(i, t));
-        common(leafP);
-        if (own) gl.uniform2f(leafP.u.uPlate, face.aw, face.ah);
-        gl.uniform1f(leafP.u.uKind, own);
-        gl.uniform1f(leafP.u.uMask, mask);
-        gl.uniform2f(leafP.u.uShade, mask * 0.62, mask * 0.78);
-        gl.bindVertexArray(q.vao);
-        gl.drawElementsInstanced(gl.TRIANGLES, gridI.length, gl.UNSIGNED_SHORT, 0, q.n);
+      const leaves = (prog, mask) => {
+        const S0 = mask ? edgeSet : ownSet;
+        if (!S0.n) return;
+        face.o.forEach((t, i) => bind(i, t));
+        common(prog);
+        const { u } = prog;
+        gl.uniform2f(u.uPlate, face.aw, face.ah);
+        if (u.uMask) gl.uniform1f(u.uMask, mask);
+        gl.uniform1f(u.uN, S0.n + 1);
+        gl.uniform1i(u.uRips, ripples);
+        gl.uniform2f(u.uShade, mask * 0.62, mask * 0.78);
+        gl.bindVertexArray(S0.vao);
+        gl.drawElementsInstanced(gl.TRIANGLES, gridI.length, gl.UNSIGNED_SHORT, 0, S0.n);
       };
-      const shadows = shade && ownSet.n > 0;
+      const shadows = shade && edgeSet.n > 0;
       if (shadows) {
         const sw = Math.max(2, Math.round(L.w / 5));
         const sh = Math.max(2, Math.round(L.h / 5));
@@ -434,7 +446,7 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
         gl.enable(gl.BLEND);
         gl.blendEquation(gl.MAX);
         gl.blendFunc(gl.ONE, gl.ONE);
-        leaves(1, 1);
+        leaves(leafP, 1);
         gl.blendEquation(gl.FUNC_ADD);
         gl.disable(gl.BLEND);
         gl.useProgram(blurP.p);
@@ -451,16 +463,28 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
       }
       gl.viewport(0, 0, cw, ch);
       gl.disable(gl.BLEND);
-      face.t.forEach((t, i) => bind(i, t));
       common(baseP);
       gl.uniform1f(baseP.u.uShadowOn, shadows ? 1 : 0);
-      gl.uniform2f(baseP.u.uAnchor, L.ox + (anchor[0] * L.m) / CELL, L.oy + (anchor[1] * L.m) / CELL);
       gl.bindVertexArray(quadVao);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      leaves(0, 0);
-      leaves(1, 0);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthMask(true);
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      gl.depthFunc(gl.LESS);
+      // soft edges from the card's own samples, nearest leaf first, so what is hidden costs little
+      gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+      gl.colorMask(true, true, true, false);
+      leaves(leafP, 0);
+      gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+      gl.colorMask(false, false, false, true);
+      gl.depthFunc(gl.GREATER);
+      gl.depthMask(false);
+      gl.useProgram(solidP.p);
+      gl.bindVertexArray(quadVao);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // whatever a leaf covers is solid
+      gl.depthMask(true);
+      gl.colorMask(true, true, true, true);
+      gl.disable(gl.DEPTH_TEST);
     },
     /* runs only while `watch` is on screen; lowers resolution if frames are slow */
     run(watch, each) {
@@ -484,7 +508,7 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
         if (each?.(dt, top, h) === false) return;
         // nothing but air moving: on a fast screen, every other frame is enough
         const key = `${W.zoom.toFixed(4)} ${W.amb.toFixed(3)} ${page.sharp}`;
-        const busy = !settled || restock || P.s > 0.01 || Math.abs(W.gust) > 0.03 || Math.abs(W.px.v) + Math.abs(W.py.v) > 1e-5 || key !== mapped || W.now() - Math.max(rip[2], rip[5], rip[8], rip[11]) < 3;
+        const busy = !settled || restock || P.s > 0.01 || Math.abs(W.gust) > 0.03 || W.water.s > 0.01 || W.lamp.on > 0.01 || Math.abs(W.px.v) + Math.abs(W.py.v) > 1e-5 || key !== mapped || W.now() - Math.max(rip[2], rip[5], rip[8], rip[11]) < 3;
         mapped = key;
         calm = busy ? 0 : calm + 1;
         if (calm > 8 && page.hz > 100 && calm % 2) return;
@@ -508,56 +532,49 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
     const ay = L.oy + (anchor[1] * L.m) / CELL;
     const pw = face.w * S;
     const ph = face.h * S;
-    const T = face.table;
-    const n = T.length / 8;
     const right = L.ox + L.cols * L.m;
     const foot = L.oy + L.rows * L.m;
     const tiles = [];
     for (let j = Math.floor((L.oy - ay) / ph); j * ph + ay < foot; j++) for (let i = Math.floor((L.ox - ax) / pw); i * pw + ax < right; i++) tiles.push([ax + i * pw, ay + j * ph]);
-    const out = [];
-    const pad = 60;
     let total = 0;
+    let thin = 0;
     const inside = (x, y) => x >= L.ox && y >= L.oy && x <= right && y <= foot;
     const rnd = (v) => {
       const h = Math.sin(v) * 43758.5453;
       return h - Math.floor(h);
     };
-    for (let k = 0; k < n; k++) {
-      const o = k * 8;
-      for (const [tx, ty] of tiles) {
-        const x = tx + T[o] * S;
-        const y = ty + T[o + 1] * S;
-        if (!inside(x, y)) continue;
-        if (x + T[o + 4] * S < -pad || x + T[o + 2] * S > L.w + pad || y + T[o + 5] * S < -pad || y + T[o + 3] * S > L.h + pad) continue;
-        out.push(x, y, T[o], T[o + 1], T[o + 2], T[o + 3], T[o + 4], T[o + 5], T[o + 6], rnd(k * 12.9898 + T[o] * 0.31), k + 1, 0, S, 0);
-      }
-    }
-    wholeSet.n = out.length / 14;
-    gl.bindBuffer(gl.ARRAY_BUFFER, wholeSet.b);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(out), gl.DYNAMIC_DRAW);
     const P = face.plants;
     at = [];
     const rows = [];
-    for (let k = 0; k < P.length; k += 6) for (const [tx, ty] of tiles) {
+    const starts = new Int32Array(P.length / 6); // each plant's first leaf in the light table
+    for (let k = 1; k < starts.length; k++) starts[k] = starts[k - 1] + face.kinds[P[(k - 1) * 6 + 2] * 4 + 1];
+    const known = face.lit.length / 2;
+    for (let k = P.length - 6; k >= 0; k -= 6) for (const [tx, ty] of tiles) {
       const x = tx + P[k] * S;
       const y = ty + P[k + 1] * S;
       if (!inside(x, y) || x < -200 || y < -200 || x > L.w + 200 || y > L.h + 200) continue;
       const cell = Math.min(L.rows - 1, Math.floor((y - L.oy) / L.m)) * L.cols + Math.min(L.cols - 1, Math.floor((x - L.ox) / L.m));
       const n = face.kinds[P[k + 2] * 4 + 1];
-      at.push([cell, total, (total += n * 14)]);
-      rows.push(x, y, P[k + 2], P[k + 3] / 10000, P[k + 4] / 1000, P[k + 5], rnd(k * 7.13 + tx));
+      let show = 0;
+      const first = starts[k / 6];
+      for (let m = 0; m < n; m++) show += face.lit[known + first + m];
+      at.push([cell, total, (total += n * 14), thin, (thin += show * 14)]);
+      rows.push(x, y, P[k + 2], P[k + 3] / 10000, P[k + 4] / 1000, P[k + 5], rnd(k * 7.13 + tx), first);
     }
     if (pool.length < total) {
       pool = new Float32Array(total);
+      seen = new Float32Array(total);
       pack = new Float32Array(total);
+      if (shadow) pack2 = new Float32Array(total);
     }
     const leaf = face.leaves;
     let w = 0;
-    for (let i = 0; i < rows.length; i += 7) {
+    let v = 0;
+    for (let i = 0; i < rows.length; i += 8) {
       const kind = rows[i + 2] * 4;
       const first = face.kinds[kind];
       const s = (rows[i + 4] * L.m) / CELL / OWN;
-      for (let k = 0; k < face.kinds[kind + 1]; k++) {
+      for (let k = face.kinds[kind + 1] - 1; k >= 0; k--) {
         const o = (first + k) * 6;
         pool[w++] = rows[i];
         pool[w++] = rows[i + 1];
@@ -567,9 +584,13 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
         pool[w++] = rows[i + 5] + leaf[o + 4];
         pool[w++] = rnd((first + k) * 12.9898 + rows[i + 6] * 70);
         pool[w++] = first + k + 1;
-        pool[w++] = 0;
+        pool[w++] = face.lit[rows[i + 7] + k] / 255;
         pool[w++] = s;
         pool[w++] = rows[i + 3];
+        if (face.lit[known + rows[i + 7] + k]) {
+          seen.set(pool.subarray(w - 14, w), v);
+          v += 14;
+        }
       }
     }
     restock = true;
@@ -581,22 +602,41 @@ export async function createWall(canvas, { style = 0, shadow = false, anchor = [
     let n = 0;
     let from = -1;
     let to = -1;
+    let src = pool;
     const take = () => {
       if (from < 0) return;
-      pack.set(pool.subarray(from, to), n);
+      pack.set(src.subarray(from, to), n);
       n += to - from;
       from = -1;
     };
-    for (const [cell, a, b] of at) {
-      if (born[cell] === -1 || still[cell] === 1) {
+    for (const [cell, a, b, c, d] of at) {
+      if (born[cell] === -1) {
         take();
         continue;
       }
-      if (from < 0) from = a;
-      to = b;
+      const want = still[cell] ? seen : pool;
+      if (want !== src) {
+        take();
+        src = want;
+      }
+      if (from < 0) from = still[cell] ? c : a;
+      to = still[cell] ? d : b;
     }
     take();
     ownSet.n = n / 14;
+    if (edgeSet) {
+      let e = 0;
+      for (const [cell, a, b] of at) {
+        if (born[cell] === -1 || still[cell]) continue;
+        pack2.set(pool.subarray(a, b), e);
+        e += b - a;
+      }
+      edgeSet.n = e / 14;
+      if (e) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, edgeSet.b);
+        gl.bufferData(gl.ARRAY_BUFFER, pack2, gl.DYNAMIC_DRAW, 0, e);
+      }
+    }
     if (!n) return;
     gl.bindBuffer(gl.ARRAY_BUFFER, ownSet.b);
     gl.bufferData(gl.ARRAY_BUFFER, pack, gl.DYNAMIC_DRAW, 0, n);

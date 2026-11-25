@@ -1,5 +1,5 @@
 
-import { ROOM } from './roomdata.js?v=496d7227';
+import { ROOM } from './roomdata.js?v=544c3219';
 import { page, scene, follow } from './frame.js?v=c5329617';
 import { programs, picture, texture, sized, slot } from './gl.js?v=da570bfd';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -30,9 +30,10 @@ const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPr
 if (!gl) throw new Error('no webgl2');
 const making = programs(gl, [[VS, FS]], 'room');
 making.catch(() => {});
-const small = innerWidth * Math.min(2, devicePixelRatio || 1) < 1500;
+const need = Math.max(innerWidth, innerHeight * (16 / 9) * 0.8) * Math.min(1.75, devicePixelRatio || 1) * (name === 'mat' ? 1.5 : 1.1);
+const tier = navigator.connection?.saveData || need < 1300 ? '-s' : need < 2300 || Math.max(innerWidth, innerHeight) < 1000 ? '' : '-l';
 const at = (f) => picture(new URL(`../img/room/${f}.avif`, import.meta.url).href);
-const pics = await Promise.all([0, 1, 2, 3].map((g) => at(`${name}-${g}${small ? '-s' : ''}`)).concat(at(`${name}-d`)));
+const pics = await Promise.all([0, 1, 2, 3].map((g) => at(`${name}-${g}${tier}`)).concat(at(`${name}-d`)));
 const [{ p: prog, u }] = await making;
 let asp = 0;
 gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
@@ -41,7 +42,7 @@ gl.enableVertexAttribArray(0);
 gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 const tex = [];
 for (const img of pics) {
-tex.push(await texture(gl, img));
+tex.push(await texture(gl, img, { mip: true, sharp: 2 }));
 asp ||= img.width / img.height;
 img.close();
 }
@@ -128,7 +129,7 @@ if (reduced) still();
 });
 function still() {
 place();
-R.w = on ? [0.55, 1.25, 1, 1.9] : [1, 0, 0, 0];
+R.w = on ? [0.75, 0.62, 0.84, 1.5] : [1.35, 0, 0, 0];
 R.view[2] = 1;
 R.draw(0);
 }
@@ -146,10 +147,10 @@ let lit = '';
 R.run(sec, (dt, top, h) => {
 if (!on && !touched && top < page.h * 0.22 && top + h > page.h * 0.6) set(true);
 since += dt;
-to[0] = on ? 0.55 : 1;
-to[3] = on && since > 120 ? 1.9 : 0;
-to[1] = on && since > 620 ? 1.25 : 0;
-to[2] = on && since > 1250 ? 1 : 0;
+to[0] = on ? 0.75 : 1.35;
+to[3] = on && since > 120 ? 1.5 : 0;
+to[1] = on && since > 620 ? 0.62 : 0;
+to[2] = on && since > 1250 ? 0.84 : 0;
 for (let i = 0; i < 4; i++) R.w[i] = follow(lamp[i], to[i], dt, on ? warm[i] : warm[i] * 0.7);
 place();
 R.view[2] = follow(zoom, 1.1 - Math.min(1, Math.max(0, 1 - top / page.h)) * 0.07, dt, 480);

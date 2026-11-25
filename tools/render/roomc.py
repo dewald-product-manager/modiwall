@@ -29,29 +29,38 @@ def dark_textures():
             r = np.exp(-np.abs(field(sd, b, k)) / th) * mk(sd + 20, g) * st
             col = col * (1 - r[..., None]) + np.array(cc) * r[..., None]
         save('nero_d.png', np.clip(col, 0, 1) ** (1 / 1.35))
-    if not os.path.exists(d + '/trav_d.png'):   # silver travertine, cut along the vein: 3.4 m across
+    for q in range(3):
+        if os.path.exists(f'{d}/tv{q}_d.png'):
+            continue
+        o = 400 + q * 40
         y, x = np.mgrid[0:n, 0:n] / n
-        warp = fb(n, 171, 5, 2) * .030 + fb(n, 172, 4, 7) * .010 + fb(n, 173, 4, 30) * .0022
+        warp = fb(n, o, 4, 1) * .030 + fb(n, o + 1, 4, 3) * .011 + fb(n, o + 2, 4, 11) * .0030 + fb(n, o + 3, 4, 46) * .0007
 
-        def lay(seed, base, stretch, kx=.0):
-            f = fb(n, seed, 5, base)
-            return map_coordinates(f, [((y + warp) * n) % n, (x * n / stretch + kx * n) % n], order=1, mode='wrap')
-        big, mid, fine, hair = lay(174, 5, 5.), lay(175, 14, 9.), lay(176, 48, 14.), lay(177, 150, 18.)
-        t = big * .75 + mid * .62 + fine * .42 + hair * .22
-        light, dark, rust = np.array([.70, .67, .62]), np.array([.27, .25, .225]), np.array([.40, .315, .235])
-        k = np.clip(t * 1.05 + .5, 0, 1)[..., None]
-        col = dark * (1 - k) + light * k
-        rr = np.clip(lay(178, 9, 8.) * 2 - .25, 0, 1)[..., None] * .45
-        col = col * (1 - rr) + rust * rr
-        seam = np.exp(-np.abs(lay(179, 11, 10.)) / .018)[..., None] * .5
-        col = col * (1 - seam) + np.array([.19, .168, .145]) * seam
-        ph = map_coordinates(fb(n, 180, 3, 220), [((y + warp) * n) % n, (x * n / 3.) % n], order=1, mode='wrap')
-        pit = np.clip((ph * .9 + lay(181, 12, 8.) * .5 - .62) * 6, 0, 1)
-        pit = gaussian_filter(pit, .7)
-        col = col * (1 - pit[..., None] * .6)
-        save('trav_d.png', col)
-        Image.fromarray(plants.tonormal(-pit * 3.2 + fine * .35 + hair * .3, 1.2)).save(d + '/trav_n.png')
-        save('trav_r.png', np.repeat((.40 + fine * .08 + pit * .45 + fb(n, 182, 4, 12) * .05)[..., None], 3, 2))
+        def lay(seed, base, stretch):
+            return map_coordinates(fb(n, o + seed, 5, base), [((y + warp) * n) % n, (x * n / stretch) % n], order=1, mode='wrap')
+        norm = lambda f: f / (f.std() + 1e-6)
+        big, mid, fine, hair, dust = (norm(lay(k, b, t)) for k, b, t in ((4, 3, 5.), (5, 9, 9.), (6, 30, 16.), (7, 95, 22.), (8, 210, 10.)))
+        t = big * .30 + mid * .34 + fine * .30 + hair * .20 + dust * .07
+        k = 1 / (1 + np.exp(-t * 1.55))
+        ramp = np.array([[.335, .300, .262], [.455, .415, .365], [.560, .522, .470], [.640, .607, .557], [.700, .672, .628]])
+        u = np.clip(k, 0, .9999) * 4
+        i0 = u.astype(int)
+        col = ramp[i0] * (1 - (u - i0))[..., None] + ramp[i0 + 1] * (u - i0)[..., None]
+        warm = np.clip(norm(lay(9, 5, 7.)) * .5 - .25, 0, 1)[..., None] * .26
+        col = col * (1 - warm) + np.array([.50, .40, .30]) * warm
+        line = (np.exp(-np.abs(norm(lay(10, 16, 14.))) / .06) * np.clip(norm(lay(11, 4, 4.)) * .7 + .2, 0, 1))[..., None] * .34
+        col = col * (1 - line) + np.array([.275, .238, .200]) * line
+        # the small open pores travertine has, strung out along the bedding
+        ph = norm(map_coordinates(fb(n, o + 12, 3, 250), [((y + warp) * n) % n, (x * n / 2.6) % n], order=1, mode='wrap'))
+        band = np.clip(norm(lay(13, 13, 10.)) * .8 - .35, 0, 1)
+        pit = gaussian_filter(np.clip((ph * .5 + band * 1.05 - 1.62) * 5, 0, 1), .6)
+        pit2 = gaussian_filter(np.clip((norm(fb(n, o + 14, 2, 420)) - 2.35) * 3, 0, 1), .5)
+        pp = np.maximum(pit, pit2 * .7)
+        col = col * (1 - pp[..., None] * .66)
+        col *= (1 + norm(fb(n, o + 15, 2, 600)) * .012)[..., None]
+        save(f'tv{q}_d.png', col)
+        Image.fromarray(plants.tonormal(-pp * 4.2 + fine * .10 + hair * .10 + norm(fb(n, o + 16, 3, 180)) * .05, 1.2)).save(f'{d}/tv{q}_n.png')
+        save(f'tv{q}_r.png', np.repeat((.34 + hair * .015 + (1 - k) * .10 + pp * .45 + norm(fb(n, o + 17, 4, 6)) * .02)[..., None], 3, 2))
     if not os.path.exists(d + '/bas_d.png'):    # honed basalt floor, 1.2 m slabs, barely a joint
         a, b, c = fb(n, 151, 7, 4), fb(n, 152, 6, 20), fb(n, 153, 3, 200)
         y, x = np.mgrid[0:n, 0:n] / n
@@ -63,6 +72,10 @@ def dark_textures():
         save('bas_d.png', col)
         Image.fromarray(plants.tonormal(-j * 3 + c * .12 + b * .12, 1.)).save(d + '/bas_n.png')
         save('bas_r.png', np.repeat((.36 + a * .16 + b * .10 + c * .06 + j * .4)[..., None], 3, 2))
+    if not os.path.exists(d + '/hide_d.png'):
+        im = np.asarray(Image.open(ROOT + '/ph/fabric_leather_01_d.jpg').convert('L').resize((n, n)), float) / 255
+        im = im / im.mean()
+        save('hide_d.png', np.clip(.78 * np.repeat((.72 + .28 * im + fb(n, 190, 5, 4) * .10)[..., None], 3, 2), 0, 1))
     if not os.path.exists(d + '/cem_d.png'):    # trowelled microcement
         a, b = fb(n, 161, 6, 3), fb(n, 162, 6, 9)
         w = fb(n, 163, 4, 5) * 40
@@ -80,20 +93,73 @@ def darks(s):
     dark_textures()
     m = std(s)
     m['nero'] = s.mat('nero', (1, 1, 1), .13, spec=.5, tBase='ptex/nero_d.png', scale=1.)
-    m['trav'] = s.mat('trav', (.86, .86, .86), 1., spec=.45, tBase='ptex/trav_d.png', tNorm='ptex/trav_n.png', tRough='ptex/trav_r.png', scale=1., nStr=.8)
-    m['travb'] = s.mat('travb', (.86, .86, .86), 1., spec=.45, tBase='ptex/trav_d.png', tNorm='ptex/trav_n.png', tRough='ptex/trav_r.png', scale=1 / 3.4, nStr=.8, box=True)
-    m['bas'] = s.mat('bas', (.62, .62, .60), .55, spec=.5, tBase='ptex/bas_d.png', tNorm='ptex/bas_n.png', tRough='ptex/bas_r.png', scale=1 / 2.4, box=True, nStr=.25)
+    m['tv'] = [s.mat(f'tv{q}', (.80, .80, .80), 1., spec=.5, tBase=f'ptex/tv{q}_d.png', tNorm=f'ptex/tv{q}_n.png', tRough=f'ptex/tv{q}_r.png', scale=1., nStr=.8) for q in range(3)]
+    m['tvb'] = s.mat('tvb', (.80, .80, .80), 1., spec=.5, tBase='ptex/tv1_d.png', tNorm='ptex/tv1_n.png', tRough='ptex/tv1_r.png', scale=1 / 1.7, nStr=.8, box=True)
+    m['nerob'] = s.mat('nerob', (.62, .62, .62), .12, spec=.5, tBase='ptex/nero_d.png', scale=.75, box=True)
+    m['hide'] = s.mat('hide', (.235, .125, .066), .82, spec=.5, tBase='ptex/hide_d.png', tNorm='ph/fabric_leather_01_n.jpg', tRough='ph/fabric_leather_01_r.jpg', scale=2.4, box=True, nStr=.8)
+    m['loop'] = s.mat('loop', (.56, .525, .47), .96, spec=.12)
+    m['pile'] = s.mat('pile', (.118, .118, .108), .97, spec=.08)
+    m['steel'] = s.mat('steelw', (.35, .33, .30), .3, metal=1)
+    m['bas'] = s.mat('bas', (.50, .50, .485), .40, spec=.5, tBase='ptex/bas_d.png', tNorm='ptex/bas_n.png', tRough='ptex/bas_r.png', scale=1 / 2.4, box=True, nStr=.2)
     m['cem'] = s.mat('cem', (.30, .305, .295), 1., spec=.35, tBase='ptex/cem_d.png', tNorm='ptex/cem_n.png', tRough='ptex/cem_r.png', scale=1 / 3.1, box=True, nStr=.7)
     m['cemd'] = s.mat('cemd', (.17, .172, .165), 1., spec=.35, tBase='ptex/cem_d.png', tNorm='ptex/cem_n.png', tRough='ptex/cem_r.png', scale=1 / 3.1, box=True, nStr=.6)
-    m['smoke'] = s.mat('smoke', (.50, .455, .41), .85, spec=.45, tBase='ph/smoked_walnut_veneer_d.jpg', tNorm='ph/smoked_walnut_veneer_n.jpg', tRough='ph/smoked_walnut_veneer_r.jpg', scale=.8, nStr=.7)
-    m['smokeb'] = s.mat('smokeb', (.50, .455, .41), .85, spec=.45, tBase='ph/smoked_walnut_veneer_d.jpg', tNorm='ph/smoked_walnut_veneer_n.jpg', tRough='ph/smoked_walnut_veneer_r.jpg', scale=.8, nStr=.6, box=True, swap=True)
-    m['bz'] = s.mat('bz', (.21, .15, .098), .30, metal=1, spec=.5)
+    m['smoke'] = s.mat('smoke', (.40, .372, .345), .85, spec=.45, tBase='ph/smoked_walnut_veneer_d.jpg', tNorm='ph/smoked_walnut_veneer_n.jpg', tRough='ph/smoked_walnut_veneer_r.jpg', scale=.8, nStr=.7)
+    m['smokeb'] = s.mat('smokeb', (.40, .372, .345), .85, spec=.45, tBase='ph/smoked_walnut_veneer_d.jpg', tNorm='ph/smoked_walnut_veneer_n.jpg', tRough='ph/smoked_walnut_veneer_r.jpg', scale=.8, nStr=.6, box=True, swap=True)
+    m['bz'] = s.mat('bz', (.23, .172, .118), .28, metal=1, spec=.5)
     m['boucle'] = s.mat('boucle', (.60, .57, .52), .95, spec=.12, tBase='ptex/teddy_d.png', tNorm='ph/curly_teddy_natural_n.jpg', scale=3.2, box=True, nStr=1.4)
     m['rugd'] = s.mat('rugd', (.27, .262, .245), .98, spec=.08, tBase='ptex/teddy_d.png', tNorm='ph/curly_teddy_natural_n.jpg', scale=2.2, box=True, nStr=1.7)
     return m
 
 
-def halo(s, m, c, r, e, group, tilt=(0., 0.), hang=3.4, prof=(.016, .034)):
+def nub(P, N, step, amp, seed=1):
+    """small round loops over a surface: the height of the nearest of many scattered points"""
+    from scipy.spatial import cKDTree
+    rng = np.random.default_rng(seed)
+    lo, hi = P.min(0) - step, P.max(0) + step
+    cell = np.unique(np.floor((P - lo) / step).astype(int), axis=0)
+    pts = lo + (cell + rng.random(cell.shape)) * step
+    d, i = cKDTree(pts).query(P, k=2)
+    size = rng.random(len(pts)) * .5 + .7
+    h = np.exp(-(d[:, 0] / (step * .55)) ** 2) * size[i[:, 0]]
+    h = np.maximum(h, np.exp(-(d[:, 1] / (step * .55)) ** 2) * size[i[:, 1]])
+    return P + N * (h * amp)[:, None]
+
+
+def rbox(lo, hi, b, step):
+    """a rounded box with an even, fine mesh"""
+    lo, hi = np.array(lo, float), np.array(hi, float)
+    c, h = (lo + hi) / 2, (hi - lo) / 2
+    b = min(b, h.min() * .98)
+    inner = h - b
+    PP, FF, off = [], [], 0
+
+    def ticks(i):
+        arc = max(4, int(np.ceil(b * np.pi / 4 / step)))
+        flat = max(1, int(np.ceil(2 * i / step)))
+        a = np.tan(np.linspace(-np.pi / 4, 0, arc + 1))
+        return np.concatenate([np.stack([np.full(arc, -i), a[:-1]], 1), np.stack([np.linspace(-i, i, flat + 1), np.zeros(flat + 1)], 1), np.stack([np.full(arc, i), -a[::-1][1:]], 1)])
+    for ax in range(3):
+        for sg in (-1, 1):
+            a1, a2 = (ax + 1) % 3, (ax + 2) % 3
+            A, B = ticks(inner[a1]), ticks(inner[a2])
+            cen = np.zeros((len(A), len(B), 3))
+            dr = np.zeros_like(cen)
+            cen[..., a1], cen[..., a2], cen[..., ax] = A[:, 0][:, None], B[:, 0][None], sg * inner[ax]
+            dr[..., a1], dr[..., a2], dr[..., ax] = A[:, 1][:, None], B[:, 1][None], sg
+            dr /= np.linalg.norm(dr, axis=-1, keepdims=True)
+            P = (cen + dr * b + c).reshape(-1, 3)
+            F = grid_faces(len(A), len(B))
+            nn = np.cross(P[F[:, 1]] - P[F[:, 0]], P[F[:, 2]] - P[F[:, 0]]).sum(0)
+            if nn[ax] * sg < 0:
+                F = F[:, ::-1]
+            PP.append(np.concatenate([P, dr.reshape(-1, 3)], 1))
+            FF.append(F + off)
+            off += len(P)
+    A = np.concatenate(PP)
+    return A[:, :3], np.concatenate(FF), A[:, 3:]
+
+
+def halo(s, m, c, r, e, group, tilt=(0., 0.), hang=3.4, prof=(.013, .028)):
     """a slim bronze ring of light: the lamp itself is a diffuser let into the inner face"""
     w, h = prof
     glow = s.mat(f'halo{group}', (.9, .86, .8), .6, spec=.2, emit=tuple(e * np.array([1., .80, .55])), egroup=group)
@@ -115,7 +181,7 @@ def halo(s, m, c, r, e, group, tilt=(0., 0.), hang=3.4, prof=(.016, .034)):
     ring([(r - .003, -h * .36), (r - .0004, -h * .36), (r - .0004, h * .36), (r - .003, h * .36)], glow)
     ring([(r + .003, -h / 2 - .003), (r + w - .003, -h / 2 - .003), (r + w - .003, -h / 2 - .0004), (r + .003, -h / 2 - .0004)], glow)
     n = 9
-    E = np.array([1., .78, .51]) * e * 34
+    E = np.array([1., .78, .51]) * e * 56
     for k in range(n):
         a0, a1 = 2 * np.pi * k / n, 2 * np.pi * (k + 1) / n
         p0, p1 = (np.array([r * np.cos(a), 0, r * np.sin(a)]) * .992 for a in (a0, a1))
@@ -131,7 +197,7 @@ def halo(s, m, c, r, e, group, tilt=(0., 0.), hang=3.4, prof=(.016, .034)):
     for k in range(3):
         a = 2 * np.pi * k / 3 + .4
         p = Rr @ np.array([(r + w / 2) * np.cos(a), h / 2, (r + w / 2) * np.sin(a)]) + np.array(c)
-        top = np.array([c[0] + .05 * np.cos(a), hang, c[2] + .05 * np.sin(a)])
+        top = np.array([p[0], hang, p[2]])
         d = top - p
         L = np.linalg.norm(d)
         d /= L
@@ -141,16 +207,16 @@ def halo(s, m, c, r, e, group, tilt=(0., 0.), hang=3.4, prof=(.016, .034)):
         M = np.zeros((3, 4))
         M[:, :3] = np.stack([x, d, z], 1)
         M[:, 3] = p
-        P, F, UV = lathe([(.0016, 0), (.0016, L)], 8)
-        s.add(s.mesh(P, F, m['bz']), M)
-    cyl(s, m['bz'], (c[0], hang - .03, c[2]), .085, .035, .006)
+        P, F, UV = lathe([(.0011, 0), (.0011, L)], 8)
+        s.add(s.mesh(P, F, m['steel']), M)
+        cyl(s, m['bz'], (top[0], hang - .012, top[2]), .011, .014, .002)
 
 
 def tub(s, m, mat, t, yaw):
     """a low upholstered tub chair: one swept shell, one round seat, a recessed plinth"""
     M = place(t, yaw)
-    n = 60
-    k = 28
+    n = 330
+    k = 190
     A = np.linspace(-2.02, 2.02, n)
     a = np.linspace(0, 2 * np.pi, k, endpoint=False)
     ex = 3.2
@@ -186,23 +252,67 @@ def tub(s, m, mat, t, yaw):
     if (N * outw).sum() < 0:
         F = F[:, ::-1]
         N = -N
-    s.add(s.mesh(P, F, mat, N=N), M)
+    P = nub(P, N, .0125, .0048, 3)
+    s.add(s.mesh(P, F, mat), M)
     c = [(1e-4, .10)]
     R0, H0, b = .335, .42, .07
-    c += [(R0 - b + b * np.sin(q), .10 + b - b * np.cos(q)) for q in np.linspace(0, np.pi / 2, 8)]
-    c += [(R0 - b + b * np.cos(q), H0 - b + b * np.sin(q)) for q in np.linspace(0, np.pi / 2, 8)]
-    c += [(.16, H0 + .012), (1e-4, H0 + .016)]
-    P, F, UV = lathe(c, 72)
+    c += [(R0 - b + b * np.sin(q), .10 + b - b * np.cos(q)) for q in np.linspace(0, np.pi / 2, 20)]
+    c += [(R0, y) for y in np.linspace(.10 + b, H0 - b, 34)[1:-1]]
+    c += [(R0 - b + b * np.cos(q), H0 - b + b * np.sin(q)) for q in np.linspace(0, np.pi / 2, 20)]
+    c += [(x, H0 + .016 * (1 - (x / (R0 - b)) ** 2)) for x in np.linspace(R0 - b, 1e-4, 46)[1:]]
+    P, F, UV = lathe(c, 360)
+    P = nub(P, normals(P, F), .0125, .0048, 5)
     s.add(s.mesh(P, F, mat), M)
     P, F, UV = lathe([(1e-4, 0), (.30, 0), (.30, .08), (1e-4, .08)], 60)
     s.add(s.mesh(P, F, m['bz']), M)
 
 
-def bench(s, m, mat, t, yaw, w=1.9, d=.74):
+def bench(s, m, mat, t, yaw, w=1.86, d=.66):
     M = place(t, yaw)
-    for lo, hi, bv, mt in (((-w / 2, .15, -d / 2), (w / 2, .40, d / 2), .085, mat), ((-w / 2 + .12, .0, -d / 2 + .10), (w / 2 - .12, .16, d / 2 - .10), .004, m['bz'])):
-        P, F, UV, N = box_mesh(lo, hi, bv)
-        s.add(s.mesh(P, F, mt, UV=UV, N=N), M)
+    n = 6
+    cw = w / n
+    for k in range(n):
+        x = -w / 2 + k * cw
+        P, F, N = rbox((x + .0012, .315, -d / 2), (x + cw - .0012, .432, d / 2), .036, .012)
+        cx = (P[:, 0] - x - cw / 2) / (cw / 2)
+        cz = P[:, 2] / (d / 2)
+        P[:, 1] += np.where(P[:, 1] > .37, .012 * (1 - cx ** 2) * (1 - cz ** 4), 0)
+        s.add(s.mesh(P, F, mat), M)
+    for lo, hi in (((-w / 2 + .01, .292, -d / 2 + .01), (w / 2 - .01, .314, d / 2 - .01)),):
+        P, F, UV, N = box_mesh(lo, hi, .003)
+        s.add(s.mesh(P, F, m['bz'], UV=UV, N=N), M)
+    for sx in (-1, 1):
+        x = sx * (w / 2 - .20)
+        for lo, hi in (((x - .011, .0, -d / 2 + .05), (x + .011, .292, -d / 2 + .072)), ((x - .011, .0, d / 2 - .072), (x + .011, .292, d / 2 - .05)), ((x - .011, .0, -d / 2 + .05), (x + .011, .022, d / 2 - .05))):
+            P, F, UV, N = box_mesh(lo, hi, .002)
+            s.add(s.mesh(P, F, m['bz'], UV=UV, N=N), M)
+
+
+def slab(s, mat, x, y0, y1, z0, z1, uv0, flip):
+    """one cut slab, its edges eased, standing 20 mm off the wall"""
+    e, t = .0022, .02
+    P, F, UV = [], [], []
+
+    def quad(a, b, c, d):
+        o = len(P)
+        for p in (a, b, c, d):
+            P.append(p)
+            u = (p[2] - z0) / 1.7
+            UV.append([uv0[0] + (-(u) if flip else u), uv0[1] + (p[1] - y0) / 1.7])
+        F.extend([[o, o + 1, o + 2], [o, o + 2, o + 3]])
+    f = lambda y, z: (x, y, z)
+    bk = lambda y, z: (x - t, y, z)
+    em = lambda y, z: (x - e, y, z)
+    quad(f(y0 + e, z1 - e), f(y0 + e, z0 + e), f(y1 - e, z0 + e), f(y1 - e, z1 - e))
+    for (ya, za), (yb, zb), (ia, ja), (ib, jb) in (((y1, z1), (y1, z0), (y1 - e, z1 - e), (y1 - e, z0 + e)), ((y0, z0), (y0, z1), (y0 + e, z0 + e), (y0 + e, z1 - e)), ((y1, z0), (y0, z0), (y1 - e, z0 + e), (y0 + e, z0 + e)), ((y0, z1), (y1, z1), (y0 + e, z1 - e), (y1 - e, z1 - e))):
+        quad(f(ia, ja), f(ib, jb), em(yb, zb), em(ya, za))
+        quad(em(ya, za), em(yb, zb), bk(yb, zb), bk(ya, za))
+    P, F = np.array(P, float), np.array(F)
+    fn = np.cross(P[F[:, 1]] - P[F[:, 0]], P[F[:, 2]] - P[F[:, 0]])
+    cen = np.array([x - t, (y0 + y1) / 2, (z0 + z1) / 2])
+    bad = (fn * (P[F].mean(1) - cen)).sum(1) < 0
+    F[bad] = F[bad][:, ::-1]
+    s.add(s.mesh(P, F, mat, UV=np.array(UV)))
 
 
 def mat_scene2(name):
@@ -217,21 +327,18 @@ def mat_scene2(name):
     s.box((-X - .4, 0, Z - .1), (X + .4, HH + .4, Z), m['cemd'])
     # stone: the whole left wall, four slabs, matched at each joint
     s.box((-X - .4, 0, -.35), (-X - .02, HH + .4, Z), m['black'])
-    sw, rows = 2.35, (0., 1.16, 2.32, HH + .14)
-    for k in range(6):
+    # slabs 1.28 m long in three courses; neighbours are cut from the same block, so the bedding runs on
+    sl, rows = 1.28, (.016, 1.126, 2.236, HH + .14)
+    for k in range(10):
         for q in range(3):
-            z0, z1 = -.02 + k * sw, -.02 + (k + 1) * sw - .004
-            y0, y1 = rows[q], rows[q + 1] - .004
-            u0 = ((k * .37 + q * .61) % 1) * .30
-            v0 = ((k * .41 + q * .34) % 1) * .6 + .02
-            du, dv = (z1 - z0) / 3.4, (y1 - y0) / 3.4
-            rect(s, m['trav'], (-X, y0, z1), (0, 0, z0 - z1), (0, y1 - y0, 0), [[u0, v0], [u0 + du, v0], [u0 + du, v0 + dv], [u0, v0 + dv]])
+            blk = (k * 2 + q * 5 + k // 3) % 3
+            slab(s, m['tv'][blk], -X, rows[q], rows[q + 1] - .003, -.02 + k * sl, -.02 + (k + 1) * sl - .003, (((k * .37 + q * .61) % 1) * .235 + .004, (k * .53 + q * .31) % 1), False)
     # a floating shelf of the same stone, lit from beneath
-    s.box((-X, .40, .9), (-X + .46, .465, 6.2), m['travb'], .003)
-    gltf(s, 'ceramic_vase_02', place((-X + .22, .465, 1.55), .4), height=.40)
+    s.box((-X, .40, .9), (-X + .42, .452, 6.2), m['tvb'], .002)
+    gltf(s, 'ceramic_vase_02', place((-X + .21, .452, 1.55), .4), height=.40)
     for k, (dz, c) in enumerate(((0, m['boucle']), (.012, m['clay']), (-.01, m['cem']))):
-        s.box((-X + .10, .465 + k * .03, 2.25 + dz), (-X + .36, .493 + k * .03, 2.60 + dz), c, .003)
-    gltf(s, 'wooden_bowl_01', place((-X + .23, .465, 3.5), 1.), height=.075)
+        s.box((-X + .10, .452 + k * .03, 2.25 + dz), (-X + .36, .480 + k * .03, 2.60 + dz), c, .003)
+    gltf(s, 'wooden_bowl_01', place((-X + .21, .452, 3.5), 1.), height=.075)
     # timber: smoked walnut battens over the whole right wall, with one lit niche
     bw, bg, bd = .034, .012, .030
     rr = np.random.default_rng(5)
@@ -255,7 +362,7 @@ def mat_scene2(name):
     for a, b in (((X - .02, niche[2] - .03, niche[0] - .03), (X + .30, niche[2], niche[1] + .03)), ((X - .02, niche[3], niche[0] - .03), (X + .30, niche[3] + .03, niche[1] + .03)), ((X - .02, niche[2], niche[0] - .03), (X + .30, niche[3], niche[0])), ((X - .02, niche[2], niche[1]), (X + .30, niche[3], niche[1] + .03))):
         s.box(a, b, m['bz'], .002)
     s.box((X + .28, niche[2], niche[0]), (X + .30, niche[3], niche[1]), m['smokeb'])
-    s.quad((X + .03, niche[3] - .005, niche[0] + .05), (.03, 0, 0), (0, 0, niche[1] - niche[0] - .1), (95, 66, 38), 1)
+    s.quad((X + .03, niche[3] - .005, niche[0] + .05), (.03, 0, 0), (0, 0, niche[1] - niche[0] - .1), (95, 70, 43), 1)
     gltf(s, 'ceramic_vase_04', place((X + .14, niche[2], 1.15), .4), height=.30)
     gltf(s, 'ceramic_vase_01', place((X + .15, niche[2], 2.4), 1.2), height=.36)
     gltf(s, 'wooden_bowl_01', place((X + .14, niche[2], 1.75), .3), height=.09)
@@ -270,26 +377,30 @@ def mat_scene2(name):
     s.rec = [(r[0], *r[2]) for r in plantwall(s, K, L, 9, 1, frame=xf(t=(-X + .11, .10, -.20)), scale=1.05)]
     s.box((-X, .05, -.33), (X, HH + .3, -.24), M['black'])
     # a place to sit and look at it
-    s.box((-2.1, 0, 1.75), (2.1, .022, 5.0), m['rugd'], .01)
-    tub(s, m, m['boucle'], (1.5, .022, 2.75), -.95)
-    tub(s, m, m['boucle'], (-1.5, .022, 2.95), .85)
-    bench(s, m, m['boucle'], (.35, .022, 4.35), .0)
-    cyl(s, m['nero'], (-.12, .022, 3.15), .50, .30, .012)
-    cyl(s, m['bz'], (.50, .022, 2.72), .27, .44, .006)
+    P, F, N = rbox((-2.15, .001, 1.62), (2.15, .020, 4.95), .009, .0082)
+    top = N[:, 1] > .2
+    Q = nub(P, N, .0165, .0062, 11)
+    P = np.where(top[:, None], Q, P)
+    s.add(s.mesh(P, F, m['pile']))
+    tub(s, m, m['loop'], (1.52, .022, 2.72), -.95)
+    tub(s, m, m['loop'], (-1.52, .022, 2.9), .85)
+    bench(s, m, m['hide'], (.30, .024, 4.28), .0)
+    cyl(s, m['nerob'], (-.12, .022, 3.1), .52, .30, .006)
+    cyl(s, m['bz'], (.53, .022, 2.66), .25, .45, .004)
     gltf(s, 'ceramic_vase_04', place((-.25, .322, 3.02), .4), height=.26)
     gltf(s, 'wooden_bowl_01', place((.10, .322, 3.28), 1.), height=.07)
     # the light
-    halo(s, m, (.18, 2.20, 2.9), .80, 11., 2, (.045, -.03), HH)
-    halo(s, m, (-.34, 2.62, 2.75), .50, 11., 2, (-.06, .04), HH)
+    halo(s, m, (.20, 2.16, 2.85), .86, 7., 2, (.045, -.03), HH)
+    halo(s, m, (-.36, 2.60, 2.7), .52, 7., 2, (-.06, .04), HH)
     # what lights the stone
     s.quad((-X + .16, HH + .09, .4), (.14, 0, 0), (0, 0, 8.8), (24, 21.8, 18.8), 0)
-    for z in (.8, 2.2, 3.6, 5.0, 6.4):
+    for z in (1.25, 2.5, 3.75, 5.0, 6.25):
         s.spot((-X + .95, HH - .004, z), (-.50, -1, 0), .035, (6800, 6100, 5150), 0, 9)
     s.quad((-X + .03, .392, .95), (.05, 0, 0), (0, 0, 5.2), (26, 20, 13.5), 0)
     # the timber
-    s.quad((X - .25, HH + .09, .5), (.20, 0, 0), (0, 0, 8.4), (15, 11.4, 7.7), 1)
+    s.quad((X - .25, HH + .09, .5), (.20, 0, 0), (0, 0, 8.4), (15, 12.2, 9.0), 1)
     for z in (1.0, 2.4, 3.8, 5.2, 6.6):
-        s.spot((X - .60, HH - .004, z), (.34, -1, 0), .03, (3600, 2750, 1850), 1, 16)
+        s.spot((X - .60, HH - .004, z), (.34, -1, 0), .03, (3500, 2820, 2080), 1, 14)
     # the planting: a slot above it, grazing down, and small heads set back
     s.quad((-X + .2, HH + .11, .16), (2 * X - .4, 0, 0), (0, 0, .34), (27, 23.5, 18), 3)
     for x in np.linspace(-2.7, 2.7, 6):
