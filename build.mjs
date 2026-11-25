@@ -75,10 +75,10 @@ const storyCard = (p, sizes, big = false) => `<a class="story${big ? ' story--le
 
 // the journal in chapters: what each is called, what it is for, and its stories in order
 const CHAPTERS = [
-  ['rooms', 'The rooms', 'Where a wall belongs, and what it does there.', ['feature-wall-ideas', 'living-wall-bathroom', 'patio-vertical-garden', 'pool-and-boundary-wall-garden']],
-  ['plants', 'Plants', 'What grows, where, and in which light.', ['best-indoor-living-wall-plants', 'best-outdoor-living-wall-plants', 'indoor-living-wall-light']],
+  ['rooms', 'The rooms', 'Where a wall belongs, and what it does there.', ['feature-wall-ideas', 'double-volume-living-wall', 'entrance-hall-living-wall', 'living-wall-bathroom', 'patio-vertical-garden', 'pool-and-boundary-wall-garden', 'office-reception-living-wall', 'hotel-restaurant-living-wall']],
+  ['plants', 'Plants', 'What grows, where, and in which light.', ['best-indoor-living-wall-plants', 'best-outdoor-living-wall-plants', 'vertical-garden-plants-by-province', 'indoor-living-wall-light', 'living-wall-grow-lights', 'pet-safe-living-wall', 'herb-living-wall']],
   ['keeping', 'Living with one', 'Water, power, insects and the years.', ['how-to-water-a-living-wall', 'living-wall-lifespan', 'why-living-walls-fail', 'living-wall-load-shedding', 'living-wall-mosquitoes']],
-  ['before', 'Before you build', 'What to ask, and what to draw first.', ['living-wall-cost-south-africa', 'living-wall-damp', 'living-wall-weight', 'living-or-artificial-wall', 'living-wall-architects-brief']],
+  ['before', 'Before you build', 'What to ask, and what to draw first.', ['what-is-a-living-wall', 'living-wall-cost-south-africa', 'is-a-living-wall-worth-it', 'living-wall-installation', 'living-wall-damp', 'living-wall-weight', 'living-or-artificial-wall', 'moss-wall-or-living-wall', 'estate-living-wall-approval', 'living-wall-architects-brief']],
   ['evidence', 'The evidence', 'What has been measured, and what has been won.', ['vertical-garden-health-benefits', 'do-plants-clean-the-air', 'two-gold-walls']],
 ];
 const ORDER = CHAPTERS.flatMap((c) => c[3]);
@@ -90,13 +90,14 @@ const opening = (slug) => {
   const paras = [...raw.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).filter((t) => t.length > 60);
   return paras.slice(0, 6).join(' ').split(' ').slice(0, 210).join(' ');
 };
+const pulled = (slug) => (read(`src/pages/journal-${slug}.html`).match(/<blockquote>([\s\S]*?)<\/blockquote>/)?.[1] ?? '').replace(/<[^>]+>/g, '').trim();
 const helpers = {
   // the stories in their chapters, each carrying what the book sets on its pages
   index: () => CHAPTERS.map(([id, name, sub, slugs]) => `<section class="jg" id="${id}" aria-labelledby="${id}-h"><div class="jg__h"><h3 id="${id}-h">${name}</h3><p>${sub}</p>${id === 'plants' ? `<a class="link" href="/plants.html">Our plants</a><div class="jg__sp" aria-hidden="true">${['marble', 'bulb', 'fern', 'setc'].map((k) => `<img src="/img/plants/${k}.avif" width="720" height="720" alt="" loading="lazy" decoding="async">`).join('')}</div>` : ''}</div><ul class="jg__l">${slugs.map((slug, n) => {
     const p = postOf[slug];
     const im = images[p.image];
-    const at = (w) => `/img/${p.image}-${im.widths.includes(w) ? w : im.widths.at(-1)}.avif`;
-    return `<li${n ? '' : ' class="jg__one"'}><a class="jc" href="${p.url}" data-story data-cursor="Read" data-group="${id}" data-group-name="${name}" data-group-say="${sub}" data-head="${esc(p.head)}" data-stand="${esc(p.stand)}" data-alt="${esc(im.alt)}" data-minutes="${p.minutes}" data-img="${at(1280)}" data-open="${esc(opening(slug))}"><span class="jc__p">${picture(p.image, n ? '(min-width:900px) 32vw, 100vw' : '(min-width:900px) 66vw, 100vw')}</span><span class="jc__t"><b>${p.head}</b><span>${p.stand}</span><small>${p.minutes} minute read</small></span></a></li>`;
+    const at = (w) => `/img/${p.image}-${im.widths.find((x) => x >= w) ?? im.widths.at(-1)}.avif`;
+    return `<li${n ? '' : ' class="jg__one"'}><a class="jc" href="${p.url}" data-story data-cursor="Read" data-group="${id}" data-group-name="${name}" data-group-say="${sub}" data-head="${esc(p.head)}" data-stand="${esc(p.stand)}" data-alt="${esc(im.alt)}" data-minutes="${p.minutes}" data-img="${at(1280)}" data-quote="${esc(pulled(slug))}" data-open="${esc(opening(slug))}"><span class="jc__p">${picture(p.image, n ? '(min-width:900px) 32vw, 100vw' : '(min-width:900px) 66vw, 100vw')}</span><span class="jc__t"><b>${p.head}</b><span>${p.stand}</span><small>${p.minutes} minute read</small></span></a></li>`;
   }).join('')}</ul></section>`).join('\n'),
   chapters: () => CHAPTERS.map(([id, name]) => `<li><a href="#${id}">${name}</a></li>`).join(''),
   // who lives with a wall, one name to each clearing in the leaves
@@ -112,7 +113,7 @@ const helpers = {
   // every wall on the page; those marked 'page' are not also hung in the corridor
   cards: (items) => items.map(([name, place, title, only]) => {
     const im = images[name];
-    const at = (w) => `/img/${name}-${im.widths.includes(w) ? w : im.widths.at(-1)}.avif`;
+    const at = (w) => `/img/${name}-${im.widths.find((x) => x >= w) ?? im.widths.at(-1)}.avif`;
     const where = { home: 'Private home', health: 'Healthcare', work: 'Office', hospitality: 'Hospitality and retail' }[place];
     return `<li data-place="${place}"><a href="${full(name)}" data-lightbox${only ? '' : ' data-frame'} data-cursor="View" data-title="${esc(title)}" data-where="${where}" data-ratio="${(im.w / im.h).toFixed(3)}" data-hang="${at(800)}" data-hang-l="${at(1280)}"><span class="cards__p">${picture(name, '(min-width:1000px) 30vw, (min-width:560px) 46vw, 92vw')}</span><span class="tile__cap2"><b>${title}</b><span>${where}</span></span></a></li>`;
   }).join('\n'),
@@ -191,7 +192,7 @@ for (const file of pages) {
     const parts = { topic: p.topic, head: p.head, stand: p.stand, by, lead: picture(p.image, '(min-width:900px) 50vw, 100vw', '', true), sources: refs, more: helpers.stories(p.related) };
     source = read('src/partials/article.html').replace(/\{\{(topic|head|stand|by|lead|sources|more)\}\}/g, (_, k) => parts[k]).replace('{{BODY}}', () => source.trim().replace('<p>', '<p class="art__first">'));
   }
-  let body = expand(source, ctx);
+  let body = expand(source, ctx).replace(/\/img\/([\w-]+)-full\.avif/g, (_, n) => full(n));
   let html = expand(read('src/partials/shell.html'), ctx).replace('<!--BODY-->', () => body);
   // each drawing of the mark on a page gets masks of its own
   let marks = 0;

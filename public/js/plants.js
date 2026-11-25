@@ -2,7 +2,7 @@
 import { createWall, STYLE_NAMES, loadPlate } from './wall.js?v=d99e9af5';
 import { page, box, follow, clamp } from './frame.js?v=c5329617';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const LIGHT = [[1, [1, 1, 1], 0], [1.04, [1.05, 1.01, 0.93], 0], [0.3, [1.04, 0.98, 0.9], 0.8], [1.02, [0.97, 1.0, 1.05], 0], [1.08, [1.05, 1.0, 0.92], 0], [0.34, [1.02, 0.97, 1.02], 0.72]];
+const LIGHT = [[1.02, [1.07, 1.0, 0.86], 0], [1.04, [1, 1, 1], 0], [0.28, [1.03, 0.98, 0.94], 0.85]];
 export function initPlants(sec) {
 const areas = [...sec.querySelectorAll('[data-area-at]')];
 const themes = [...sec.querySelectorAll('[data-theme]')];
@@ -11,6 +11,13 @@ const cards = [...document.querySelectorAll('.sp')];
 const notes = [...document.querySelectorAll('[data-area-note]')];
 let wall = null;
 let now = 0;
+let hour = 1;
+const hours = [...sec.querySelectorAll('[data-hour]')];
+hours.forEach((b) => b.addEventListener('click', () => {
+hour = Number(b.dataset.hour);
+hours.forEach((x) => x.setAttribute('aria-pressed', x === b));
+if (wall) wall.hour = hour;
+}));
 const pick = (v, from) => {
 if (v === now && from) return;
 now = v;
@@ -36,6 +43,7 @@ areas.forEach((b) => b.addEventListener('click', (e) => (now < 3) !== (b.dataset
 pick(/^#exterior/.test(location.hash) ? 4 : 0);
 grow(sec, now).then((w) => {
 wall = w;
+wall.hour = hour;
 if (wall.at !== now) wall.show(now);
 }).catch(() => sec.classList.add('is-flat'));
 }
@@ -56,7 +64,7 @@ for (let i = 0; i < n; i++) W.plant(i, true, spot(i)[0] / 1800 + Math.sin(i * 12
 layout();
 let timer;
 new ResizeObserver(() => { clearTimeout(timer); timer = setTimeout(layout, 140); }).observe(pin);
-const state = { at: first, turn: 0 };
+const state = { at: first, turn: 0, hour: 1 };
 state.show = async (v, e) => {
 const turn = ++state.turn;
 state.at = v;
@@ -78,7 +86,7 @@ await W.style(v);
 if (turn !== state.turn) return;
 for (let i = 0; i < n; i++) W.plant(i, true, d(i) * 1.15);
 };
-const cur = LIGHT[first].flat().map((x) => ({ x, v: 0 }));
+const cur = LIGHT[1].flat().map((x) => ({ x, v: 0 }));
 const lx = { x: innerWidth * 0.62, v: 0 };
 const ly = { x: innerHeight * 0.4, v: 0 };
 let tx = 0.64;
@@ -99,8 +107,8 @@ if (!e.target.closest('button')) W.ripple(e.clientX, e.clientY + page.y - b.top)
 }, { passive: true });
 W.run(sec, (dt) => {
 const b = box(sec);
-const to = LIGHT[state.at].flat();
-cur.forEach((c, k) => follow(c, to[k], dt, 1500));
+const to = LIGHT[state.hour].flat();
+cur.forEach((c, k) => follow(c, to[k], dt, 900));
 W.amb = cur[0].x;
 W.tint = [cur[1].x, cur[2].x, cur[3].x];
 W.lamp = { x: follow(lx, tx * b.width, dt, 520), y: follow(ly, ty * b.height, dt, 520), r: Math.min(b.width, b.height) * 0.44, on: cur[4].x };

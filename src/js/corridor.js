@@ -34,7 +34,7 @@ vec3 film(vec3 c){ c *= vec3(1.26, 1.24, 1.22); c = c * (c * 2.51 + .03) / (c * 
 vec3 lin(vec3 c, float s){ return pow(c, vec3(2.4)) * s; }
 `;
 
-/* kind 0 side wall, 1 ceiling, 2 end, 3 planted bay in relief, 4 stone portal */
+/* kind 0 side wall, 1 ceiling, 2 end, 3 planted bay in relief, 4 stone portal, 5 the steel reservoir under a planted bay, 6 the dark head above it */
 const WALL_FS = `#version 300 es
 ${COMMON}
 in vec3 vP; in vec2 vUv;
@@ -72,6 +72,17 @@ void main(){
     float sway = .0016 * textureLod(uDepth, uv, 2.).r; uv += vec2(sin(uT * .7 + p.z * 2.1 + p.y), cos(uT * .55 + p.z * 1.7)) * sway;
     col = elev(uv, -.4);
     col *= 1. + .35 * pow(1. - abs(v.x), 3.);
+  } else if (uKind == 5 || uKind == 6) {
+    // brushed steel: it takes the colour of the leaves above it and of the light line in the ceiling
+    vec3 v = normalize(vP - uCam);
+    float br = hash(vec2(floor(vP.y * 1400.), 7.)) * .5 + soft(vec2(vP.z * 3., vP.y * 900.)) * .5;
+    vec3 near = elev(vec2(along(vP.z), .70 + .1 * vUv.y), 5.);
+    float rim = smoothstep(.10, .0, vUv.y) , foot = smoothstep(.55, 1., vUv.y);
+    float sheen = exp(-pow((vUv.y - .30) * 3.2, 2.)) * .6 + .25;
+    vec3 steel = vec3(.070, .074, .073) * (.8 + .4 * br);
+    col = uKind == 6 ? vec3(.012, .013, .012) + near * .10 : steel * .55 + (near * vec3(.9, .95, .9) + vec3(.016, .018, .017)) * (.30 + sheen * .75) * (.85 + .3 * br);
+    col += (vec3(.10, .095, .085) + near * .5) * rim * float(uKind == 5) * .9; col *= 1. - foot * .6;
+    col *= 1. + .5 * pow(1. - abs(v.x), 4.);
   } else if (uKind == 4) {
     // a slim bronze fin: dark metal that takes the light of whatever is beside it
     vec3 v = normalize(vP - uCam);
@@ -274,6 +285,7 @@ export async function initCorridor(sec, frames, open) {
     quad('end', [-HALF, ROOF, z1], [HALF, ROOF, z1], [-HALF, FLOOR, z1], [HALF, FLOOR, z1]);
     // planted bays opposite each photo, and the stone portal between one stop and the next
     quads.bays = [];
+    quads.tanks = [];
     quads.jambs = [];
     for (let n = -1; n <= list.length; n++) {
       const z = -n * GAP;
@@ -282,6 +294,22 @@ export async function initCorridor(sec, frames, open) {
       const name = `g${n}`;
       quad(name, [x, ROOF, z + 1.72], [x, ROOF, z - 1.72], [x, FLOOR, z + 1.72], [x, FLOOR, z - 1.72]);
       quads.bays.push([quads[name], side, n]);
+      // under each planted bay its reservoir, and over it a slim head: the planting begins and ends on something
+      const tf = side * (HALF - LEAF - 0.075);
+      const tb = side * (HALF + 0.02);
+      const T = FLOOR + 0.27;
+      const K = ROOF - 0.075;
+      const at = (nm, kind, ...q) => {
+        quad(nm, ...q);
+        quads.tanks.push([quads[nm], kind, side, n]);
+      };
+      at(`t${n}f`, 5, [tf, T, z + 1.72], [tf, T, z - 1.72], [tf, FLOOR, z + 1.72], [tf, FLOOR, z - 1.72]);
+      at(`t${n}u`, 5, [tb, T, z + 1.72], [tb, T, z - 1.72], [tf, T, z + 1.72], [tf, T, z - 1.72]);
+      at(`t${n}a`, 5, [tf, T, z + 1.72], [tb, T, z + 1.72], [tf, FLOOR, z + 1.72], [tb, FLOOR, z + 1.72]);
+      at(`t${n}b`, 5, [tf, T, z - 1.72], [tb, T, z - 1.72], [tf, FLOOR, z - 1.72], [tb, FLOOR, z - 1.72]);
+      const hf = side * (HALF - LEAF - 0.03);
+      at(`t${n}h`, 6, [hf, ROOF, z + 1.72], [hf, ROOF, z - 1.72], [hf, K, z + 1.72], [hf, K, z - 1.72]);
+      at(`t${n}k`, 6, [hf, K, z + 1.72], [hf, K, z - 1.72], [tb, K, z + 1.72], [tb, K, z - 1.72]);
       const zp = z - GAP / 2;
       const box = (nm, a, b, c, d) => {
         quad(nm, a, b, c, d);
@@ -427,6 +455,7 @@ export async function initCorridor(sec, frames, open) {
         gl.drawArrays(gl.TRIANGLE_STRIP, at, 4);
       };
       for (const [at, n] of quads.jambs) if (n > s - 1.6 && n < s + 9) part(4, at);
+      for (const [at, kind, side, n] of quads.tanks) if (n > s - 1.6 && n < s + 9) part(kind, at, side);
       if (!flip) for (const [at, side, n] of quads.bays) if (n > s - 1.4 && n < s + 4.2) part(3, at, side);
       part(0, quads.left, -1);
       part(0, quads.right, 1);

@@ -15,3 +15,7 @@ A small path tracer that runs on WebGPU inside Chrome, driven from Python (numpy
     python export.py in,out,both,mat,night,hall   # denoise and write the site's pictures
 
 `plants.py` and `plants2.py` hold the species, `themes.py` the three interior and three exterior plantings, `roomlib.py` the furniture and materials. What these write (`out`, `tex`, `ptex`, `ph`, scene folders) is ignored by git.
+
+`enhance.py` rebuilds the photographs: it registers each true original to the crop in use, enlarges and sharpens it with
+Real-ESRGAN x4plus (Qualcomm's ONNX build) through onnxruntime-web on WebGPU (`sr.py`, `sr.html`), and blends that with the
+photograph's own texture. The models and runtime are downloaded separately and are not in this repository.

@@ -1,6 +1,7 @@
 
 import { html } from './html.js?v=fd61fe77';
-import { createAtelier } from './atelier.js?v=a8b5f451';
+import { createElevation } from './elevation.js?v=9f16c1a8';
+import { initVine } from './vine.js?v=97fc472e';
 const RULES = {
 name: (v) => (v.trim().length < 2 ? 'Enter your name.' : ''),
 email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Enter an email address like name@example.co.za.'),
@@ -21,8 +22,42 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const started = Date.now();
 let at = 0;
 let sized = false; // only send a size the visitor actually gave
+const el0 = $('[data-el]');
+const room = createElevation(el0);
+{
+let on = false;
+const { grip } = room;
+grip.addEventListener('pointerdown', (e) => {
+on = true;
+grip.setPointerCapture(e.pointerId);
+page.classList.add('is-pulling');
+e.preventDefault();
+});
+grip.addEventListener('pointermove', (e) => {
+if (!on) return;
+const [w, h] = room.metres(e.clientX, e.clientY);
+const snap = (x, lo, hi) => Math.min(hi, Math.max(lo, Math.round(x * 2) / 2));
+el('w').value = snap(w, 1, 12);
+el('h').value = snap(h, 1, 5);
+size();
+});
+const off = () => {
+on = false;
+page.classList.remove('is-pulling');
+};
+grip.addEventListener('pointerup', off);
+grip.addEventListener('pointercancel', off);
+}
+const shots = [...page.querySelectorAll('[data-shot]')];
+const shot = (k) => shots.forEach((n) => {
+const now = n.dataset.shot === k;
+if (n.classList.contains('on') === now) return;
+n.classList.toggle('was', !now && n.classList.contains('on'));
+n.classList.toggle('on', now);
+const img = n.querySelector('img');
+if (now) img.loading = 'eager';
+});
 const picked = (n) => form.querySelector(`[name=${n}]:checked`)?.value ?? '';
-let room = null;
 let saying = 0;
 const line = $('[data-sentence]');
 const words = line.firstElementChild;
@@ -43,10 +78,11 @@ line.classList.remove('turn');
 const draw = () => {
 const w = Number(el('w').value);
 const h = Number(el('h').value);
+form.querySelectorAll('[data-size]').forEach((b) => b.setAttribute('aria-pressed', sized && b.dataset.size === `${w},${h}`));
 $('[data-w]').textContent = `${num(w)} m`;
 $('[data-h]').textContent = `${num(h)} m`;
-room?.size(w, h);
-room?.place({ indoors: 'in', outdoors: 'out', both: 'both' }[picked('where')] ?? 'in');
+room.size(w, h);
+shot(at === 4 ? 'reply' : at > 0 && picked('where') ? picked('where') : picked('wall') || 'start');
 const v = Number(el('area').value) || w * h;
 $('[data-area]').textContent = `${num(v)} m²`;
 const kind = { living: 'A living wall', artificial: 'An artificial wall', unsure: 'A wall' }[picked('wall')] ?? 'A wall';
@@ -61,6 +97,10 @@ sized = true;
 el('area').value = num(Number(el('w').value) * Number(el('h').value));
 draw();
 };
+form.querySelectorAll('[data-size]').forEach((b) => b.addEventListener('click', () => {
+[el('w').value, el('h').value] = b.dataset.size.split(',');
+size();
+}));
 el('w').addEventListener('input', size);
 el('h').addEventListener('input', size);
 const fromArea = (a) => {
@@ -88,11 +128,6 @@ const r = form.querySelector(`[name=role][value="${role}"]`);
 if (r) r.checked = true;
 }
 draw();
-createAtelier($('[data-atelier]')).then((r) => {
-room = r;
-page.classList.add('is-real');
-draw();
-}).catch(() => page.classList.add('no-webgl'));
 const setError = (name, text) => {
 form.querySelector(`[data-e="${name}"]`).textContent = text;
 if (text) el(name).setAttribute('aria-invalid', 'true');
@@ -114,13 +149,16 @@ back.hidden = at === 0;
 next.hidden = at === steps.length - 1;
 send.hidden = at !== steps.length - 1;
 page.dataset.at = at;
-if (at === 1) ['out', 'both'].forEach((k) => room?.warm(k));
+draw();
 page.style.setProperty('--done', (at / (steps.length - 1)).toFixed(3));
 $('[data-count]').textContent = `Step ${at + 1} of ${steps.length}`;
+page.dispatchEvent(new CustomEvent('mw:step', { detail: { at } }));
 if (focus) steps[at].querySelector('[data-focus]')?.focus({ preventScroll: true });
 if (focus && form.getBoundingClientRect().top < 0) form.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
 };
 page.classList.add('is-steps');
+initVine(page);
+page.addEventListener('mw:go', (e) => show(e.detail));
 next.addEventListener('click', () => show(at + 1));
 back.addEventListener('click', () => show(at - 1));
 let byPointer = false;
@@ -173,6 +211,7 @@ done.querySelector('p').textContent = `Thank you, ${data.get('name')}. Your comm
 form.replaceWith(done);
 page.classList.add('is-sent');
 page.dataset.at = steps.length;
+page.dispatchEvent(new CustomEvent('mw:step', { detail: { at: steps.length - 1, sent: true } }));
 page.style.setProperty('--done', 1);
 done.focus();
 done.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });

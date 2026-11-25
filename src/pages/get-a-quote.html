@@ -10,20 +10,22 @@
       <div>
         <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">What would you like to live with?</legend>
           <div class="picks">
-            <label class="pick"><input type="radio" name="wall" value="living">{{img courtyard-bands | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>A living wall</b><span>Grown, watered and tended.</span></span></label>
-            <label class="pick"><input type="radio" name="wall" value="artificial">{{img art-mixed | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>An artificial wall</b><span>Where no plant could live.</span></span></label>
-            <label class="pick"><input type="radio" name="wall" value="unsure">{{img skylight | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Advise me</b><span>We read the light and tell you.</span></span></label>
+            <label class="pick"><input type="radio" name="wall" value="living">{{img courtyard-bands | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>A living wall</b><span>Grown, watered and tended.</span></span></label>
+            <label class="pick"><input type="radio" name="wall" value="artificial">{{img art-mixed | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>An artificial wall</b><span>Where no plant could live.</span></span></label>
+            <label class="pick"><input type="radio" name="wall" value="unsure">{{img skylight | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>Advise me</b><span>We read the light and tell you.</span></span></label>
           </div>
         </fieldset>
         <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">Where will it be?</legend>
           <div class="picks">
-            <label class="pick"><input type="radio" name="where" value="indoors">{{img stairs | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Indoors</b><span>A room, a stair, an atrium.</span></span></label>
-            <label class="pick"><input type="radio" name="where" value="outdoors">{{img pool | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Outdoors</b><span>A patio, a pool, an entrance.</span></span></label>
-            <label class="pick"><input type="radio" name="where" value="both">{{img slats | (min-width:1000px) 18vw, (min-width:620px) 31vw, 92vw}}<span class="pick__t"><b>Between the two</b><span>Courtyards and covered terraces.</span></span></label>
+            <label class="pick"><input type="radio" name="where" value="indoors">{{img stairs | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>Indoors</b><span>A room, a stair, an atrium.</span></span></label>
+            <label class="pick"><input type="radio" name="where" value="outdoors">{{img pool | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>Outdoors</b><span>A patio, a pool, an entrance.</span></span></label>
+            <label class="pick"><input type="radio" name="where" value="both">{{img slats | (min-width:1000px) 20vw, 34vw}}<span class="pick__t"><b>Between the two</b><span>Courtyards and covered terraces.</span></span></label>
           </div>
         </fieldset>
         <fieldset class="com__step" data-step><legend class="com__q" data-focus tabindex="-1">How big is the wall?</legend>
+          <p class="com__hint">Drag the corner of the wall in the drawing, or start from one of these.</p>
           <div class="sizes">
+            <div class="presets"><button type="button" data-size="1.5,2"><i class="pz pz1"></i>A niche</button><button type="button" data-size="3,2.5"><i class="pz pz2"></i>A feature wall</button><button type="button" data-size="6,2.5"><i class="pz pz3"></i>A long wall</button><button type="button" data-size="4,5"><i class="pz pz4"></i>Double height</button></div>
             <div class="slide"><label for="w">Width</label><output for="w" data-w>3 m</output><input id="w" name="w" type="range" min="1" max="12" step="0.5" value="3"></div>
             <div class="slide"><label for="h">Height</label><output for="h" data-h>2.5 m</output><input id="h" name="h" type="range" min="1" max="5" step="0.5" value="2.5"></div>
             <div class="f"><label for="area">Or the area, in square metres</label><input id="area" name="area" type="number" inputmode="decimal" min="0.25" max="2000" step="0.25" value="7.5"></div>
@@ -60,9 +62,26 @@
       </div>
     </form>
   </div>
-  <aside class="com__side" aria-hidden="true">
-    <div class="com__photo">{{img skylight | (min-width:1000px) 56vw, 100vw}}</div>
-    <canvas class="com__room" data-atelier></canvas>
-    <div class="com__note"><p class="com__say" data-sentence><span>A wall, and the room it belongs to.</span></p><p class="com__area" data-area>7.5 m²</p></div>
+  <aside class="com__side">
+    <div class="com__shots" aria-hidden="true">
+      <div class="shot on" data-shot="start">{{img zanzibar | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="living">{{img courtyard-bands | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="artificial">{{img art-rings | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="unsure">{{img skylight | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="indoors">{{img sofa | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="outdoors">{{img pool | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="both">{{img white-court | (min-width:1000px) 62vw, 100vw}}</div>
+      <div class="shot" data-shot="reply">{{img lanterns | (min-width:1000px) 62vw, 100vw}}</div>
+    </div>
+    <div class="el" data-el aria-hidden="true">
+      <img class="el__src" data-el-photo src="/img/zanzibar-detail-2048.avif" alt="" decoding="async">
+      <div class="el__floor" data-el-floor></div>
+      <svg class="el__person" data-el-person viewBox="-30 -180 60 180" width="60" height="180"><circle cx="0" cy="-164" r="9"/><path d="M0-150c11 0 17 9 16 24-1 18-4 34-5 52L7 0H-7l-4-74c-1-18-4-34-5-52-1-15 5-24 16-24z"/></svg>
+      <canvas class="el__wall" data-el-wall></canvas><div class="el__tank" data-el-tank></div>
+      <div class="el__w" data-el-w><b>3 m</b></div><div class="el__h" data-el-h><b>2.5 m</b></div>
+      <button class="com__grip" type="button" data-grip tabindex="-1"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M10 7h7v7"/></svg></button>
+    </div>
+    <div class="com__note" aria-hidden="true"><p class="com__say" data-sentence><span>A wall, and the room it belongs to.</span></p><p class="com__area" data-area>7.5 m²</p></div>
   </aside>
+  <div class="vine" data-vine><svg aria-hidden="true" preserveAspectRatio="none"><path class="vine__edge" data-edge/><path class="vine__stem" data-stem/><g class="vine__leaves" data-twigs></g></svg><ol aria-label="Go to a question"><li><button type="button" data-vine-at><i></i><span>What</span></button></li><li><button type="button" data-vine-at><i></i><span>Where</span></button></li><li><button type="button" data-vine-at><i></i><span>Size</span></button></li><li><button type="button" data-vine-at><i></i><span>Whose</span></button></li><li><button type="button" data-vine-at><i></i><span>Reply</span></button></li></ol></div>
 </section>

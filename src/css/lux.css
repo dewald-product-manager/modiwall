@@ -14,11 +14,10 @@ h2 { font-size: clamp(2.7rem, 6.6vw, 6.6rem); line-height: 1; }
 .head { align-items: end; padding-top: 1.6rem; border-top: 1px solid var(--hair); }
 .words .w { overflow-clip-margin: .3em; }
 
-/* ---- buttons: a leaf in a lime disc that opens to fill the button ---- */
+/* ---- buttons (their field is in lux4.css) ---- */
 .btn { min-height: 3.6rem; padding: .6rem 1.9rem .6rem 4.3rem; background: none; color: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 34%, transparent); font-weight: 500; font-size: 1rem; letter-spacing: -.005em; justify-content: flex-start; }
 .btn--lime, .btn--forest, .btn--line { background: none; color: inherit; }
 .btn::before { inset: auto; left: .42rem; top: 50%; width: 2.76rem; height: 2.76rem; margin-top: -1.38rem; border-radius: 99px; background: var(--lime); transform: none; transition: transform .9s var(--ease); z-index: -1; }
-.btn::after { content: ''; position: absolute; left: 1.28rem; top: 50%; width: 1.05rem; height: 1.5rem; margin-top: -.75rem; background: var(--deep); -webkit-mask: url(../img/leaf.svg) center/contain no-repeat; mask: url(../img/leaf.svg) center/contain no-repeat; transform-origin: 30% 90%; transition: transform .9s var(--ease); }
 @media (hover: hover) {
   .btn:hover { color: var(--deep); }
   .btn:hover::before { transform: scale(16); }
@@ -49,28 +48,33 @@ body:has(main > .ph) .top:not(.is-stuck), body:has(main > .hall) .top:not(.is-st
 .menu nav a { font-size: clamp(2.2rem, 9.6vw, 3.4rem); line-height: 1.12; }
 .menu-open .top { --lg-m: var(--white); }
 
-/* ---- the logo: its own outlines, uncovered along the line of a pen ---- */
+/* ---- the logo: one pen traces both letters, colour washes through them, and the sprig grows ---- */
 .lg { overflow: visible; }
 .lg-m, .lg-name, .foot__word { fill: var(--lg-m); transition: fill .5s; } .lg-b { stroke: var(--lg-m); transition: stroke .5s; }
 .lg-w { fill: var(--lg-w); }
-.lg:not(.lg-go, .lg-wait) > :is(.lg-m, .lg-w), .top__logo:not(:hover) .lg-mark > :is(.lg-m, .lg-w) { mask: none; }
-@keyframes lg-draw { 0% { stroke-dashoffset: 1.02; opacity: 0; } 4% { opacity: 1; } 100% { stroke-dashoffset: 0; } }
-:is(.lg-go, .lg-wait) .k { stroke-dasharray: 1 1.05; }
-.lg-go .k { animation: lg-draw 1.1s cubic-bezier(.6, 0, .2, 1) both; }
-.lg-go .k2 { animation-delay: .32s; animation-duration: .9s; } .lg-go .k3 { animation-delay: .42s; } .lg-go .k4 { animation-delay: .74s; }
-.lg-go .k5 { animation-delay: 1.3s; animation-duration: .9s; } .lg-go .k6 { animation-delay: 1.62s; animation-duration: .6s; } .lg-go .k7 { animation-delay: 1.72s; animation-duration: .6s; }
+.lg-line { fill: none; stroke-width: 5; stroke-linejoin: round; opacity: 0; } .ln-w { stroke: var(--lg-w); } .ln-m { stroke: var(--lg-m); }
+.lg-spr { transform-box: view-box; transform-origin: 566px 478px; }
+.lg-fill { mask: none; }
+:is(.lg-go, .lg-wait) .lg-fill, .top__logo:hover .lg-fill { mask: revert-layer; }
+.lg-go .lg-line use { stroke-dasharray: 1; animation: lg-trace 1.7s cubic-bezier(.5, .05, .15, 1) both; }
+.lg-go .lg-line { animation: lg-line 2.2s both; }
+.lg-go .wash { animation: lg-wash 1.5s .62s cubic-bezier(.4, 0, .15, 1) both; }
+.lg-go .lg-spr { animation: lg-grow 1.5s 1.5s cubic-bezier(.2, 1.1, .3, 1) both; }
+@keyframes lg-trace { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes lg-line { 0%, 58% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes lg-wash { from { transform: translateX(-1500px); } to { transform: none; } }
+@keyframes lg-grow { 0% { transform: scale(0, 0) rotate(-14deg); } 55% { transform: scale(1.02, 1.05) rotate(2.4deg); } 78% { transform: scale(1, .99) rotate(-.8deg); } 100% { transform: none; } }
 @media (hover: hover) {
-  .top__logo:hover :is(.k3, .k4, .k5, .k6, .k7) { stroke-dasharray: 1 1.05; animation: lg-draw .9s cubic-bezier(.6, 0, .2, 1) both; }
-  .top__logo:hover .k4 { animation-delay: .2s; } .top__logo:hover .k5 { animation-delay: .62s; animation-duration: .8s; } .top__logo:hover .k6 { animation-delay: .92s; animation-duration: .5s; } .top__logo:hover .k7 { animation-delay: 1s; animation-duration: .5s; }
+  .top__logo:hover .lg-spr { animation: lg-grow 1.3s cubic-bezier(.2, 1.1, .3, 1) both; }
+  .top__logo:hover .lg-line use { stroke-dasharray: 1; animation: lg-trace 1.3s cubic-bezier(.5, .05, .15, 1) both; } .top__logo:hover .lg-line { animation: lg-line 1.6s both; stroke-width: 9; } .top__logo:hover :is(.ln-m, .ln-w) { stroke: #d6ff7a; }
 }
-/* waiting: the mark draws and undraws */
-.lg-wait .k { animation: lg-loop 2.6s cubic-bezier(.6, 0, .3, 1) infinite; }
-.lg-wait .k2 { animation-delay: .12s; } .lg-wait .k3 { animation-delay: .24s; } .lg-wait .k4 { animation-delay: .36s; } .lg-wait .k5 { animation-delay: .5s; } .lg-wait .k6 { animation-delay: .6s; } .lg-wait .k7 { animation-delay: .64s; }
-@keyframes lg-loop { 0% { stroke-dashoffset: 1.02; } 45%, 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -1.03; } }
+/* waiting: the line runs round and round */
+.lg-wait .lg-fill, .lg-wait .lg-spr { opacity: .16; } .lg-wait .lg-line { opacity: 1; } .lg-wait .lg-line use { stroke-dasharray: .28 .72; animation: lg-loop 2.6s linear infinite; }
+@keyframes lg-loop { to { stroke-dashoffset: -1; } }
 
 /* first visit: the mark draws itself, then the page is there */
 .loader { display: none; }
-.first .loader { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: var(--white); animation: lift .9s 1.75s cubic-bezier(.76, 0, .2, 1) forwards; pointer-events: none; }
+.first .loader { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: var(--white); animation: lift 1s 2.5s cubic-bezier(.76, 0, .2, 1) forwards; pointer-events: none; }
 .loader .mark { width: clamp(6rem, 11vw, 10rem); }
 @keyframes lift { to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
 .foot__mark { width: clamp(10rem, 19vw, 17rem); margin-bottom: 2.2rem; --lg-m: var(--white); overflow: visible; }

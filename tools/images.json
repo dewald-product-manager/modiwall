@@ -1,318 +1,318 @@
 {
  "atrium": {
-  "src": "atrium.jpg",
+  "src": "atrium.avif",
   "alt": "Living green wall in a stone-clad corporate atrium"
  },
  "monstera": {
-  "src": "monstera.jpg",
+  "src": "monstera.avif",
   "alt": "Living wall of pothos and delicious monster in a home"
  },
  "dining": {
-  "src": "dining.jpg",
+  "src": "dining.avif",
   "alt": "Living wall behind a dining table in a South African home"
  },
  "pendants": {
-  "src": "pendants.jpg",
+  "src": "pendants.avif",
   "alt": "Double-height living wall column behind pendant lights"
  },
  "reception-water": {
-  "src": "reception-water.jpg",
+  "src": "reception-water.avif",
   "alt": "Double-height reception with living wall columns either side of a water feature"
  },
  "courtyard-bands": {
-  "src": "courtyard-bands.jpg",
+  "src": "courtyard-bands.avif",
   "alt": "Courtyard living wall planted in bands of fern, lime and burgundy foliage"
  },
  "courtyard-frame": {
-  "src": "courtyard-frame.jpg",
+  "src": "courtyard-frame.avif",
   "alt": "Framed outdoor vertical garden above a stone bench"
  },
  "home-table": {
-  "src": "home-table.jpg",
+  "src": "home-table.avif",
   "alt": "Trailing living wall beside a timber dining table"
  },
  "inverroche": {
-  "src": "inverroche.jpg",
+  "src": "inverroche.avif",
   "alt": "Green wall on the Inverroche stand in a retail concourse"
  },
  "pool": {
-  "src": "pool.jpg",
+  "src": "pool.avif",
   "alt": "Living walls between stone pillars along a swimming pool"
  },
  "bathroom": {
-  "src": "bathroom.jpg",
+  "src": "bathroom.avif",
   "alt": "Living wall behind glass in a marble bathroom"
  },
  "skylight": {
-  "src": "skylight.jpg",
+  "src": "skylight.avif",
   "alt": "Vertical garden in a skylit courtyard"
  },
  "office": {
-  "src": "office.jpg",
+  "src": "office.avif",
   "alt": "Office living wall with spider plant, lime pothos and philodendron"
  },
  "sun-city": {
-  "src": "sun-city.jpg",
+  "src": "sun-city.avif",
   "alt": "Planted steel tree beneath the skylight of the Sun City Entertainment Centre"
  },
  "laboratory": {
-  "src": "laboratory.jpg",
+  "src": "laboratory.avif",
   "alt": "Long living wall above the benches in a working laboratory"
  },
  "lounge-art": {
-  "src": "lounge-art.jpg",
+  "src": "lounge-art.avif",
   "alt": "Living wall in a lounge with framed portraits and a red rug"
  },
  "retirement-entrance": {
-  "src": "retirement-entrance.jpg",
+  "src": "retirement-entrance.avif",
   "alt": "Living wall on a stone plinth at a retirement village entrance"
  },
  "retirement-lounge": {
-  "src": "retirement-lounge.jpg",
+  "src": "retirement-lounge.avif",
   "alt": "Living wall behind a sofa in a retirement village reception"
  },
  "slats": {
-  "src": "slats.jpg",
+  "src": "slats.avif",
   "alt": "Lime pothos living wall against a timber slat screen"
  },
  "sofa": {
-  "src": "sofa.jpg",
+  "src": "sofa.avif",
   "alt": "Living wall seen through steel-framed glass behind a curved sofa"
  },
  "spa-pool": {
-  "src": "spa-pool.jpg",
+  "src": "spa-pool.avif",
   "alt": "Living wall lit from above at the end of a dark indoor pool"
  },
  "pinehaven": {
-  "src": "pinehaven.jpg",
+  "src": "pinehaven.avif",
   "alt": "Living green wall in the atrium of Netcare Pinehaven Hospital"
  },
  "pinehaven-tall": {
-  "src": "pinehaven-tall.jpg",
+  "src": "pinehaven-tall.avif",
   "alt": "Waiting area below the living wall at Netcare Pinehaven Hospital"
  },
  "pinehaven-lounge": {
-  "src": "pinehaven-lounge.jpg",
+  "src": "pinehaven-lounge.avif",
   "alt": "Seating in front of the living wall at Netcare Pinehaven Hospital"
  },
  "stairs": {
-  "src": "stairs.jpg",
+  "src": "stairs.avif",
   "alt": "Living wall beside a steel staircase in a double-volume home"
  },
  "stairs-tall": {
-  "src": "stairs-tall.jpg",
+  "src": "stairs-tall.avif",
   "alt": "Double-volume living wall beside a glass balustrade"
  },
  "stone-stripes": {
-  "src": "stone-stripes.jpg",
+  "src": "stone-stripes.avif",
   "alt": "Vertical garden strips alternating with stacked stone cladding"
  },
  "pretoria-east": {
-  "src": "pretoria-east.jpg",
+  "src": "pretoria-east.avif",
   "alt": "Living wall in a hospital waiting room in Pretoria East"
  },
  "reception-desk": {
-  "src": "reception-desk.jpg",
+  "src": "reception-desk.avif",
   "alt": "Living wall behind an office reception desk"
  },
  "piano": {
-  "src": "piano.jpg",
+  "src": "piano.avif",
   "alt": "Living wall framing a window beside an upright piano"
  },
  "billboard": {
-  "src": "billboard.jpg",
+  "src": "billboard.avif",
   "alt": "Technician on ropes planting a living billboard"
  },
  "maintenance": {
-  "src": "maintenance.jpg",
+  "src": "maintenance.avif",
   "alt": "Modiwall technicians maintaining a tall living wall from a lift"
  },
  "art-rings": {
-  "src": "art-rings.jpg",
+  "src": "art-rings.avif",
   "alt": "Tall artificial green wall behind ring pendant lights in a reception"
  },
  "art-lounge": {
-  "src": "art-lounge.jpg",
+  "src": "art-lounge.avif",
   "alt": "Artificial green wall in a family lounge"
  },
  "art-washroom": {
-  "src": "art-washroom.jpg",
+  "src": "art-washroom.avif",
   "alt": "Artificial green wall around mirrors in a washroom with blue tiles"
  },
  "art-mixed": {
-  "src": "art-mixed.jpg",
+  "src": "art-mixed.avif",
   "alt": "Mixed-foliage artificial green wall with variegated leaves"
  },
  "art-mezzanine": {
-  "src": "art-mezzanine.jpg",
+  "src": "art-mezzanine.avif",
   "alt": "Artificial green wall above a lounge with blue armchairs"
  },
  "art-entrance": {
-  "src": "art-entrance.jpg",
+  "src": "art-entrance.avif",
   "alt": "Artificial green wall with burgundy accents at an entrance"
  },
  "art-desk": {
-  "src": "art-desk.jpg",
+  "src": "art-desk.avif",
   "alt": "Artificial green wall behind a yellow reception desk"
  },
  "art-meeting": {
-  "src": "art-meeting.jpg",
+  "src": "art-meeting.avif",
   "alt": "Artificial tropical green wall behind two chairs in an office"
  },
  "art-shower": {
-  "src": "art-shower.jpg",
+  "src": "art-shower.avif",
   "alt": "Artificial green walls either side of a glass water wall"
  },
  "art-terrace": {
-  "src": "art-terrace.jpg",
+  "src": "art-terrace.avif",
   "alt": "Artificial green panels along a restaurant terrace"
  },
  "piece-panel": {
-  "src": "piece-panel.jpg",
+  "src": "piece-panel.avif",
   "alt": "The Modiwall panel, with its vertical water channels and the rails that join it to the next"
  },
  "piece-grid": {
-  "src": "piece-grid.jpg",
+  "src": "piece-grid.avif",
   "alt": "The Modiwall grid that holds the vessels"
  },
  "piece-vessel": {
-  "src": "piece-vessel.jpg",
+  "src": "piece-vessel.avif",
   "alt": "Three Modiwall vessels, one turned to show its two hooks"
  },
  "press-pinehaven": {
-  "src": "press-pinehaven.jpg",
+  "src": "press-pinehaven.avif",
   "alt": "African Design Magazine article on the green wall at Netcare Pinehaven"
  },
  "press-suncity": {
-  "src": "press-suncity.jpg",
+  "src": "press-suncity.avif",
   "alt": "African Design Magazine article on the Sun City green wall tree"
  },
  "zanzibar": {
-  "src": "zanzibar.jpg",
+  "src": "zanzibar.avif",
   "alt": "Double-height living wall of fern, philodendron and begonia beside tall windows at Zanzibar"
  },
  "zanzibar-detail": {
-  "src": "zanzibar-detail.jpg",
+  "src": "zanzibar-detail.avif",
   "alt": "Fern, pothos, begonia and spider plant growing together on one wall"
  },
  "urns": {
-  "src": "urns.jpg",
+  "src": "urns.avif",
   "alt": "Vertical garden of grasses and silver succulents beside three water urns and a stone wall"
  },
  "water-blade": {
-  "src": "water-blade.jpg",
+  "src": "water-blade.avif",
   "alt": "Water falling from a steel spout in front of a planted wall"
  },
  "succulents": {
-  "src": "succulents.jpg",
+  "src": "succulents.avif",
   "alt": "Coral succulents in rows of black vessels on an outdoor wall"
  },
  "terrace": {
-  "src": "terrace.jpg",
+  "src": "terrace.avif",
   "alt": "Outdoor living wall of grasses, bulbine and succulents above a timber deck"
  },
  "white-court": {
-  "src": "white-court.jpg",
+  "src": "white-court.avif",
   "alt": "Two living walls in a white-brick courtyard with a fireplace"
  },
  "glass-doors": {
-  "src": "glass-doors.jpg",
+  "src": "glass-doors.avif",
   "alt": "Living walls in a courtyard, seen from a dining table through folding glass doors"
  },
  "fountain": {
-  "src": "fountain.jpg",
+  "src": "fountain.avif",
   "alt": "Stone bowl fountain in front of a living wall"
  },
  "water-court": {
-  "src": "water-court.jpg",
+  "src": "water-court.avif",
   "alt": "Fountain and planted column along a narrow courtyard pool"
  },
  "lanterns": {
-  "src": "lanterns.jpg",
+  "src": "lanterns.avif",
   "alt": "Living wall on a covered terrace beneath three iron lanterns"
  },
  "bronze": {
-  "src": "bronze.jpg",
+  "src": "bronze.avif",
   "alt": "Bronze sculpture in front of a living wall at an entrance"
  },
  "foyer": {
-  "src": "foyer.jpg",
+  "src": "foyer.avif",
   "alt": "Lime philodendron wall on a stone plinth, passing through a glass door"
  },
  "reflection": {
-  "src": "reflection.jpg",
+  "src": "reflection.avif",
   "alt": "Planted column rising from a courtyard pool"
  },
  "atrium-water": {
-  "src": "atrium-water.jpg",
+  "src": "atrium-water.avif",
   "alt": "Two living walls either side of a water feature in a glazed reception"
  },
  "looking-up": {
-  "src": "looking-up.jpg",
+  "src": "looking-up.avif",
   "alt": "Looking up along a living wall and a water feature to the ceiling of an atrium"
  },
  "water-base": {
-  "src": "water-base.jpg",
+  "src": "water-base.avif",
   "alt": "Pebbles and a steel planter at the foot of a living wall and water feature"
  },
  "pinehaven-chairs": {
-  "src": "pinehaven-chairs.jpg",
+  "src": "pinehaven-chairs.avif",
   "alt": "Armchairs below the living wall at Netcare Pinehaven Hospital"
  },
  "garden-shower": {
-  "src": "garden-shower.jpg",
+  "src": "garden-shower.avif",
   "alt": "Living wall of bromeliad, peperomia and fern in an open-air shower"
  },
  "bromeliad": {
-  "src": "bromeliad.jpg",
+  "src": "bromeliad.avif",
   "alt": "Red bromeliads above peperomia and wandering jew on a living wall"
  },
  "peperomia": {
-  "src": "peperomia.jpg",
+  "src": "peperomia.avif",
   "alt": "Peperomia leaves with deep silver and burgundy ridges"
  },
  "foliage": {
-  "src": "foliage.jpg",
+  "src": "foliage.avif",
   "alt": "Variegated philodendron and alocasia on a living wall"
  },
  "fern": {
-  "src": "fern.jpg",
+  "src": "fern.avif",
   "alt": "Asparagus fern against blue-green fern fronds"
  },
  "monstera-fern": {
-  "src": "monstera-fern.jpg",
+  "src": "monstera-fern.avif",
   "alt": "Living wall of delicious monster below hanging sword fern"
  },
  "patterned-floor": {
-  "src": "patterned-floor.jpg",
+  "src": "patterned-floor.avif",
   "alt": "Double-height living wall on a patterned tile floor beside iron lanterns"
  },
  "desk-teal": {
-  "src": "desk-teal.jpg",
+  "src": "desk-teal.avif",
   "alt": "Living wall on a teal wall behind a reception desk and a wing chair"
  },
  "courtyard-sky": {
-  "src": "courtyard-sky.jpg",
+  "src": "courtyard-sky.avif",
   "alt": "Living wall under a glass roof beside courtyard steps"
  },
  "year-2019-05": {
-  "src": "year-2019-05.jpg",
+  "src": "year-2019-05.avif",
   "alt": "The Hollard wall in May 2019, newly planted"
  },
  "year-2019-08": {
-  "src": "year-2019-08.jpg",
+  "src": "year-2019-08.avif",
   "alt": "The Hollard wall in August 2019"
  },
  "year-2022-01": {
-  "src": "year-2022-01.jpg",
+  "src": "year-2022-01.avif",
   "alt": "The Hollard wall in January 2022"
  },
  "year-2023-04": {
-  "src": "year-2023-04.jpg",
+  "src": "year-2023-04.avif",
   "alt": "The Hollard wall in April 2023"
  },
  "year-2025-02": {
-  "src": "year-2025-02.jpg",
+  "src": "year-2025-02.avif",
   "alt": "The Hollard wall in February 2025"
  }
 }

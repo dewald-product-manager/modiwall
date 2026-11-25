@@ -367,14 +367,14 @@ def mat_scene2(name):
     gltf(s, 'ceramic_vase_01', place((X + .15, niche[2], 2.4), 1.2), height=.36)
     gltf(s, 'wooden_bowl_01', place((X + .14, niche[2], 1.75), .3), height=.09)
     # the planted wall, floor to ceiling, in a slim bronze reveal
-    s.box((-X + .10, 0, -.34), (X - .06, .10, .16), m['bz'], .004)
+    tk = s.mat('tank', (.50, .51, .505), .34, metal=1); s.box((-X + .10, .012, -.34), (X - .06, .27, .24), tk, .004); s.box((-X + .10, .27, -.34), (X - .06, .282, .252), tk, .003)
     s.box((-X + .06, 0, -.34), (-X + .10, HH + .14, .10), m['bz'], .002)
     s.box((X - .06, 0, -.34), (X - .02, HH + .14, .10), m['bz'], .002)
     K, M = plants.kit(s)
     W2 = 2 * X - .22
-    L, _, _ = layout(W2, HH + .08, dict(WSTY, density=2.1, str=2.8, mix=dict(heart=8, lime=1.5, fern=5, spider=2.4, lily=2.4, monstera=2.6, pep=2.4, syng=1.4, lirio=2, purple=.5)), 64, px=.105, py=.12)
+    L, _, _ = layout(W2, HH - .08, dict(WSTY, density=2.1, str=2.8, mix=dict(heart=8, lime=1.5, fern=5, spider=2.4, lily=2.4, monstera=2.6, pep=2.4, syng=1.4, lirio=2, purple=.5)), 64, px=.105, py=.12)
     L = drop(L, None, dict(monstera=.75, lily=.18))
-    s.rec = [(r[0], *r[2]) for r in plantwall(s, K, L, 9, 1, frame=xf(t=(-X + .11, .10, -.20)), scale=1.05)]
+    s.rec = [(r[0], *r[2]) for r in plantwall(s, K, L, 9, 1, frame=xf(t=(-X + .11, .26, -.20)), scale=1.05)]
     s.box((-X, .05, -.33), (X, HH + .3, -.24), M['black'])
     # a place to sit and look at it
     P, F, N = rbox((-2.15, .001, 1.62), (2.15, .020, 4.95), .009, .0082)

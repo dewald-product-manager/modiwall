@@ -101,13 +101,13 @@ if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=1aa3d066').then((m) => m.initVisualiser(vis));
+if (vis) import('./visualise.js?v=b19ab5aa').then((m) => m.initVisualiser(vis));
 const system = $('[data-system]');
 if (system) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(system, 1.1).then(() => import('./system.js?v=f446d86f')).then((m) => m.initSystem(system));
+quiet(system, 1.1).then(() => import('./system.js?v=d816dcbb')).then((m) => m.initSystem(system));
 }, { rootMargin: '260% 0px' });
 near.observe(system);
 }
@@ -174,7 +174,7 @@ if (night) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(night, 1).then(() => import('./room.js?v=d173187c')).then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
+quiet(night, 1).then(() => import('./room.js?v=293d82a9')).then((m) => m.nightRoom(night)).catch(() => night.classList.add('no-webgl'));
 }, { rootMargin: '220% 0px' });
 near.observe(night);
 }
@@ -182,14 +182,14 @@ $$('[data-mark]').forEach((m) => new IntersectionObserver(([e]) => {
 m.classList.toggle('in', e.isIntersecting);
 m.classList.toggle('lg-go', e.isIntersecting && !reduced);
 }, { threshold: 0.35 }).observe(m));
-import('./pointer.js?v=d8371ced').then((m) => m.initPointer());
+import('./pointer.js?v=1bb8fb63').then((m) => m.initPointer());
 const mat = $('[data-mat]');
 if (mat) {
 let begun = false;
 const begin = () => {
 if (begun) return;
 begun = true;
-import('./materials.js?v=c5d90df1').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
+import('./materials.js?v=71e21760').then((m) => m.initMaterials(mat)).catch(() => mat.classList.add('is-flat'));
 };
 if (!navigator.connection?.saveData) addEventListener('load', () => setTimeout(() => (window.requestIdleCallback ?? setTimeout)(begin), 3600));
 const near = new IntersectionObserver(([e]) => {
@@ -316,7 +316,7 @@ body.animate({ height: ['0px', `${body.offsetHeight}px`] }, ease);
 });
 const filters = $('[data-filters]');
 const hall = $('[data-hall-page]');
-if (hall) import('./corridor.js?v=882a348c').then(async (m) => {
+if (hall) import('./corridor.js?v=335125fb').then(async (m) => {
 const frames = $$('[data-frame]');
 const rows = $$('.cards li');
 const status = $('[data-filter-status]');
@@ -409,16 +409,16 @@ const d = e.changedTouches[0].clientX - sx;
 if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
-for (const [sel, file, fn] of [['[data-book]', './book.js?v=c2bc8c26', 'initBook'], ['[data-names]', './tale.js?v=2e0bf3ac', 'clearing']]) {
+for (const [sel, file, fn] of [['[data-book]', './book.js?v=18b56ef4', 'initBook'], ['[data-names]', './tale.js?v=2e0bf3ac', 'clearing']]) {
 const el = $(sel);
 if (!el) continue;
 if (reduced) el.classList.add('is-flat');
-else (file === './book.js?v=c2bc8c26' ? import('./book.js?v=c2bc8c26') : import('./tale.js?v=2e0bf3ac')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+else (file === './book.js?v=18b56ef4' ? import('./book.js?v=18b56ef4') : import('./tale.js?v=2e0bf3ac')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
 }
 const visit = $('[data-visit]');
 if (visit) import('./visit.js?v=37ee7a39').then((x) => x.initVisit(visit));
 const plants = $('[data-plants]');
-if (plants) import('./plants.js?v=6609481b').then((x) => x.initPlants(plants));
+if (plants) import('./plants.js?v=d43329db').then((x) => x.initPlants(plants));
 const cut = $('[data-cut]');
 if (cut) {
 const near = new IntersectionObserver(([e]) => {
@@ -443,12 +443,19 @@ if (came && !reduced) c.animate([{ opacity: 0, transform: 'translateY(1.4rem)' }
 pals.addEventListener('click', (e) => e.target.closest('button') && show(e.target.closest('button')));
 show($('button', pals));
 }
+const provs = $('[data-provs]');
+if (provs) provs.addEventListener('click', (e) => {
+const b = e.target.closest('[data-prov-at]');
+if (!b) return;
+$$('[data-prov-at]', provs).forEach((x) => x.setAttribute('aria-pressed', x === b));
+$$('[data-prov]', provs).forEach((x) => x.classList.toggle('on', x.dataset.prov === b.dataset.provAt));
+});
 for (const [sel, fn] of [['[data-reel]', 'reel'], ['[data-years]', 'years']]) {
 const el = $(sel);
 if (el) import('./reel.js?v=61d99f51').then((m) => m[fn](el));
 }
 const form = $('[data-form]');
-if (form) import('./form.js?v=aeb4d5d6').then((m) => m.initForm(form));
+if (form) import('./form.js?v=37f686cf').then((m) => m.initForm(form));
 const dock = $('[data-dock]');
 if (dock && hero) {
 new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero.closest('[data-pin]'));

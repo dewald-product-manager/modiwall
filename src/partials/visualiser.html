@@ -8,30 +8,27 @@
     <button class="vis__corner" type="button" data-corner aria-label="Top right corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Bottom right corner. Move with the arrow keys"></button>
     <button class="vis__corner" type="button" data-corner aria-label="Bottom left corner. Move with the arrow keys"></button>
-    <div class="vis__tools"><button type="button" data-vis-evening aria-pressed="false">Evening</button><button type="button" data-vis-bare>Hold to compare</button><button type="button" data-vis-save>Save picture</button></div>
+    <div class="vis__sun" aria-hidden="true"></div>
+    <div class="vis__tools"><div class="day" role="group" aria-label="Light"><button type="button" data-vis-light="0" aria-pressed="false" aria-label="Morning light" title="Morning"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7.500 18a4.500 4.500 0 0 1 9 0M12 8.500V6M6.300 11.300 4.600 9.600M17.700 11.300l1.700-1.700"/></svg></button><button type="button" data-vis-light="1" aria-pressed="true" aria-label="Midday light" title="Midday"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.200"/><path d="M12 3.500V5M12 19v1.500M3.500 12H5M19 12h1.500M6 6l1 1M17 17l1 1M18 6l-1 1M7 17l-1 1"/></svg></button><button type="button" data-vis-light="2" aria-pressed="false" aria-label="Evening light" title="Evening"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14.500A7.500 7.500 0 0 1 9.500 5a7.500 7.500 0 1 0 9.500 9.500z"/></svg></button></div><button type="button" data-vis-bare>Hold to compare</button><button type="button" data-vis-save>Save picture</button></div>
     <div class="vis__wait"><svg class="mark lg lg-wait" viewBox="0 0 768 571" aria-label="Loading" role="img">{{> mark-paths}}</svg></div>
   </div>
   <div class="vis__panel">
-    <div class="vis__src">
-      <label class="btn btn--lime"><input class="vh" type="file" accept="image/*" capture="environment" data-vis-file>Photograph your wall</label>
-      <label class="link vis__pick"><input class="vh" type="file" accept="image/*" data-vis-file>Choose a photo</label>
+    <div class="vis__plants">
+      <div class="seg" role="group" aria-label="Where the wall is"><button type="button" data-vis-place="in" aria-pressed="true">Interior plants</button><button type="button" data-vis-place="ex" aria-pressed="false">Exterior plants</button></div>
+      <fieldset class="mixes"><legend class="vh">Plant mix</legend><label class="mix" data-area="in"><input type="radio" name="planting" value="0" checked data-vis-style><span class="mix__p"><img src="/img/mix/in-midday.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Canopy</b><span>Every green there is, in full leaf.</span></label><label class="mix" data-area="in"><input type="radio" name="planting" value="1" data-vis-style><span class="mix__p"><img src="/img/mix/in-morning.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Gold leaf</b><span>Gold, cream and new green.</span></label><label class="mix" data-area="in"><input type="radio" name="planting" value="2" data-vis-style><span class="mix__p"><img src="/img/mix/in-evening.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Velvet</b><span>Deep, glossy, burgundy in the shade.</span></label><label class="mix" data-area="ex" hidden><input type="radio" name="planting" value="4" data-vis-style><span class="mix__p"><img src="/img/mix/ex-midday.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Karoo</b><span>Coral, lime and bulbine in flower.</span></label><label class="mix" data-area="ex" hidden><input type="radio" name="planting" value="3" data-vis-style><span class="mix__p"><img src="/img/mix/ex-morning.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Silver</b><span>Silver and blue, soft against stone.</span></label><label class="mix" data-area="ex" hidden><input type="radio" name="planting" value="5" data-vis-style><span class="mix__p"><img src="/img/mix/ex-evening.avif" width="720" height="507" alt="" loading="lazy" decoding="async"></span><b>Violet</b><span>Purple and dark green, for shade.</span></label></fieldset>
     </div>
-    <div class="vis__opts">
-      <div class="vis__dim"><span>Width</span><button class="step" type="button" data-vis-step="cols,-1" aria-label="Narrower">−</button><button class="step" type="button" data-vis-step="cols,1" aria-label="Wider">+</button></div>
-      <div class="vis__dim"><span>Height</span><button class="step" type="button" data-vis-step="rows,-1" aria-label="Lower">−</button><button class="step" type="button" data-vis-step="rows,1" aria-label="Taller">+</button></div>
-      <div class="vis__plants">
-        <div class="seg" role="group" aria-label="Where the wall is"><button type="button" data-vis-place="in" aria-pressed="true">Interior plants</button><button type="button" data-vis-place="ex" aria-pressed="false">Exterior plants</button></div>
-        <fieldset class="vis__style"><legend class="vh">Planting</legend>
-          <label data-area="in"><input type="radio" name="planting" value="1" data-vis-style><span>Morning</span></label>
-          <label data-area="in"><input type="radio" name="planting" value="0" checked data-vis-style><span>Midday</span></label>
-          <label data-area="in"><input type="radio" name="planting" value="2" data-vis-style><span>Evening</span></label>
-          <label data-area="ex" hidden><input type="radio" name="planting" value="3" data-vis-style><span>Morning</span></label>
-          <label data-area="ex" hidden><input type="radio" name="planting" value="4" data-vis-style><span>Midday</span></label>
-          <label data-area="ex" hidden><input type="radio" name="planting" value="5" data-vis-style><span>Evening</span></label>
-        </fieldset>
+    <div class="vis__side">
+      <div class="vis__opts">
+        <div class="vis__dim"><span>Width</span><button class="step" type="button" data-vis-step="cols,-1" aria-label="Narrower">−</button><button class="step" type="button" data-vis-step="cols,1" aria-label="Wider">+</button></div>
+        <div class="vis__dim"><span>Height</span><button class="step" type="button" data-vis-step="rows,-1" aria-label="Lower">−</button><button class="step" type="button" data-vis-step="rows,1" aria-label="Taller">+</button></div>
+        <p role="status"><span data-vis-out></span> <span class="vis__area" data-vis-area></span></p>
       </div>
+      <div class="vis__src">
+        <label class="btn btn--lime"><input class="vh" type="file" accept="image/*" capture="environment" data-vis-file>Photograph your wall</label>
+        <label class="link vis__pick"><input class="vh" type="file" accept="image/*" data-vis-file>Choose a photo</label>
+      </div>
+      <a class="btn btn--line" data-vis-cta href="/get-a-quote.html">Commission this wall</a>
     </div>
-    <div class="vis__end"><p role="status"><span data-vis-out></span> <span class="vis__area" data-vis-area></span></p><a class="btn btn--line" data-vis-cta href="/get-a-quote.html">Commission this wall</a></div>
     <p class="vis__msg" role="alert" data-vis-msg></p>
   </div>
 </div>

@@ -1,5 +1,6 @@
 /* See it on your wall. The photo is drawn to a canvas in this page and never leaves the device. */
 import { frameWall } from './wall.js';
+import { picture } from './gl.js';
 
 const STEP = 0.5; // metres per panel
 
@@ -39,6 +40,7 @@ export async function initVisualiser(root) {
   let box = { w: 1, h: 1 };
   let m = 100;
   let pad = 40;
+  let mood = [1, 1, 1];
 
   try {
     frame = await frameWall(plane.querySelector('canvas'), stage);
@@ -48,64 +50,29 @@ export async function initVisualiser(root) {
     return;
   }
 
-  /* an empty room to begin with: plaster, late sun through a window, a stone floor */
-  function room(w, h) {
-    const fl = h * 0.84;
-    let g = ctx.createLinearGradient(0, 0, w, fl);
-    g.addColorStop(0, '#efebe3');
-    g.addColorStop(0.5, '#dcd5c9');
-    g.addColorStop(1, '#b9b1a3');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, fl);
-    // plaster: thousands of faint trowel marks
-    let seed = 7;
-    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < 2600; i++) {
-      ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,.016)' : 'rgba(70,58,40,.012)';
-      ctx.beginPath();
-      ctx.ellipse(rnd() * w, rnd() * fl, 8 + rnd() * w * 0.04, 2 + rnd() * 9, rnd() * 3, 0, 7);
-      ctx.fill();
-    }
-    // window light, soft and slanted
-    ctx.save();
-    ctx.filter = `blur(${Math.round(w * 0.013)}px)`;
-    ctx.fillStyle = 'rgba(255,240,206,.6)';
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) {
-      const x = w * (0.03 + c * 0.125 + r * 0.022);
-      const y = h * (0.1 + r * 0.2 + c * 0.03);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + w * 0.105, y + h * 0.03);
-      ctx.lineTo(x + w * 0.125, y + h * 0.2);
-      ctx.lineTo(x + w * 0.02, y + h * 0.17);
-      ctx.fill();
-    }
-    ctx.restore();
-    g = ctx.createLinearGradient(0, fl, 0, h);
-    g.addColorStop(0, '#766c5e');
-    g.addColorStop(1, '#a79d8e');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, fl, w, h - fl);
-    ctx.strokeStyle = 'rgba(40,32,22,.28)';
-    ctx.lineWidth = Math.max(1, h * 0.0016);
-    for (let i = -6; i <= 6; i++) {
-      ctx.beginPath();
-      ctx.moveTo(w / 2 + i * w * 0.1, fl);
-      ctx.lineTo(w / 2 + i * w * 0.19, h);
-      ctx.stroke();
-    }
-    ctx.fillStyle = '#e9e4da';
-    ctx.fillRect(0, fl - h * 0.02, w, h * 0.02);
-    g = ctx.createLinearGradient(0, fl, 0, fl + h * 0.05);
-    g.addColorStop(0, 'rgba(20,15,8,.4)');
-    g.addColorStop(1, 'rgba(20,15,8,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, fl, w, h * 0.05);
-    g = ctx.createRadialGradient(w / 2, h * 0.4, h * 0.2, w / 2, h * 0.4, w * 0.75);
-    g.addColorStop(0, 'rgba(30,22,10,0)');
-    g.addColorStop(1, 'rgba(30,22,10,.36)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
+  /* a room, or a terrace, to begin with: rendered bare, and known to the centimetre, so the wall stands in it to scale */
+  const F = 14.4;
+  const CY = 2.6;
+  const scenes = {};
+  const scene = (k) => (scenes[k] ??= picture(new URL(`../img/room/${k}-0.avif`, import.meta.url).href));
+  let seen = { x: -4.4, y: -1.3, w: 8.8, h: 5 }; // metres of the scene on show
+  let place = 'in';
+  function look() {
+    const asp = box.w / box.h;
+    const w = Math.min(13.6, Math.max(state.cols * STEP + 3.4, (state.rows * STEP + 2.2) * asp, 4.6));
+    const h = w / asp;
+    seen = { x: -w / 2, y: Math.max(-4.4, -h * 0.2), w, h };
+  }
+  let bg = null;
+  async function stand(k) {
+    place = k;
+    try {
+      const img = await scene(k);
+      if (place !== k || state.source) return;
+      bg = img;
+      paint();
+      size();
+    } catch { /* the plain wall stays */ }
   }
 
   function paint() {
@@ -121,7 +88,12 @@ export async function initVisualiser(root) {
       const sw = state.source.width * s;
       const sh = state.source.height * s;
       ctx.drawImage(state.source, (w - sw) / 2, (h - sh) / 2, sw, sh);
-    } else room(w, h);
+    } else if (bg) {
+      look();
+      const k = bg.width / F;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bg, (seen.x + F / 2) * k, (CY - seen.y - seen.h + F / 2) * k, seen.w * k, seen.h * k, 0, 0, w, h);
+    }
     light();
   }
 
@@ -145,12 +117,21 @@ export async function initVisualiser(root) {
     const avg = sum.map((v) => v / n / 255);
     const l = (avg[0] + avg[1] + avg[2]) / 3;
     const gain = Math.min(1.1, 0.42 + l * 0.9);
-    frame.W.tint = avg.map((v) => gain * (1 + (v / Math.max(0.05, l) - 1) * 0.35));
+    mood = avg.map((v) => gain * (1 + (v / Math.max(0.05, l) - 1) * 0.35));
+    evening();
   }
 
   /* until a corner is moved, the wall keeps its true proportions */
   function centre() {
     if (state.touched) return;
+    if (!state.source && bg) { // to scale, standing on its reservoir
+      const X = (x) => (x - seen.x) / seen.w;
+      const Y = (y) => 1 - (y - seen.y) / seen.h;
+      const hw = (state.cols * STEP) / 2;
+      const foot = place === 'in' ? 0.66 : 0.42;
+      state.pts = [{ x: X(-hw), y: Y(foot + state.rows * STEP) }, { x: X(hw), y: Y(foot + state.rows * STEP) }, { x: X(hw), y: Y(foot) }, { x: X(-hw), y: Y(foot) }];
+      return;
+    }
     const ratio = state.cols / state.rows;
     const w = Math.min(box.w * 0.66, box.h * 0.6 * ratio);
     const hx = w / 2 / box.w;
@@ -160,6 +141,7 @@ export async function initVisualiser(root) {
   }
 
   function size() {
+    if (!state.source && bg && !state.touched) paint();
     centre();
     const target = Math.min(1000, Math.max(560, box.w * 0.8));
     m = Math.round(Math.min(150, Math.max(70, target / Math.max(state.cols, state.rows))));
@@ -169,7 +151,7 @@ export async function initVisualiser(root) {
     c.style.height = `${state.rows * m + pad * 2}px`;
     c.style.left = c.style.top = `${-pad}px`;
     const trough = root.querySelector('[data-vis-trough]');
-    Object.assign(trough.style, { top: `${state.rows * m}px`, width: `${state.cols * m}px`, height: `${Math.round(m * 0.3)}px` });
+    Object.assign(trough.style, { top: `${state.rows * m - 2}px`, left: `${-m * 0.03}px`, width: `${state.cols * m + m * 0.06}px`, height: `${Math.round(m * 0.36)}px` });
     evening();
     frame.set({ cols: state.cols, rows: state.rows, m, pad, style: state.style });
     const area = state.cols * state.rows * STEP * STEP;
@@ -189,20 +171,24 @@ export async function initVisualiser(root) {
     handles.forEach((h, i) => { h.style.transform = `translate(${px[i].x.toFixed(1)}px,${px[i].y.toFixed(1)}px)`; });
   }
 
-  /* evening: the photo dims and a lamp comes on above the wall */
-  let dusk = false;
+  /* the hour: low and warm, high and plain, or lamps. It changes the light, never the planting */
+  let hour = 1;
+  const HOUR = [{ amb: 0.98, tint: [1.07, 1.0, 0.86] }, { amb: 1, tint: [1, 1, 1] }, { amb: 0.16, tint: [1, 1, 1] }];
   function evening() {
     const { W } = frame;
-    W.amb = dusk ? 0.16 : 1;
-    W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: dusk ? 1.1 : 0 };
+    W.amb = HOUR[hour].amb;
+    W.tint = mood.map((v, i) => v * HOUR[hour].tint[i]);
+    W.lamp = { x: (state.cols * m) / 2 + pad, y: pad - m * 0.2, r: Math.max(state.cols, state.rows) * m * 0.42, on: hour === 2 ? 1.1 : 0 };
   }
-  root.querySelector('[data-vis-evening]').addEventListener('click', (e) => {
-    dusk = !dusk;
-    e.currentTarget.setAttribute('aria-pressed', dusk);
-    root.classList.toggle('is-evening', dusk);
+  const hours = [...root.querySelectorAll('[data-vis-light]')];
+  hours.forEach((b) => b.addEventListener('click', () => {
+    hour = Number(b.dataset.visLight);
+    hours.forEach((x) => x.setAttribute('aria-pressed', x === b));
+    root.classList.toggle('is-morning', hour === 0);
+    root.classList.toggle('is-evening', hour === 2);
     evening();
     frame.W.draw();
-  });
+  }));
   const bare = root.querySelector('[data-vis-bare]');
   const show = (v) => root.classList.toggle('is-bare', v);
   bare.addEventListener('pointerdown', () => show(true));
@@ -216,7 +202,8 @@ export async function initVisualiser(root) {
     cv.width = photo.width;
     cv.height = photo.height;
     const x = cv.getContext('2d');
-    if (dusk) x.filter = 'brightness(.3) saturate(.72)';
+    if (hour === 2) x.filter = 'brightness(.3) saturate(.72)';
+    if (hour === 0) x.filter = 'sepia(.14) saturate(1.08) brightness(1.02)';
     x.drawImage(photo, 0, 0);
     x.filter = 'none';
     const M = new DOMMatrix(quadMatrix(state.cols * m, state.rows * m, state.pts.map((p) => ({ x: p.x * cv.width, y: p.y * cv.height }))));
@@ -339,18 +326,20 @@ export async function initVisualiser(root) {
     state.style = Number(i.value);
     size();
   }));
-  // plants for a room, or for the open air: the same hour of the day in either
-  const OTHER = [4, 3, 5, 1, 0, 2];
+  // plants for a room, or for the open air: the mix of the same temper in either
+  const OTHER = [4, 3, 5, 1, 0, 2]; // the mix of the same temper
   const places = [...root.querySelectorAll('[data-vis-place]')];
   places.forEach((b) => b.addEventListener('click', () => {
     if (b.getAttribute('aria-pressed') === 'true') return;
     places.forEach((x) => x.setAttribute('aria-pressed', x === b));
     styles.forEach((i) => { i.closest('label').hidden = i.closest('label').dataset.area !== b.dataset.visPlace; });
     state.style = OTHER[state.style];
+    if (!state.source) stand(b.dataset.visPlace === 'in' ? 'in' : 'out');
     styles.find((i) => Number(i.value) === state.style).checked = true;
     size();
   }));
 
+  await stand('in');
   paint();
   size();
   let timer;

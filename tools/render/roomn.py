@@ -91,12 +91,12 @@ def night2(name):
     gltf(s, 'ceramic_vase_04', place((px0 - 1.35, .50, .14), 1.4), height=.26)
     for k, (dx, c) in enumerate(((0, m['loop']), (.012, m['clay']), (-.01, m['cem']))):
         s.box((XL + .85 + dx, .50 + k * .03, -.02), (XL + 1.18 + dx, .528 + k * .03, .24), c, .003)
-    s.box((px0 - .06, 0, -.36), (XR, .10, .16), m['bz'], .003)
+    tk = s.mat('tank', (.50, .51, .505), .34, metal=1); s.box((px0 - .05, .012, -.36), (XR, .27, .24), tk, .004); s.box((px0 - .062, .27, -.36), (XR, .282, .252), tk, .003)   # the steel reservoir the wall stands in, as wide as the wall
     K, M = plants.kit(s)
     W2 = XR - px0 - .02
-    L, _, _ = layout(W2, H - .12, dict(WSTY, density=2.1, str=2.8, mix=dict(heart=8, lime=1.0, fern=5.5, spider=2., lily=2.6, monstera=3., pep=2.4, syng=1.2, lirio=1.6)), 71, px=.105, py=.12)
+    L, _, _ = layout(W2, H - .28, dict(WSTY, density=2.1, str=2.8, mix=dict(heart=8, lime=1.0, fern=5.5, spider=2., lily=2.6, monstera=3., pep=2.4, syng=1.2, lirio=1.6)), 71, px=.105, py=.12)
     L = drop(L, None, dict(monstera=.75, lily=.18))
-    plantwall(s, K, L, 13, 1, frame=xf(t=(px0 - .03, .10, -.20)), scale=1.05)
+    plantwall(s, K, L, 13, 1, frame=xf(t=(px0 - .03, .26, -.20)), scale=1.05)
     s.box((px0 - .06, .05, -.34), (XR, H, -.24), M['black'])
     # the room
     P, F, N = rbox((-1.75, .001, 1.35), (3.45, .020, 5.15), .009, .0086)

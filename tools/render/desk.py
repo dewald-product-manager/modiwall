@@ -64,29 +64,56 @@ F += [[0, 1 + i, 1 + (i + 1) % 48] for i in range(48)]
 for k in range(7):
     for i in range(48): a0, b0 = 1 + k * 48 + i, 1 + k * 48 + (i + 1) % 48; F += [[a0, a0 + 48, b0 + 48], [a0, b0 + 48, b0]]
 s.add(s.mesh(np.array(P), np.array(F), steel), put(Rz(-1.1), (cx + .02, cy - .285, .062)))
-# a phone, face up and asleep
-P, F, N = rbox((-.171, -.352, 0), (.171, .352, .037), .0175, .006)
-q = np.abs(P[:, :2]) - np.array([.171 - .052, .352 - .052]); c = (q > 0).all(1); l = np.linalg.norm(np.maximum(q, 0), axis=1); f = np.where(c & (l > .052), .052 / np.maximum(l, 1e-6), 1)
-P[:, 0] = np.sign(P[:, 0]) * np.where(c, (.171 - .052) + q[:, 0] * f, np.abs(P[:, 0])); P[:, 1] = np.sign(P[:, 1]) * np.where(c, (.352 - .052) + q[:, 1] * f, np.abs(P[:, 1]))
-s.add(s.mesh(P, F, s.mat('phone', (.02, .021, .023), .22, spec=.5)), put(Rz(-.12), (1.46, -.34, .002)))
-n = 24; a = np.linspace(0, 2 * np.pi, 4 * n, endpoint=False); ring = []
-for k in range(4 * n):
-    sx, sy = np.sign(np.cos(a[k])), np.sign(np.sin(a[k])); ring.append((sx * (.160 - .044) + .044 * np.cos(a[k]), sy * (.341 - .044) + .044 * np.sin(a[k]), 0))
-P = np.array([(0, 0, 0)] + ring); F = [(0, k + 1, (k + 1) % (4 * n) + 1) for k in range(4 * n)]
-s.add(s.mesh(P, np.array(F), s.mat('glass', (.004, .005, .006), .035, spec=.7)), put(Rz(-.12), (1.46, -.34, .0402)))
+# ---- a white phone, face down; a laptop, open
+def outline(w, h, rad, n=14):
+    o = []
+    for q, (sx, sy) in enumerate(((1, 1), (-1, 1), (-1, -1), (1, -1))):
+        for a in np.linspace(0, np.pi / 2, n): t = a + q * np.pi / 2; o.append((sx * (w / 2 - rad) + rad * np.cos(t), sy * (h / 2 - rad) + rad * np.sin(t)))
+    return np.array(o)
+
+
+def slab(w, h, z0, z1, rad, bev, mat, top=None, uv=False, M=None):
+    """a rounded plate with soft edges; its top can carry a picture"""
+    rings = [(bev * .9, z0), (bev * .25, z0 + bev * .3), (0, z0 + bev), (0, z1 - bev), (bev * .12, z1 - bev * .45), (bev * .45, z1 - bev * .12), (bev, z1)]; P = []
+    for d, z in rings: o = outline(w - 2 * d, h - 2 * d, max(rad - d, .002)); P.append(np.column_stack([o, np.full(len(o), z)]))
+    n = len(P[0]); V = np.concatenate(P); F = []
+    for k in range(len(rings) - 1):
+        for i in range(n): a, b = k * n + i, k * n + (i + 1) % n; F += [[a, b, b + n], [a, b + n, a + n]]
+    s.add(s.mesh(V, np.array(F), mat), M)
+    c = np.concatenate([[[0, 0, z1]], P[-1]]); F = np.array([[0, 1 + i, 1 + (i + 1) % n] for i in range(n)]); UV = np.stack([c[:, 0] / w + .5, .5 - c[:, 1] / h], 1) if uv else None
+    s.add(s.mesh(c, F, mat if top is None else top, N=np.tile([0, 0, 1.], (n + 1, 1)), UV=UV), M)
+
+
+def disc(x, y, z0, z1, rad, mat, M, lens=None):
+    P, F, UV = lathe([(rad, z0), (rad, z1), (rad * .86, z1), (1e-4, z1)], 40); P = np.stack([P[:, 0] + x, P[:, 2] + y, P[:, 1]], 1); s.add(s.mesh(P, F[:, ::-1], mat), M)
+    if lens is not None: P, F, UV = lathe([(rad * .8, z1 + .0012), (1e-4, z1 + .003)], 40); P = np.stack([P[:, 0] + x, P[:, 2] + y, P[:, 1]], 1); s.add(s.mesh(P, F[:, ::-1], lens), M)
+
+
+alu = s.mat('alu', (.60, .60, .605), .42, spec=.9); white = s.mat('wglass', (.90, .895, .88), .20, spec=.55); back = s.mat('wback', (1, 1, 1), .22, spec=.55, tBase='ph/phoneback.png'); dark = s.mat('lens', (.004, .005, .008), .04, spec=.9); band = s.mat('band', (.86, .85, .83), .22, metal=1)
+Mp = put(Rz(.16), (1.50, -.52, .003)); slab(.352, .724, 0, .038, .056, .007, band, back, True, Mp)
+slab(.172, .176, .037, .050, .046, .005, white, None, False, put(Rz(.16), np.array([1.50, -.52, .003]) + Rz(.16) @ np.array([-.077, .258, 0])))
+for lx, ly in ((-.118, .300), (-.118, .214), (-.038, .257)): disc(lx, ly, .048, .058, .034, band, Mp, dark)
+disc(-.038, .318, .048, .0515, .011, s.mat('flash', (.95, .9, .78), .4), Mp)
+LX, LY, LR = 2.02, .40, -.13; Ml = put(Rz(LR), (LX, LY, .004)); slab(1.52, 1.06, .006, .056, .055, .010, alu, None, False, Ml)
+well = s.mat('well', (.018, .0185, .019), .6); P, F, N = rbox((-.665, -.02, .0545), (.665, .395, .0562), .0008, .004); s.add(s.mesh(P, F, well, N=N), Ml)
+keym = s.mat('keys', (1, 1, 1), .52, spec=.35, tBase='ph/keys.png')
+from desk_up import ROWS
+for r_, row in enumerate(ROWS):
+    tot = sum(w for _, w in row); x_ = 0
+    for t_, w_ in row:
+        x0, x1 = -.655 + 1.31 * x_ / tot + .005, -.655 + 1.31 * (x_ + w_) / tot - .005; y1, y0 = .386 - r_ * .0665 - .004, .386 - (r_ + 1) * .0665 + .004; P, F, N = rbox((x0, y0, .0555), (x1, y1, .0625), .004, .003); UV = np.stack([(P[:, 0] + .655) / 1.31, (.386 - P[:, 1]) / .399], 1); s.add(s.mesh(P, F, keym, N=N, UV=UV), Ml); x_ += w_
+P, F, N = rbox((-.30, -.46, .0555), (.30, -.075, .0567), .0006, .012); s.add(s.mesh(P, F, s.mat('pad', (.565, .565, .57), .38, spec=.8), N=N), Ml)
+tilt = np.array([[1, 0, 0], [0, np.cos(1.92), -np.sin(1.92)], [0, np.sin(1.92), np.cos(1.92)]]); Mh = np.zeros((3, 4)); Mh[:, :3] = Rz(LR) @ tilt; Mh[:, 3] = np.array([LX, LY, .06]) + Rz(LR) @ np.array([0, .515, 0]) + Rz(LR) @ tilt @ np.array([0, .50, 0])
+slab(1.52, .99, -.012, .010, .05, .006, alu, dark, False, Mh); scr = s.mat('scr', (1, 1, 1), .25, spec=.4, tBase='ph/screen.png'); P = np.array([[-.73, -.45, .0112], [.73, -.45, .0112], [.73, .46, .0112], [-.73, .46, .0112]]); s.add(s.mesh(P, np.array([[0, 1, 2], [0, 2, 3]]), scr, UV=np.array([[0, 1], [1, 1], [1, 0], [0, 0.]])), Mh)
 # fountain pen
 R = np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0.]])  # lathe axis along x
 pen = put(Rz(1.12), (-1.36, -.42, .036))
 for mat, prof in ((blk, [(1e-4, -.36), (.020, -.355), (.030, -.30), (.034, -.1), (.035, 0.)]), (brass, [(.0365, 0.), (.0365, .022)]), (blk, [(.0375, .022), (.0375, .20), (.034, .27), (.022, .30), (1e-4, .305)]), (brass, [(.0378, .20), (.0378, .212)])):
     P, F, UV = lathe(prof, 48); P = np.stack([P[:, 1], P[:, 0], P[:, 2]], 1); s.add(s.mesh(P, F[:, ::-1], mat), pen)
 P, F, N = rbox((.06, -.010, .036), (.27, .010, .044), .0035, .006); s.add(s.mesh(P, F, brass, N=N), pen)
-# a card wallet and a brass ruler
-P, F, N = rbox((-.25, -.17, 0), (.25, .17, .045), .018, .009); s.add(s.mesh(P, F, leather, N=N), put(Rz(.42), (1.62, .50, .004)))
-P, F, N = rbox((-.62, -.028, 0), (.62, .028, .006), .002, .02); s.add(s.mesh(P, F, brass, N=N), put(Rz(-.35), (1.98, -.98, .004)))
 # CC0 objects
 def obj(name, size, t, yaw):
     for q in (gltf(s, name, put(Rz(yaw) @ UP, t, U * size)) or []): pass
-obj('Camera_01', 1.0, (2.15, .34, .0), -.6)
 # a plant reaching in from the corner
 K, M = plants2.kit(s, ['heart', 'mica', 'fern'])
 for k, (kind, x, yy, zz, yaw, sc) in enumerate((('heart', -2.05, 1.02, .34, -.5, 2.3), ('mica', -1.78, 1.10, .30, .2, 2.1), ('heart', -2.22, .78, .30, -1.0, 2.2), ('fern', -2.3, 1.12, .28, -.9, 2.4), ('mica', -2.0, .70, .22, -.8, 1.9), ('heart', 2.44, -1.12, .3, 2.3, 2.1), ('mica', 2.26, -1.28, .28, 2.7, 2.1))):

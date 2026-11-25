@@ -168,6 +168,16 @@ for (const [x, z, u, v] of [[-3.56, 0.78, 0, 0], [3.26, 0.78, 6, 0], [3.26, -0.3
 m.quad(a, a + 1, a + 2, a + 3);
 return m;
 }
+function longTank() {
+return lit(new Mesh().box(0, -3.68, 0.22, PITCH * 3 + 0.16, 1.5, 1.36, 0.05).box(0, -2.93, 0.22, PITCH * 3 + 0.28, 0.07, 1.46, 0.03));
+}
+function longPool() {
+const m = new Mesh();
+const a = m.v.length / 8;
+for (const [x, z, u, v] of [[-7.7, 0.82, 0, 0], [5.0, 0.82, 12, 0], [5.0, -0.38, 12, 1], [-7.7, -0.38, 0, 1]]) m.vert(x, -3.3, z, 0, 1, 0, u, v);
+m.quad(a, a + 1, a + 2, a + 3);
+return m;
+}
 const PUMP = [-3.02, -4.32, 0.25];
 function pump() {
 const m = new Mesh();
@@ -713,7 +723,7 @@ const potInst = new Float32Array(pots.flatMap((i) => [potAt(i)[0], potAt(i)[1], 
 const wallMesh = flat(-40, -30, 40, 30, -0.42);
 const parts = {
 wall: upload(wallMesh), panel: upload(cast.panel), panelFar: upload(panelFar()), grid: upload(cast.grid), screws: upload(screwsMesh()), drive: upload(driveMesh()), vessel: upload(cast.vessel, potInst), vesselFar: upload(vesselFar(cast.rim), potInst), soil: upload(soilMesh(cast.rim), potInst),
-pipes: upload(plumbing()), timer: upload(timerBody()), tank: upload(tank()), pool: upload(pool()), pump: upload(pump()), timerKeys: upload(timerKeys()), timerPlate: upload(timerPlate()), timerLead: upload(timerLead()), streams: upload(streams()),
+pipes: upload(plumbing()), timer: upload(timerBody()), tank: upload(tank()), longTank: upload(longTank()), longPool: upload(longPool()), pool: upload(pool()), pump: upload(pump()), timerKeys: upload(timerKeys()), timerPlate: upload(timerPlate()), timerLead: upload(timerLead()), streams: upload(streams()),
 };
 await slot();
 const make = (far) => {
@@ -951,8 +961,19 @@ if (!sun) draw(parts.drive, 1, g);
 const pipes = span(p, 0.555, 0.62);
 const xray = span(p, 0.595, 0.64) * (1 - span(p, 0.725, 0.785)); // the reservoir clears, to show what lies in it
 const pumpAt = (m) => move(PUMP[0], m[13] + PUMP[1], PUMP[2]);
-const down = move(0, (1 - pipes) * -5 - span(p, 0.9, 0.97) * 2.4, 0);
-if (pipes > 0.005 && p < 0.97) {
+const down = move(0, (1 - pipes) * -5 - span(p, 0.8, 0.87) * 9, 0);
+const under = span(p, 0.865, 0.925); // the long tank comes up to meet the wall
+const inside = span(p, 0.925, 0.95) * (1 - span(p, 0.978, 0.996));
+const long = move(0, -PITCH - (1 - under) * 5, 0);
+if (under > 0.005) {
+if (inside < 0.01 || (sun && inside < 0.5)) draw(parts.longTank, 2.2, long);
+else if (!sun) {
+draw(parts.pump, 9.3, move(-6.4, long[13] + PUMP[1], PUMP[2]));
+draw(parts.timer, 9.3, move(6.3, long[13] - 3.72, 0.3));
+draw(parts.timerPlate, 9.3, move(6.3, long[13] - 3.72, 0.3));
+}
+}
+if (pipes > 0.005 && p < 0.875) {
 const pm = down;
 draw(parts.pipes, 7, pm);
 const tm = move(TIMER[0], TIMER[1] + down[13], TIMER[2]);
@@ -973,7 +994,7 @@ draw(parts.panel, 1, move((1 - smooth(clamp(visit * 1.8 - 0.8))) * 8, PITCH, (1 
 for (const m of beside) draw(parts.panelFar, 1, m);
 if (!sun) draw(parts.wall, 0);
 const wet = span(p, 0.61, 0.69) * (1 - span(p, 0.78, 0.82));
-if (!sun && (wet > 0.01 || xray > 0.01)) {
+if (!sun && (wet > 0.01 || xray > 0.01 || inside > 0.01)) {
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 gl.depthMask(false);
@@ -981,6 +1002,10 @@ if (wet > 0.01) draw(parts.streams, 3);
 if (xray > 0.01) {
 draw(parts.pool, 3.3, down, 1, 1, xray);
 draw(parts.tank, 2.2, down, 1, 1, 1 - xray);
+}
+if (inside > 0.01) {
+draw(parts.longPool, 3.3, long, 1, 1, inside);
+draw(parts.longTank, 2.2, long, 1, 1, 1 - inside * 0.92);
 }
 gl.depthMask(true);
 gl.disable(gl.BLEND);
@@ -995,7 +1020,10 @@ if (!size.fit()) return;
 const { cw: w, ch: h } = size;
 const asp = w / h;
 const tall = asp < 0.95;
-const [, yaw, pitch, d0, ty] = cam(p);
+const [, yaw, pitch, d1, ty0] = cam(p);
+const last = span(p, 0.84, 0.94);
+const d0 = d1 * (1 + last * 0.07);
+const ty = ty0 - last * 0.75;
 const dist = d0 * (tall ? Math.max(1.2, 0.95 / asp) : Math.max(1, 1.5 / asp));
 const ya = yaw + turn.x;
 const pi = Math.max(-0.5, Math.min(0.9, pitch + turn.y));
@@ -1054,7 +1082,7 @@ gl.uniform3fv(u.uSun, SUN);
 gl.uniform1i(u.uSh, 0);
 gl.uniform1i(u.uTx, 1);
 gl.uniform1i(u.uLcd, 4);
-gl.uniform3f(u.uSlab, 2.72 + span(p, 0.79, 0.93) * 5.0, 2.72 + span(p, 0.79, 0.93) * 5.0, 0);
+gl.uniform3f(u.uSlab, 2.72 + span(p, 0.79, 0.93) * 5.25, 2.72 + span(p, 0.79, 0.93) * 5.85, span(p, 0.84, 0.93) * -0.85);
 gl.uniform1f(u.uOn, running ? 1 : 0);
 gl.uniform1i(u.uLeafN, 3);
 gl.uniform1f(u.uPx, 1 / SIZE);

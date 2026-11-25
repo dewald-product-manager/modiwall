@@ -1,5 +1,5 @@
 
-import { ROOM } from './roomdata.js?v=544c3219';
+import { ROOM } from './roomdata.js?v=983f7cdd';
 import { page, scene as onScreen, follow, clamp, smooth } from './frame.js?v=c5329617';
 import { programs, picture, texture, sized } from './gl.js?v=da570bfd';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -64,6 +64,16 @@ vec3 p = vP + st * b; vec2 uv = vec2(along(p.z), up(p.y));
 float sway = .0016 * textureLod(uDepth, uv, 2.).r; uv += vec2(sin(uT * .7 + p.z * 2.1 + p.y), cos(uT * .55 + p.z * 1.7)) * sway;
 col = elev(uv, -.4);
 col *= 1. + .35 * pow(1. - abs(v.x), 3.);
+} else if (uKind == 5 || uKind == 6) {
+vec3 v = normalize(vP - uCam);
+float br = hash(vec2(floor(vP.y * 1400.), 7.)) * .5 + soft(vec2(vP.z * 3., vP.y * 900.)) * .5;
+vec3 near = elev(vec2(along(vP.z), .70 + .1 * vUv.y), 5.);
+float rim = smoothstep(.10, .0, vUv.y) , foot = smoothstep(.55, 1., vUv.y);
+float sheen = exp(-pow((vUv.y - .30) * 3.2, 2.)) * .6 + .25;
+vec3 steel = vec3(.070, .074, .073) * (.8 + .4 * br);
+col = uKind == 6 ? vec3(.012, .013, .012) + near * .10 : steel * .55 + (near * vec3(.9, .95, .9) + vec3(.016, .018, .017)) * (.30 + sheen * .75) * (.85 + .3 * br);
+col += (vec3(.10, .095, .085) + near * .5) * rim * float(uKind == 5) * .9; col *= 1. - foot * .6;
+col *= 1. + .5 * pow(1. - abs(v.x), 4.);
 } else if (uKind == 4) {
 vec3 v = normalize(vP - uCam);
 float face = abs(vUv.x - .5);
@@ -250,6 +260,7 @@ quad('roof', [-HALF, ROOF, z0], [HALF, ROOF, z0], [-HALF, ROOF, z1], [HALF, ROOF
 quad('floor', [-HALF, FLOOR, z0], [HALF, FLOOR, z0], [-HALF, FLOOR, z1], [HALF, FLOOR, z1]);
 quad('end', [-HALF, ROOF, z1], [HALF, ROOF, z1], [-HALF, FLOOR, z1], [HALF, FLOOR, z1]);
 quads.bays = [];
+quads.tanks = [];
 quads.jambs = [];
 for (let n = -1; n <= list.length; n++) {
 const z = -n * GAP;
@@ -258,6 +269,21 @@ const x = side * (HALF - LEAF);
 const name = `g${n}`;
 quad(name, [x, ROOF, z + 1.72], [x, ROOF, z - 1.72], [x, FLOOR, z + 1.72], [x, FLOOR, z - 1.72]);
 quads.bays.push([quads[name], side, n]);
+const tf = side * (HALF - LEAF - 0.075);
+const tb = side * (HALF + 0.02);
+const T = FLOOR + 0.27;
+const K = ROOF - 0.075;
+const at = (nm, kind, ...q) => {
+quad(nm, ...q);
+quads.tanks.push([quads[nm], kind, side, n]);
+};
+at(`t${n}f`, 5, [tf, T, z + 1.72], [tf, T, z - 1.72], [tf, FLOOR, z + 1.72], [tf, FLOOR, z - 1.72]);
+at(`t${n}u`, 5, [tb, T, z + 1.72], [tb, T, z - 1.72], [tf, T, z + 1.72], [tf, T, z - 1.72]);
+at(`t${n}a`, 5, [tf, T, z + 1.72], [tb, T, z + 1.72], [tf, FLOOR, z + 1.72], [tb, FLOOR, z + 1.72]);
+at(`t${n}b`, 5, [tf, T, z - 1.72], [tb, T, z - 1.72], [tf, FLOOR, z - 1.72], [tb, FLOOR, z - 1.72]);
+const hf = side * (HALF - LEAF - 0.03);
+at(`t${n}h`, 6, [hf, ROOF, z + 1.72], [hf, ROOF, z - 1.72], [hf, K, z + 1.72], [hf, K, z - 1.72]);
+at(`t${n}k`, 6, [hf, K, z + 1.72], [hf, K, z - 1.72], [tb, K, z + 1.72], [tb, K, z - 1.72]);
 const zp = z - GAP / 2;
 const box = (nm, a, b, c, d) => {
 quad(nm, a, b, c, d);
@@ -394,6 +420,7 @@ gl.uniform1f(wallP.u.uSide, side);
 gl.drawArrays(gl.TRIANGLE_STRIP, at, 4);
 };
 for (const [at, n] of quads.jambs) if (n > s - 1.6 && n < s + 9) part(4, at);
+for (const [at, kind, side, n] of quads.tanks) if (n > s - 1.6 && n < s + 9) part(kind, at, side);
 if (!flip) for (const [at, side, n] of quads.bays) if (n > s - 1.4 && n < s + 4.2) part(3, at, side);
 part(0, quads.left, -1);
 part(0, quads.right, 1);

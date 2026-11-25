@@ -1,5 +1,5 @@
 
-import { ROOM } from './roomdata.js?v=544c3219';
+import { ROOM } from './roomdata.js?v=983f7cdd';
 import { page, scene, follow } from './frame.js?v=c5329617';
 import { programs, picture, texture, sized, slot } from './gl.js?v=da570bfd';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;

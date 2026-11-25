@@ -1,5 +1,5 @@
 
-import { createRoom } from './room.js?v=d173187c';
+import { createRoom } from './room.js?v=293d82a9';
 import { clamp, smooth, span, follow, page } from './frame.js?v=c5329617';
 const beat = (p, a, b, c, d) => span(p, a, b) * (1 - span(p, c, d));
 const WIDE = [[0, [0.2, 0.47, 1.9]], [0.17, [0.27, 0.48, 1.74]], [0.33, [0.75, 0.5, 1.78]], [0.5, [0.52, 0.31, 1.5]], [0.66, [0.5, 0.42, 1.14]], [1, [0.5, 0.5, 1.0]]];

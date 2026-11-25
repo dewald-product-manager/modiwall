@@ -1,0 +1,23 @@
+<!doctype html><script type=module>
+import * as ort from '/dl/ort/package/dist/ort.webgpu.bundle.min.mjs';
+ort.env.webgpu.powerPreference='high-performance';ort.env.wasm.wasmPaths='/dl/ort/package/dist/';ort.env.wasm.numThreads=1;
+const S={};
+async function sess(name){ if(S[name]) return S[name];
+ const f={x4:'/dl/x4plus.onnx',gen:'/dl/gen/real_esrgan_general_x4v3-onnx-float/real_esrgan_general_x4v3_onnx/real_esrgan_general_x4v3.onnx'}[name];
+ const o={executionProviders:['webgpu'],graphOptimizationLevel:'all'}; if(name==='gen') o.externalData=[{path:'real_esrgan_general_x4v3.data',data:f.replace('.onnx','.data')}];
+ return S[name]=await ort.InferenceSession.create(f,o);}
+window.info=async n=>{const s=await sess(n);return [s.inputNames,s.outputNames,JSON.stringify(s.inputMetadata??'')]};
+window.run=async(name,src,out,T=128,P=12)=>{
+ const s=await sess(name); const im=await createImageBitmap(await (await fetch(src)).blob(),{colorSpaceConversion:'none'}); const W=im.width,H=im.height;
+ const c=new OffscreenCanvas(W,H),x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(im,0,0); const px=x.getImageData(0,0,W,H).data;
+ const O=new Uint8Array(W*4*H*4*3); const step=T-2*P; const t0=performance.now(); let n=0;
+ for(let ty=0;ty<H;ty+=step) for(let tx=0;tx<W;tx+=step){
+  const d=new Float32Array(3*T*T);
+  for(let y=0;y<T;y++){let sy=ty-P+y; sy=sy<0?-sy:sy; sy=sy>=H?2*H-2-sy:sy; sy=Math.max(0,sy); for(let u=0;u<T;u++){let sx=tx-P+u; sx=sx<0?-sx:sx; sx=sx>=W?2*W-2-sx:sx; sx=Math.max(0,sx); const i=(sy*W+sx)*4,k=y*T+u; d[k]=px[i]/255;d[k+T*T]=px[i+1]/255;d[k+2*T*T]=px[i+2]/255;}}
+  const r=await s.run({[s.inputNames[0]]:new ort.Tensor('float32',d,[1,3,T,T])}); const o=r[s.outputNames[0]].data, Q=T*4;
+  const h=Math.min(step,H-ty)*4,w=Math.min(step,W-tx)*4;
+  for(let y=0;y<h;y++) for(let u=0;u<w;u++){const k=(y+P*4)*Q+u+P*4, j=((ty*4+y)*W*4+tx*4+u)*3; O[j]=o[k]*255+.5<0?0:Math.min(255,o[k]*255+.5);O[j+1]=Math.max(0,Math.min(255,o[k+Q*Q]*255+.5));O[j+2]=Math.max(0,Math.min(255,o[k+2*Q*Q]*255+.5));}
+  n++; }
+ await fetch('/put/'+out,{method:'PUT',body:O}); return [W*4,H*4,n,Math.round(performance.now()-t0)];};
+window.ready=1;
+</script>

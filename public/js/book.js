@@ -103,28 +103,35 @@ float con = exp(-max(d, 0.) * 17.) * .62 + exp(-max(edge(vP + vec2(-.11, .10), v
 c *= (1. - clamp(con, 0., .9)) * uLamp;
 o = vec4(c + (hash(gl_FragCoord.xy + 2.) - .5) / 200., 1.);
 }`;
-const RIB_L = 1.36 + 0.2;
+const RIB_L = 1.36 + 0.36;
 const RIB_VS = `#version 300 es
-layout(location=0) in vec2 aR; uniform mat4 uVP; uniform vec3 uAt; uniform float uDy, uCast, uLay; out vec2 vR; out vec3 vP; out float vDrop;
+layout(location=0) in vec2 aR; uniform mat4 uVP; uniform vec3 uAt; uniform float uDy, uCast, uT; out vec2 vR; out vec3 vP, vN; out float vDrop;
+vec3 path(float s, float side){
+float y = .68 - s * ${RIB_L.toFixed(3)} - uDy; float past = max(0., -.68 - y), sg = sign(uAt.x + .0001);
+float drop = smoothstep(.0, .13, past), lie = smoothstep(.10, .34, past);
+float hw = .043 * (1. - .10 * lie);
+float x = uAt.x + sin(y * 2.1 + .6) * .006 + sg * (.02 * drop + .075 * lie * lie) + side * hw * cos(lie * .5);
+float yy = y + (1. - cos(drop * 1.57)) * .018 + side * hw * lie * .32 * sg;
+float z = mix(uAt.z, .0105, drop) + .0016 + lie * (.016 * (sin(past * 21. - 1.2) * .5 + .5) + side * .013 * sin(past * 13. + .5)) + .0035 * (1. - side * side) * (1. - drop);
+return vec3(x, yy, z);
+}
 void main(){
-float y = .68 - aR.x * ${RIB_L.toFixed(3)} - uDy; float past = -.68 - y;
-float drop = smoothstep(.012, .15, past); vDrop = past;
-float x = uAt.x + aR.y * .034 + sin(y * 2.4 + 1.) * .010 * uLay + drop * .03 * sign(uAt.x + .0001);
-float z = mix(uAt.z, .010, drop) + sin(past * 26.) * .006 * step(0., past) * (1. - drop * .4) + .0016;
-vP = vec3(x, y, z); vR = aR;
-vec3 q = vP + vec3(.014, -.014, -.0012) * uCast;
-gl_Position = uVP * vec4(q, 1.);
+vP = path(aR.x, aR.y); vR = aR; vDrop = max(0., -.68 - vP.y);
+vec3 a = path(aR.x + .004, aR.y) - path(aR.x - .004, aR.y), b = path(aR.x, min(1., aR.y + .5)) - path(aR.x, max(-1., aR.y - .5)); vN = normalize(cross(b, -a)); if (vN.z < 0.) vN = -vN;
+gl_Position = uVP * vec4(vP + vec3(.017, -.017, -.0011) * uCast, 1.);
 }`;
 const RIB_FS = `#version 300 es
-precision highp float; in vec2 vR; in vec3 vP; in float vDrop; uniform sampler2D uTex; uniform vec3 uLight, uEye; uniform float uCast, uLamp; out vec4 o;
+precision highp float; in vec2 vR; in vec3 vP, vN; in float vDrop; uniform sampler2D uTex; uniform vec3 uLight, uEye; uniform float uCast, uLamp; out vec4 o;
 void main(){
-if ((1. - vR.x) * ${RIB_L.toFixed(3)} < .05 * (1. - abs(vR.y))) discard;
-if (uCast > .5) { float a = (1. - smoothstep(.55, 1., abs(vR.y))) * .34 * uLamp; o = vec4(0., 0., 0., a); return; }
-vec3 col = pow(texture(uTex, vec2(vR.y * .5 + .5, vR.x)).rgb, vec3(2.2));
-float slope = vDrop > 0. ? cos(vDrop * 26.) * .16 + smoothstep(.012, .05, vDrop) * (1. - smoothstep(.09, .16, vDrop)) * -.6 : 0.;
-vec3 N = normalize(vec3(vR.y * .22, slope, 1.)), L = normalize(uLight - vP), V = normalize(uEye - vP), H = normalize(L + V);
-float weave = .93 + .07 * sin(vR.y * 190.) * sin(vR.x * 5200.);
-vec3 c = col * weave * (vec3(.26, .24, .2) + vec3(1.3, 1.09, .8) * max(dot(N, L), 0.) * 1.05) + vec3(1.2, 1., .7) * pow(max(dot(N, H), 0.), 22.) * .12;
+float e = (1. - vR.x) * ${RIB_L.toFixed(3)} - .052 * (1. - abs(vR.y)); float aa = fwidth(e); float cut = smoothstep(-aa, aa, e);
+if (cut < .02) discard;
+if (uCast > .5) { float a = (1. - smoothstep(.35, 1., abs(vR.y))) * .42 * uLamp * cut; o = vec4(0., 0., 0., a); return; }
+vec3 col = pow(texture(uTex, vec2(vR.y * .5 + .5, vR.x), -.4).rgb, vec3(2.2));
+vec3 N = normalize(vN + vec3(vR.y * .16, 0., 0.)), L = normalize(uLight - vP), V = normalize(uEye - vP), H = normalize(L + V);
+vec3 T = normalize(vec3(0., 1., 0.) - N * N.y); float th = dot(T, H); float satin = pow(max(0., 1. - th * th), 26.) * .34 + pow(max(0., 1. - th * th), 5.) * .10;
+float warp = .965 + .035 * sin(vR.y * 260.) * (1. - smoothstep(.0, .05, fwidth(vR.y) * 8.));
+float edge = smoothstep(1., .93, abs(vR.y));
+vec3 c = col * warp * (vec3(.24, .22, .18) + vec3(1.32, 1.1, .8) * max(dot(N, L), 0.)) * mix(.62, 1., edge) + (col * .7 + .05) * vec3(1.25, 1.05, .78) * satin;
 c *= uLamp; c = c * (c * 2.51 + .03) / (c * (c * 2.43 + .59) + .14);
 o = vec4(pow(c, vec3(1. / 2.2)), 1.);
 }`;
@@ -202,9 +209,9 @@ x.save();
 const k = w / 768;
 x.translate(cx - w / 2, cy - (571 * k) / 2);
 x.scale(k, k);
-document.querySelectorAll('.foot__mark > path').forEach((p) => {
-x.fillStyle = p.matches('.lg-m') ? fills[0] : fills[1];
-x.fill(new Path2D(p.getAttribute('d')));
+['p', 'q'].forEach((n) => {
+x.fillStyle = n === 'q' ? fills[0] : fills[1];
+x.fill(new Path2D(document.querySelector(`.foot__mark defs path[id$="-${n}"]`).getAttribute('d')));
 });
 x.restore();
 };
@@ -289,103 +296,129 @@ arrow(x, 880, 1207, 22, -1);
 pg.hits = [{ x: 560, y: 1160, w: 360, h: 100, by: 1 }];
 return x.canvas;
 };
-const half = (list) => (pg) => {
+const overview = (pg) => {
 const x = sheet();
+block(x, 'Contents', `400 $px ${DISP}`, 148, 148, 92, 120, 820);
 pg.hits = [];
-let y = 118;
-const left = list[0] === groups[0];
-if (left) {
-block(x, 'Contents', `400 $px ${DISP}`, 104, 104, 96, 96, 800);
-y = 372;
-}
-const step = 60;
-list.forEach((g) => {
-x.fillStyle = GREEN;
-line(x, g.name, `400 $px ${DISP}`, 56, 98, y + 46);
-x.fillStyle = INK;
-y += 74;
-g.list.forEach((s) => {
-rule(x, 100, y, 800, 0.16);
-const at = stories.indexOf(s);
+let y = 420;
+groups.forEach((g, k) => {
+rule(x, 96, y, 808, 0.2);
+x.font = `400 64px ${DISP}`;
+x.fillText(g.name, 94, y + 92);
+line(x, `${g.list.length} stories`, `450 $px ${TEXT}`, 25, 904, y + 90, 'right');
+pg.hits.push({ x: 76, y: y + 4, w: 848, h: 132, to: 2 + Math.floor((k + 1) / 2) });
+y += 140;
+});
+rule(x, 96, y, 808, 0.2);
+mark(x, 140, PXH - 108, 88, [INK, '#8fcb17']);
+return x.canvas;
+};
+const chapter = (g) => async (pg) => {
+const x = sheet();
+const L = 112;
+const E = 904;
+const img = await picture(g.list[0].img);
+const k = Math.max((E - L) / img.width, 400 / img.height);
+x.save();
+x.beginPath();
+x.rect(L, 96, E - L, 400);
+x.clip();
+x.imageSmoothingQuality = 'high';
+x.drawImage(img, L + (E - L - img.width * k) / 2, 96 + (400 - img.height * k) / 2, img.width * k, img.height * k);
+x.restore();
+img.close();
+block(x, g.name, `400 $px ${DISP}`, 84, 84, L - 4, 530, E - L);
+block(x, g.say, `400 $px ${DISP}`, 32, 40, L, 636, E - L);
+pg.hits = [];
+const rows = g.list.length + (g.id === 'plants' ? 1 : 0);
+const step = Math.min(64, (PXH - 92 - 716) / rows);
+let y = 716;
+const row = (text, to) => {
+rule(x, L, y, E - L, 0.16);
 let px = 33;
 x.font = `400 ${px}px ${STRONG}`;
-while (x.measureText(s.head).width > 700 && px > 25) x.font = `400 ${--px}px ${STRONG}`;
-x.fillText(s.head, 100, y + step * 0.66);
-line(x, String(spreadOf(at) * 2), `400 $px ${STRONG}`, 29, 900, y + step * 0.66, 'right');
-pg.hits.push({ x: 84, y: y + 3, w: 832, h: step - 4, to: spreadOf(at) });
+while (x.measureText(text).width > 700 && px > 24) x.font = `400 ${--px}px ${STRONG}`;
+x.fillText(text, L, y + step * 0.67);
+line(x, String(to * 2 + 1), `400 $px ${STRONG}`, 28, E, y + step * 0.67, 'right');
+pg.hits.push({ x: L - 20, y: y + 2, w: E - L + 40, h: step - 3, to });
 y += step;
-});
-if (g.id === 'plants') {
-rule(x, 100, y, 800, 0.16);
-line(x, 'A plate of our plants', `400 $px ${STRONG}`, 33, 100, y + step * 0.66);
-line(x, String(plate * 2), `400 $px ${STRONG}`, 29, 900, y + step * 0.66, 'right');
-pg.hits.push({ x: 84, y: y + 3, w: 832, h: step - 4, to: plate });
-y += step;
-}
-y += 46;
-});
+};
+g.list.forEach((s) => row(s.head, spreadOf(stories.indexOf(s))));
+if (g.id === 'plants') row('A plate of our plants', plate);
+rule(x, L, y, E - L, 0.16);
 return x.canvas;
+};
+const layoutOf = (i) => {
+const g = groups.find((q) => q.id === stories[i].group);
+const n = g.list.indexOf(stories[i]);
+return n === 0 ? 'opener' : stories[i].quote ? ['framed', 'quote', 'full'][(n - 1) % 3] : 'framed';
 };
 const text = (s, i) => (pg) => {
 const x = sheet();
-const L = 112;
-const W = 776;
+const L = 96;
+const E = 904;
+const C = 318; // where the words begin
+const g = groups.find((q) => q.id === s.group);
+const n = g.list.indexOf(s);
 x.fillStyle = GREEN;
-line(x, s.groupName, `400 $px ${STRONG}`, 29, L, 109);
+line(x, s.groupName, `400 $px ${STRONG}`, 28, L, 108);
 x.fillStyle = INK;
 backTo(x);
-rule(x, L, 152, W, 0.18);
-let px = 92;
+let px = 108;
 x.font = `400 ${px}px ${DISP}`;
-while (px > 60 && (wrap(x, s.head, W).length > 3 || wrap(x, s.head, W).some((l) => x.measureText(l).width > W))) x.font = `400 ${(px -= 3)}px ${DISP}`;
-let y = block(x, s.head, `400 $px ${DISP}`, px, px * 1.02, L - 4, 204, W + 8);
-y = block(x, s.stand, `400 $px ${DISP}`, 39, 50, L, y + 36, W - 40);
-const body = s.open ?? '';
-const top = y + 54;
-const lead = 46;
-const room = Math.floor((PXH - 236 - top) / lead);
-if (body && room > 2) {
+const fits = () => { const w = wrap(x, s.head, E - L); return w.length <= 3 && w.every((l) => x.measureText(l).width <= E - L); };
+while (px > 66 && !fits()) x.font = `400 ${(px -= 3)}px ${DISP}`;
+let y = block(x, s.head, `400 $px ${DISP}`, px, px * 0.99, L - px * 0.04, 186, E - L + 6);
+const quoteHere = s.quote && layoutOf(i) !== 'quote';
+let floor = PXH - 168;
+if (quoteHere) {
+x.font = `400 46px ${DISP}`;
+const q = wrap(x, s.quote, 720);
+floor -= q.length * 54 + 46;
 x.fillStyle = GREEN;
-line(x, body[0], `400 $px ${DISP}`, 108, L - 4, top + 74);
-const cap = x.measureText(body[0]).width + 18;
+x.fillRect(C, floor + 22, 64, 3);
 x.fillStyle = INK;
-x.font = `450 28px ${TEXT}`;
-const lines = [];
-let l = '';
-const bits = body.slice(1).split(' ').flatMap((w) => w.split(/(?<=[a-z]{2}-)(?=[a-z]{2})/).map((q, n) => [q, n > 0])); // a word may break at its own hyphen
-for (const [word, joined] of bits) {
-const t = l ? `${l}${joined ? '' : ' '}${word}` : word;
-if (x.measureText(t).width > W - (lines.length < 2 ? cap : 0)) {
-lines.push(l);
-l = word;
-if (lines.length >= room) break;
-} else l = t;
+block(x, s.quote, `400 $px ${DISP}`, 46, 54, C, floor + 46, E - C);
 }
-if (lines.length < room && l) lines.push(l);
-lines.forEach((ln, n) => {
-const ind = n < 2 ? cap : 0;
-const yy = top + 27 + n * lead;
-const end = n === lines.length - 1;
-if (end) {
-x.fillText(lines.length >= room ? `${ln.replace(/[,.;:]?$/, '')} …` : ln, L + ind, yy);
-return;
+const top = Math.max(y + 50, 452);
+rule(x, L, top, E - L, 0.22);
+x.globalAlpha = 0.86;
+block(x, s.stand, `500 $px ${TEXT}`, 21.5, 33, L, top + 30, C - L - 28);
+x.globalAlpha = 1;
+const lead = 43;
+const body = s.open ?? '';
+const W = E - C;
+const room = Math.floor((floor - top - 34) / lead);
+const bits = body.split(' ').flatMap((w) => w.split(/(?<=[a-z]{2}-)(?=[a-z]{2})/).map((q, k) => [q, k > 0]));
+let row = 0;
+let xx = C;
+const space = 8.4;
+for (let k = 0; k < bits.length; k++) {
+const [word, joined] = bits[k];
+const strong = k < 5;
+x.font = strong ? `400 34px ${STRONG}` : `450 27.5px ${TEXT}`;
+const w = x.measureText(word).width;
+const gap = xx > C && !joined ? space : 0;
+if (xx + gap + w > C + W) {
+row++;
+xx = C;
+if (row >= room) break;
 }
-const ws = ln.split(' ');
-const gap = (W - ind - ws.reduce((a, w) => a + x.measureText(w).width, 0)) / Math.max(1, ws.length - 1);
-let xx = L + ind;
-if (gap > 34) x.fillText(ln, xx, yy);
-else ws.forEach((w) => { x.fillText(w, xx, yy); xx += x.measureText(w).width + gap; });
-});
+const last = row === room - 1 && bits[k + 1] && xx + (xx > C ? gap : 0) + w + space + x.measureText(`${bits[k + 1][0]} …`).width > C + W;
+x.fillText(last ? `${word.replace(/[,.;:]$/, '')} …` : word, xx + (xx > C ? gap : 0), top + 48 + row * lead);
+xx += (xx > C ? gap : 0) + w;
+if (last) break;
 }
-rule(x, L, PXH - 138, W, 0.18);
+rule(x, L, PXH - 138, E - L, 0.22);
 line(x, 'Read the whole story', `500 $px ${TEXT}`, 27, L, PXH - 84);
 const w = x.measureText('Read the whole story').width;
 x.fillStyle = GREEN;
 x.fillRect(L, PXH - 70, w, 3);
 x.fillStyle = INK;
-line(x, `${s.minutes} minute read`, `450 $px ${TEXT}`, 25, L + w + 34, PXH - 84);
-line(x, String(spreadOf(i) * 2 + 1), `400 $px ${STRONG}`, 27, L + W, PXH - 84, 'right');
-pg.hits = [BACK, { x: L - 16, y: PXH - 130, w: w + 32, h: 76, url: s.url }];
+line(x, `${s.minutes} minute read`, `450 $px ${TEXT}`, 24, L + w + 34, PXH - 84);
+line(x, String(spreadOf(i) * 2 + 1), `400 $px ${STRONG}`, 28, E, PXH - 84, 'right');
+void n;
+pg.hits = [BACK, { x: L - 24, y: PXH - 136, w: w + 48, h: 90, url: s.url }, { x: L, y: 170, w: E - L, h: y - 170, url: s.url }];
 return x.canvas;
 };
 const plants = (list, name, href, right) => async (pg) => {
@@ -417,23 +450,48 @@ line(x, String(plate * 2 + (right ? 1 : 0)), `400 $px ${STRONG}`, 27, 900, PXH -
 pg.hits = [{ x: 84, y: PXH - 130, w: w + 32, h: 76, url: href }, ...(right ? [BACK] : [])];
 return x.canvas;
 };
-const photo = (s, i) => async () => {
+const photo = (s, i) => async (pg) => {
 const x = sheet();
 const img = await picture(s.img);
-const framed = i % 3 === 1; // now and then a picture stands in a margin, with its caption
-const [l, t, w, h] = framed ? [112, 112, 776, 980] : [0, 0, PXW, PXH];
+const how = layoutOf(i);
+const lay = (l, t, w, h, fy = 0.5) => {
 const k = Math.max(w / img.width, h / img.height);
 x.save();
 x.beginPath();
 x.rect(l, t, w, h);
 x.clip();
-x.drawImage(img, l + (w - img.width * k) / 2, t + (h - img.height * k) / 2, img.width * k, img.height * k);
+x.imageSmoothingQuality = 'high';
+x.drawImage(img, l + (w - img.width * k) / 2, t + (h - img.height * k) * fy, img.width * k, img.height * k);
 x.restore();
+};
+pg.hits = [{ x: 0, y: 0, w: PXW, h: PXH, url: s.url, pic: true }];
+if (how === 'opener') {
+lay(0, 0, PXW, PXH);
+const d = x.createLinearGradient(0, PXH * 0.42, 0, PXH);
+d.addColorStop(0, 'rgba(4,16,11,0)');
+d.addColorStop(1, 'rgba(4,16,11,.86)');
+x.fillStyle = d;
+x.fillRect(0, 0, PXW, PXH);
+x.fillStyle = '#fbf8f0';
+block(x, s.groupName, `400 $px ${DISP}`, 148, 138, 84, PXH - 330, 840);
+block(x, s.groupSay, `400 $px ${DISP}`, 40, 48, 92, PXH - 172, 760);
+} else if (how === 'quote') {
+lay(0, 0, PXW, 820);
+x.fillStyle = '#0c3328';
+x.fillRect(0, 820, PXW, PXH - 820);
+x.fillStyle = '#a1e815';
+x.fillRect(96, 884, 64, 4);
+x.fillStyle = '#f6f2e8';
+let q = 66;
+x.font = `400 ${q}px ${DISP}`;
+while (q > 44 && wrap(x, s.quote, 800).length > 4) x.font = `400 ${(q -= 2)}px ${DISP}`;
+block(x, s.quote, `400 $px ${DISP}`, q, q * 1.12, 94, 922, 806);
+} else if (how === 'framed') {
+lay(96, 96, 808, 1010);
+block(x, s.alt ?? '', `450 $px ${TEXT}`, 23, 33, 96, 1136, 560, 2);
+line(x, String(spreadOf(i) * 2), `400 $px ${STRONG}`, 28, 96, PXH - 84);
+} else lay(0, 0, PXW, PXH);
 img.close();
-if (framed) {
-block(x, s.alt ?? '', `450 $px ${TEXT}`, 24, 34, l, t + h + 34, 600, 2);
-line(x, String(spreadOf(i) * 2), `400 $px ${STRONG}`, 27, l + 0, PXH - 84);
-}
 return x.canvas;
 };
 const last = () => {
@@ -445,8 +503,7 @@ x.fillText('Grown for one address.', PXW / 2, PXH * 0.55);
 return x.canvas;
 };
 const M = stories.length;
-const cutAt = Math.floor(groups.length / 2);
-const spreads = [null, { kind: 'title' }, { kind: 'contents' }];
+const spreads = [null, { kind: 'title' }, { kind: 'contents' }, { kind: 'contents2' }, { kind: 'contents3' }];
 stories.forEach((st, i) => {
 spreads.push({ kind: 'story', i });
 if (st.group === 'plants' && stories[i + 1]?.group !== 'plants') spreads.push({ kind: 'plate' });
@@ -456,7 +513,7 @@ const plate = spreads.findIndex((q) => q?.kind === 'plate');
 const page1 = new URL('./plants.html', document.baseURI).href;
 const INP = [['heart', 'Heart-leaf philodendron', 'Philodendron hederaceum'], ['marble', 'Marble queen', 'Epipremnum aureum'], ['sche', 'Dwarf umbrella', 'Heptapleurum arboricola'], ['spider', 'Spider plant', 'Chlorophytum comosum'], ['fern', 'Boston fern', 'Nephrolepis, sterile'], ['lily', 'Peace lily', 'Spathiphyllum']];
 const EXP = [['bulb', 'Bulbine', 'Bulbine frutescens'], ['spek', 'Spekboom', 'Portulacaria afra'], ['crass', 'Campfire crassula', 'Crassula capitella'], ['helich', 'Silver helichrysum', 'Helichrysum petiolare'], ['fescue', 'Blue fescue', 'Festuca glauca'], ['setc', 'Purple heart', 'Tradescantia pallida']];
-const leaves = { title: [endpaper, title], contents: [half(groups.slice(0, cutAt)), half(groups.slice(cutAt))], plate: [plants(INP, 'For a room', page1, false), plants(EXP, 'For the open air', `${page1}#exterior`, true)] };
+const leaves = { title: [endpaper, title], contents: [overview, chapter(groups[0])], contents2: [chapter(groups[1]), chapter(groups[2])], contents3: [chapter(groups[3]), chapter(groups[4])], plate: [plants(INP, 'For a room', page1, false), plants(EXP, 'For the open air', `${page1}#exterior`, true)] };
 const faces = (q) => (q.kind === 'story' ? [photo(stories[q.i], q.i), text(stories[q.i], q.i)] : leaves[q.kind]);
 const sheets = [{ board: 1, a: () => cover(false), b: endpaper }];
 for (let k = 1; k < spreads.length; k++) sheets.push({ a: faces(spreads[k])[1], b: spreads[k + 1] ? faces(spreads[k + 1])[0] : last });
@@ -547,9 +604,16 @@ let lamp = 0;
 function ribbon() {
 const pts = [];
 const ix = [];
-for (let i = 0; i <= 90; i++) {
-pts.push(i / 90, -1, i / 90, 1);
-if (i) ix.push(i * 2 - 2, i * 2 - 1, i * 2, i * 2 - 1, i * 2 + 1, i * 2);
+const NS = 150; // along it
+const NW = 6; // across
+for (let i = 0; i <= NS; i++) {
+const f = i / NS;
+const u = f < 0.3 ? (f / 0.3) * 0.74 : 0.74 + ((f - 0.3) / 0.7) * 0.26;
+for (let k = 0; k <= NW; k++) pts.push(u, (k / NW) * 2 - 1);
+}
+for (let i = 0; i < NS; i++) for (let k = 0; k < NW; k++) {
+const a0 = i * (NW + 1) + k;
+ix.push(a0, a0 + 1, a0 + NW + 1, a0 + 1, a0 + NW + 2, a0 + NW + 1);
 }
 const a = gl.createVertexArray();
 gl.bindVertexArray(a);
@@ -560,14 +624,36 @@ gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ix), gl.STATIC_DRAW);
 gl.bindVertexArray(null);
-const c = new OffscreenCanvas(128, Math.round((128 * RIB_L) / 0.068));
+const RW = 192;
+const c = new OffscreenCanvas(RW, Math.round((RW * RIB_L) / 0.086));
 const x = c.getContext('2d');
-x.fillStyle = '#155141';
-x.fillRect(0, 0, c.width, c.height);
+const sh = x.createLinearGradient(0, 0, RW, 0);
+sh.addColorStop(0, '#0d3a2e');
+sh.addColorStop(0.5, '#17604b');
+sh.addColorStop(1, '#0d3a2e');
+x.fillStyle = sh;
+x.fillRect(0, 0, RW, c.height);
 x.fillStyle = '#a1e815';
-x.fillRect(0, 0, 9, c.height);
-x.fillRect(119, 0, 9, c.height);
-for (let y = c.height - 250; y > 0; y -= 236) mark(x, 64, y, 74, ['#f4f1e8', '#a1e815']);
+x.fillRect(13, 0, 5, c.height);
+x.fillRect(RW - 18, 0, 5, c.height);
+x.fillStyle = 'rgba(8,40,30,.55)';
+for (let y = 0; y < c.height; y += 9) {
+x.fillRect(12, y, 7, 2);
+x.fillRect(RW - 19, y, 7, 2);
+}
+const tail = Math.round(c.height * ((1.36 + 0.185) / RIB_L));
+mark(x, RW / 2, tail, 112, ['#f6f2e8', '#b4f23a']);
+mark(x, RW / 2, Math.round(c.height * 0.055), 112, ['#f6f2e8', '#b4f23a']);
+x.globalAlpha = 0.5;
+x.strokeStyle = 'rgba(8,40,30,.6)';
+x.lineWidth = 1;
+for (const cy of [tail, c.height * 0.055]) for (let q = -60; q < 60; q += 3) {
+x.beginPath();
+x.moveTo(RW / 2 - 62, cy + q);
+x.lineTo(RW / 2 + 62, cy + q + 14);
+x.stroke();
+}
+x.globalAlpha = 1;
 const t = gl.createTexture();
 gl.activeTexture(gl.TEXTURE3);
 gl.bindTexture(gl.TEXTURE_2D, t);
@@ -586,6 +672,7 @@ const placeOf = () => { const k = kept ? spreads.findIndex((q, i) => q && nameOf
 let ribAt = placeOf();
 let ribTo = ribAt;
 const pull = { x: 0, v: 0 };
+const peel = { r: { x: 0, v: 0 }, l: { x: 0, v: 0 }, tr: 0, tl: 0 };
 const hl = { x: 0, v: 0, rect: [0, 0, 0, 0], face: 0, sheet: -1, on: 0 };
 const tall = () => size.w < size.h * 0.86;
 const REST = 0.42;
@@ -623,8 +710,8 @@ const after = q.i + (f > 0.5 ? 1 : 0); // how many sheets are over once this tur
 const side = after < 1 ? 0.5 : smooth(clamp((f - 0.04) / 0.22)) - 0.5;
 cx = q.i < 1 && f <= 0.5 ? 0.5 : f > 0.5 ? -0.5 : side;
 }
-const mx = follow(mouse.x, mouse.tx, dt, 420);
-const my = follow(mouse.y, mouse.ty, dt, 420);
+const mx = follow(mouse.x, mouse.tx, dt, 240);
+const my = follow(mouse.y, mouse.ty, dt, 240);
 const wide = narrow ? 1.2 : 1.12 + opened * 1.06;
 const fov = 0.5;
 const need = Math.max((PH * (narrow ? 1.28 : 1.55)) / (2 * Math.tan(fov / 2)), wide / (2 * Math.tan(fov / 2) * asp));
@@ -659,8 +746,10 @@ gl.uniform1i(u.uA, 0);
 gl.uniform1i(u.uB, 1);
 gl.uniform1f(u.uLamp, lamp);
 gl.uniform2f(u.uGl, mx, my);
-follow(hl, hl.on, dt, 160);
+follow(hl, hl.on, dt, 80);
 gl.uniform4fv(u.uHl, hl.rect);
+follow(peel.r, peel.tr, dt, 210);
+follow(peel.l, peel.tl, dt, 210);
 const inAir = Math.floor(x);
 const a = x - inAir;
 const th = a * Math.PI;
@@ -668,7 +757,10 @@ gl.uniform1f(u.uTip, Math.cos(th) + (Math.abs(Math.cos(th)) < 0.001 ? 0.001 : 0)
 gl.bindVertexArray(vao);
 const under = BOARD; // the back board lies beneath everything
 for (const [k, s] of sheets.entries()) {
-const g = k === N - 1 ? 0 : clamp(x - k);
+let g = k === N - 1 ? 0 : clamp(x - k);
+const still = Math.abs(x - Math.round(x)) < 0.02;
+if (still && k === Math.round(x) && k < N - 1) g = Math.max(g, peel.r.x);
+if (still && k === Math.round(x) - 1) g = Math.min(g, 1 - peel.l.x);
 const moving = g > 0 && g < 1;
 gl.uniform1f(u.uTurn, g);
 gl.uniform1f(u.uCurl, s.board ? 0.0 : 1.55);
@@ -694,7 +786,7 @@ follow(pull, ribTo !== ribAt ? 1 : 0, dt, 260);
 {
 const g = clamp(x - ribAt);
 const ang = g * Math.PI;
-const out = 0.046;
+const out = 0.05;
 const right = under + (N - 2 - ribAt) * TH + TH;
 const left = BOARD * 1.02 + ribAt * TH;
 const lift = Math.sin(ang) * out;
@@ -702,8 +794,7 @@ const bow = 0.028 * (1 - g) * clamp((x - ribAt + 1) * 2 - 1); // a leaf at rest 
 gl.useProgram(ribP.p);
 gl.uniformMatrix4fv(ribP.u.uVP, false, VP);
 gl.uniform3f(ribP.u.uAt, Math.cos(ang) * out, 0, right + (left - right) * smooth(g) + lift + (g < 0.5 ? bow : 0));
-gl.uniform1f(ribP.u.uDy, pull.x * 1.75);
-gl.uniform1f(ribP.u.uLay, 1);
+gl.uniform1f(ribP.u.uDy, pull.x * 1.95);
 gl.uniform1f(ribP.u.uLamp, lamp * clamp(1.4 - Math.max(0, pull.x - 0.7) * 5));
 gl.uniform3fv(ribP.u.uLight, light);
 gl.uniform3fv(ribP.u.uEye, e);
@@ -729,7 +820,7 @@ const q = spreads[spread];
 const s = q?.kind === 'story' ? stories[q.i] : null;
 sec.classList.toggle('has-story', !!s || spread === plate);
 sec.classList.toggle('is-open', spread > 0);
-at.textContent = s ? s.groupName : spread === 0 ? 'Scroll to open' : spread === 2 ? 'Contents' : spread === plate ? 'Plants' : '';
+at.textContent = s ? s.groupName : spread === 0 ? 'Scroll to open' : spread >= 2 && spread <= 4 ? 'Contents' : spread === plate ? 'Plants' : '';
 if (s) {
 open.href = s.url;
 open.textContent = 'Read this story';
@@ -761,7 +852,7 @@ sec.classList.toggle('is-kept', !!mine);
 keep.hidden = !spreads[here] && !back;
 keep.lastElementChild.textContent = back ? 'Back to your page' : mine ? 'Take the bookmark out' : 'Bookmark this page';
 keep.setAttribute('aria-pressed', !!mine);
-toList.hidden = here < 1 || here === 2;
+toList.hidden = here < 1 || here === 2; // the way back, from anywhere
 }
 keep.addEventListener('click', () => {
 if (kept && shown < 1) return goTo(placeOf());
@@ -810,17 +901,26 @@ const px = (s > 0 ? x : 1 + x) * PXW;
 const py = (0.5 - y / PH) * PXH;
 const pg = sheets[sh]?.[s > 0 ? 'aPg' : 'bPg'];
 const hit = pg?.hits?.find((h) => px > h.x && px < h.x + h.w && py > h.y && py < h.y + h.h);
-return { s: shown === 0 ? 1 : s, hit, sh, face: s > 0 ? 0 : 1 };
+return { s: shown === 0 ? 1 : s, hit, sh, face: s > 0 ? 0 : 1, px, py };
 };
 let down = null;
 canvas.addEventListener('pointermove', (e) => {
 mouse.tx = e.clientX / page.w - 0.5;
 mouse.ty = e.clientY / page.h - 0.5;
 if (e.pointerType !== 'mouse' || !VP) return;
-const { s, hit, sh, face, tail } = spot(e);
-const word = tail ? (kept ? 'Your page' : 'Contents') : hit ? (hit.list ? 'Contents' : hit.url ? 'Read' : hit.by ? 'Turn' : '') : s ? (shown === 0 ? 'Open' : s > 0 && shown < ENDS ? 'Next' : s < 0 ? 'Back' : '') : '';
-if (word) canvas.dataset.cursor = word;
-else delete canvas.dataset.cursor;
+const { s, hit, sh, face, tail, px } = spot(e);
+const kind = tail ? 'ribbon' : hit?.list ? 'list' : hit?.url ? (hit.pic ? 'read' : 'read') : hit?.by ? 'next' : hit?.to ? 'line' : s ? (shown === 0 ? 'open' : s > 0 && shown < ENDS ? 'next' : s < 0 ? 'back' : '') : '';
+const outer = px > PXW * 0.8 && s > 0 ? 1 : px < PXW * 0.2 && s < 0 ? -1 : 0;
+const k2 = outer && kind !== 'list' && kind !== 'line' ? (outer > 0 ? 'next' : 'back') : kind;
+if (k2) {
+canvas.dataset.kind = k2;
+canvas.dataset.cursor = { ribbon: kept ? 'Your page' : 'Contents', list: 'Contents', read: 'Read', open: 'Open' }[k2] ?? '';
+} else {
+delete canvas.dataset.kind;
+delete canvas.dataset.cursor;
+}
+peel.tr = s > 0 && shown > 0 && shown < ENDS ? 0.012 + 0.05 * clamp((px / PXW - 0.45) / 0.55) : 0;
+peel.tl = s < 0 && shown > 0 ? 0.012 + 0.05 * clamp((0.55 - px / PXW) / 0.55) : 0;
 if (hit && !hit.url && !hit.list && !hit.by) {
 hl.on = 1;
 hl.rect = [hit.x / PXW, hit.y / PXH, (hit.x + hit.w) / PXW, (hit.y + hit.h) / PXH];
@@ -836,12 +936,14 @@ const dy = e.clientY - down.y;
 down = null;
 if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4) go(dx < 0 ? 1 : -1);
 else if (Math.hypot(dx, dy) < 8) {
-const { s, hit, tail } = spot(e);
+const { s, hit, tail, px } = spot(e);
+const outer = (px > PXW * 0.8 && s > 0) || (px < PXW * 0.2 && s < 0);
 if (tail) goTo(placeOf());
 else if (hit?.list) goTo(2);
+else if (hit?.to) goTo(hit.to);
+else if (outer && s && shown > 0) go(s);
 else if (hit?.url) location.href = hit.url;
 else if (hit?.by) go(hit.by);
-else if (hit?.to) goTo(hit.to);
 else if (s) go(s);
 }
 });
@@ -850,13 +952,16 @@ canvas.addEventListener('webglcontextlost', () => {
 lost = true;
 sec.classList.add('is-flat');
 });
-canvas.addEventListener('pointerleave', () => { hl.on = 0; });
+canvas.addEventListener('pointerleave', () => {
+hl.on = 0;
+peel.tr = peel.tl = 0;
+});
 sec.style.setProperty('--turns', ENDS);
 sec.classList.add('is-ready');
 scene(sec, (dt, t, top, h) => {
 if (lost) return;
 const to = clamp(-top / Math.max(1, h - page.h));
 if (turn.x < 0) turn.x = to;
-draw(t, dt, follow(turn, to, dt, 190));
+draw(t, dt, follow(turn, to, dt, 165));
 });
 }

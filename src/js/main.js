@@ -500,6 +500,15 @@ if (pals) {
   show($('button', pals));
 }
 
+/* ---- what lives outdoors, province by province ---- */
+const provs = $('[data-provs]');
+if (provs) provs.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-prov-at]');
+  if (!b) return;
+  $$('[data-prov-at]', provs).forEach((x) => x.setAttribute('aria-pressed', x === b));
+  $$('[data-prov]', provs).forEach((x) => x.classList.toggle('on', x.dataset.prov === b.dataset.provAt));
+});
+
 /* ---- the film, and one wall through the years ---- */
 for (const [sel, fn] of [['[data-reel]', 'reel'], ['[data-years]', 'years']]) {
   const el = $(sel);
