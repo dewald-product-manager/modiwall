@@ -185,7 +185,7 @@ for (const file of pages) {
   // Every page sits in one folder, so relative links work on modiwall.com, GitHub Pages or any subfolder.
   // 404.html can be served from any depth and stays absolute.
   if (file !== '404.html') {
-    html = html.replace(/\b(href|src|action|data-peek|data-hang|data-hang-l)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
+    html = html.replace(/\b(href|src|action|data-peek|data-img|data-hang|data-hang-l)="\/(?!\/)([^"]*)"/g, (_, k, v) => `${k}="${v || './'}"`)
       .replace(/\bsrcset="([^"]+)"/g, (_, v) => `srcset="${v.replace(/(^|, )\//g, '$1')}"`);
   }
   writeFileSync(`${OUT}/${file}`, html);
