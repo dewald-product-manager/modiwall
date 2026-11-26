@@ -180,7 +180,8 @@ function pool() {
   m.quad(a, a + 1, a + 2, a + 3);
   return m;
 }
-/* when the sections are joined there is one reservoir, exactly as wide as the wall, with the pump and its timer inside it */
+/* when the sections are joined there is one reservoir, exactly as wide as the wall, with the pump inside it. The timer is
+   never in it: it stays on the wall beside the end panel, where the plug is (see LONG below) */
 function longTank() {
   return lit(new Mesh().box(0, -3.68, 0.22, PITCH * 3 + 0.16, 1.5, 1.36, 0.05).box(0, -2.93, 0.22, PITCH * 3 + 0.28, 0.07, 1.46, 0.03));
 }
@@ -193,6 +194,10 @@ function longPool() {
 }
 /* the pump: it lies under the water, its outlet beneath the riser. Dial to -x, base at y = 0 */
 const PUMP = [-3.02, -4.32, 0.25];
+/* the joined wall: its reservoir ends this much further out than one section's, and the timer keeps its place beside
+   the end panel, so the pump moves out with the reservoir's end and the lead reaches a little further to it */
+const SIDE = -(PITCH * 3 + 0.16) / 2 + 3.6;
+const LONG = { pump: PUMP[0] + SIDE, reach: PITCH + SIDE };
 function pump() {
   const m = new Mesh();
   const half = [[0, 0.075], [0.16, 0.075], [0.222, 0.083], [0.252, 0.118], [0.29, 0.19], [0.299, 0.25], [0.299, 0.46], [0.288, 0.56], [0.252, 0.71], [0.226, 0.785], [0.178, 0.838], [0.115, 0.858], [0, 0.862]];
@@ -293,7 +298,7 @@ function timerPlate() {
   return new Mesh().box(0, -0.33, -0.035, 0.76, 1.2, 0.07, 0.03);
 }
 /* the pump's plug, and its lead: it dips below the lid before it rises to it, so no drop can run back along it */
-function timerLead() {
+function timerLead(reach = 0) {
   const m = new Mesh();
   const cy = ty(602);
   const z0 = face(cy);
@@ -305,7 +310,8 @@ function timerLead() {
   const ring = (g, z) => o.map(([x, y]) => [x * g, cy + y * g, z0 + z]);
   skin(m, [ring(0.98, 0), ring(1, 0.02), ring(1, 0.13), ring(0.95, 0.2), ring(0.82, 0.25), ring(0.7, 0.262)]);
   // in world terms the reservoir's side is 0.35 to the right, and its lid 2.2 below
-  const P = [[0, cy - 0.16, z0 + 0.11], [0, cy - 0.5, z0 + 0.16], [-0.04, cy - 1.2, z0 + 0.02], [-0.06, -2.3, 0.4], [-0.04, -2.78, 0.5], [0.1, -2.95, 0.55], [0.22, -2.7, 0.56], [0.3, -2.42, 0.56], [0.36, -2.4, 0.56], [0.6, -2.42, 0.5], [1.2, -2.5, 0.25], [1.62, -2.9, 0.2], [1.72, -3.3, 0.35], [1.5, -3.36, 0.55]];
+  // reach: how much further the reservoir's side lies; the lead runs along the floor of its drip loop to meet it
+  const P = [[0, cy - 0.16, z0 + 0.11], [0, cy - 0.5, z0 + 0.16], [-0.04, cy - 1.2, z0 + 0.02], [-0.06, -2.3, 0.4], [-0.04, -2.78, 0.5], ...(reach > 0.3 ? [[reach * 0.5, -3.02, 0.55]] : []), ...[[0.1, -2.95, 0.55], [0.22, -2.7, 0.56], [0.3, -2.42, 0.56], [0.36, -2.4, 0.56], [0.6, -2.42, 0.5], [1.2, -2.5, 0.25], [1.62, -2.9, 0.2], [1.72, -3.3, 0.35], [1.5, -3.36, 0.55]].map(([x, y, z]) => [x + reach, y, z])];
   const at = (t) => {
     const f = Math.min(t * (P.length - 1), P.length - 1.0001);
     const i = Math.floor(f);
@@ -325,7 +331,7 @@ function timerLead() {
   }
   skin(m, rings);
   // the gland it enters by
-  return lit(m.tube('x', 0.3, 0.4, -2.4, 0.56, 0.06, 0, 2 * PI, 18));
+  return lit(m.tube('x', 0.3 + reach, 0.4 + reach, -2.4, 0.56, 0.06, 0, 2 * PI, 18));
 }
 const flat = (x0, y0, x1, y1, z, m = new Mesh()) => {
   const a = m.vert(x0, y0, z, 0, 0, 1, 0, 0);
@@ -768,7 +774,7 @@ export async function initSystem(sec) {
   const wallMesh = flat(-40, -30, 40, 30, -0.42);
   const parts = {
     wall: upload(wallMesh), panel: upload(cast.panel), panelFar: upload(panelFar()), grid: upload(cast.grid), screws: upload(screwsMesh()), drive: upload(driveMesh()), vessel: upload(cast.vessel, potInst), vesselFar: upload(vesselFar(cast.rim), potInst), soil: upload(soilMesh(cast.rim), potInst),
-    pipes: upload(plumbing()), timer: upload(timerBody()), tank: upload(tank()), longTank: upload(longTank()), longPool: upload(longPool()), pool: upload(pool()), pump: upload(pump()), timerKeys: upload(timerKeys()), timerPlate: upload(timerPlate()), timerLead: upload(timerLead()), streams: upload(streams()),
+    pipes: upload(plumbing()), timer: upload(timerBody()), tank: upload(tank()), longTank: upload(longTank()), longPool: upload(longPool()), pool: upload(pool()), pump: upload(pump()), timerKeys: upload(timerKeys()), timerPlate: upload(timerPlate()), timerLead: upload(timerLead()), longLead: upload(timerLead(LONG.reach)), streams: upload(streams()),
   };
   await slot();
   // distant panels carry lighter leaves; at that size the eye cannot tell
@@ -1026,11 +1032,13 @@ export async function initSystem(sec) {
     const long = move(0, -PITCH - (1 - under) * 5, 0);
     if (under > 0.005) {
       if (inside < 0.01 || (sun && inside < 0.5)) draw(parts.longTank, 2.2, long);
-      else if (!sun) {
-        draw(parts.pump, 9.3, move(-6.4, long[13] + PUMP[1], PUMP[2]));
-        draw(parts.timer, 9.3, move(6.3, long[13] - 3.72, 0.3));
-        draw(parts.timerPlate, 9.3, move(6.3, long[13] - 3.72, 0.3));
-      }
+      else if (!sun) draw(parts.pump, 9.3, move(LONG.pump, long[13] + PUMP[1], PUMP[2]));
+      // the timer, on the wall beside the end panel at the plug, its lead dipping before it enters the reservoir
+      const tm = move(TIMER[0] - PITCH, TIMER[1] + long[13], TIMER[2]);
+      draw(parts.timer, 6, tm);
+      draw(parts.timerPlate, 8, tm);
+      draw(parts.longLead, 1, tm);
+      if (!sun) draw(parts.timerKeys, 9, tm);
     }
     if (pipes > 0.005 && p < 0.875) {
       const pm = down;

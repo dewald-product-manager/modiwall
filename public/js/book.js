@@ -233,8 +233,15 @@ x.fillText('Journal', PXW / 2, PXH * 0.735);
 }
 return c;
 };
-const endpaper = () => {
+const endpaper = (back) => {
 const x = sheet();
+x.fillStyle = '#1a312b';
+x.fillRect(0, 0, PXW, PXH);
+const mx = PXW * (1 - 1 / 1.022);
+const my = (PXH * (1 - 1 / 1.026)) / 2;
+x.beginPath();
+x.rect(back ? 0 : mx, my, PXW - mx, PXH - my * 2);
+x.clip();
 x.fillStyle = '#08251c';
 x.fillRect(0, 0, PXW, PXH);
 x.globalAlpha = 0.16;
@@ -515,12 +522,22 @@ const INP = [['heart', 'Heart-leaf philodendron', 'Philodendron hederaceum'], ['
 const EXP = [['bulb', 'Bulbine', 'Bulbine frutescens'], ['spek', 'Spekboom', 'Portulacaria afra'], ['crass', 'Campfire crassula', 'Crassula capitella'], ['helich', 'Silver helichrysum', 'Helichrysum petiolare'], ['fescue', 'Blue fescue', 'Festuca glauca'], ['setc', 'Purple heart', 'Tradescantia pallida']];
 const leaves = { title: [endpaper, title], contents: [overview, chapter(groups[0])], contents2: [chapter(groups[1]), chapter(groups[2])], contents3: [chapter(groups[3]), chapter(groups[4])], plate: [plants(INP, 'For a room', page1, false), plants(EXP, 'For the open air', `${page1}#exterior`, true)] };
 const faces = (q) => (q.kind === 'story' ? [photo(stories[q.i], q.i), text(stories[q.i], q.i)] : leaves[q.kind]);
-const sheets = [{ board: 1, a: () => cover(false), b: endpaper }];
+const sheets = [{ board: 1, a: () => cover(false), b: () => endpaper(false) }];
 for (let k = 1; k < spreads.length; k++) sheets.push({ a: faces(spreads[k])[1], b: spreads[k + 1] ? faces(spreads[k + 1])[0] : last });
-sheets.push({ board: 2, a: endpaper, b: () => cover(true) });
+sheets.push({ board: 2, a: () => endpaper(true), b: () => cover(true) });
 sheets.forEach((q) => { q.aPg = {}; q.bPg = {}; });
 const N = sheets.length;
 const ENDS = N - 1; // the back board stays where it is
+const BLOCK = TH * 6;
+const LEVEL = BOARD * 1.02 + BLOCK;
+const settle = (d, lo) => { const w = Math.floor(d); return w + smooth(clamp((d - w - lo) / 0.2)); };
+const boardR = (x) => Math.max(BOARD, LEVEL - settle(Math.max(0, N - 1 - x), 0.65) * TH); // top of the back board
+const boardL = (x) => Math.max(BOARD * 1.02, LEVEL - settle(Math.max(0, x - 1), 0.6) * TH); // the front endpaper
+const topR = (k, x) => {
+const level = Math.max(boardR(x) + TH, LEVEL - settle(Math.max(0, k - x), 0.65) * TH);
+return level + (BOARD + (N - 1 - k) * TH - level) * (1 - smooth(clamp(x)));
+};
+const faceL = (k, x) => Math.max(boardL(x) + TH, LEVEL - settle(Math.max(0, x - 1 - k), 0.6) * TH);
 const blank = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, blank);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([243, 239, 230, 0]));
@@ -764,12 +781,12 @@ if (still && k === Math.round(x) - 1) g = Math.min(g, 1 - peel.l.x);
 const moving = g > 0 && g < 1;
 gl.uniform1f(u.uTurn, g);
 gl.uniform1f(u.uCurl, s.board ? 0.0 : 1.55);
-gl.uniform1f(u.uRest, s.board ? 0.0 : 0.42 * clamp(x * 1.6 - 0.25) * clamp((ENDS - x) * 1.6));
-gl.uniform1f(u.uThick, s.board ? BOARD : TH);
+gl.uniform1f(u.uRest, s.board ? 0.0 : 0.42 * clamp((x - 1) * 1.6) * clamp((ENDS - x) * 1.6)); // flat where a page faces a board, so the two stay one size
+gl.uniform1f(u.uThick, k === N - 1 ? boardR(x) : k === 0 ? BOARD + (boardL(x) - BOARD * 1.02) * g : TH); // a board under a thin side stands up to the level
 gl.uniform1f(u.uW, s.board ? PW * 1.022 : PW);
 gl.uniform1f(u.uH, s.board ? PH * 1.026 : PH);
-gl.uniform1f(u.uBaseR, k === N - 1 ? 0 : under + (N - 2 - k) * TH + (k === 0 ? TH * 2.2 : 0));
-gl.uniform1f(u.uBaseL, k === 0 ? BOARD * 1.02 : BOARD * 1.02 + k * TH);
+gl.uniform1f(u.uBaseR, k === N - 1 ? 0 : k === 0 ? under + (N - 2) * TH + TH * 2.2 : topR(k, x) - TH);
+gl.uniform1f(u.uBaseL, k === 0 ? boardL(x) : faceL(k, x));
 gl.uniform1f(u.uBoard, s.board ?? 0);
 gl.uniform1f(u.uShade, moving ? 0 : Math.sin(th));
 gl.uniform2f(u.uHf, k === hl.sheet ? hl.x : 0, hl.face);
@@ -787,8 +804,8 @@ follow(pull, ribTo !== ribAt ? 1 : 0, dt, 260);
 const g = clamp(x - ribAt);
 const ang = g * Math.PI;
 const out = 0.05;
-const right = under + (N - 2 - ribAt) * TH + TH;
-const left = BOARD * 1.02 + ribAt * TH;
+const right = topR(ribAt, x);
+const left = faceL(ribAt, x);
 const lift = Math.sin(ang) * out;
 const bow = 0.028 * (1 - g) * clamp((x - ribAt + 1) * 2 - 1); // a leaf at rest stands up a little beside the spine
 gl.useProgram(ribP.p);
@@ -889,8 +906,8 @@ const [d, f, g] = [VP[1] - ny * VP[3], VP[5] - ny * VP[7], -(VP[9] * z + VP[13] 
 const k = a * f - b * d;
 return [(c * f - b * g) / k, (a * g - c * d) / k];
 };
-let p = onto(BOARD + (N - 2 - Math.max(0, shown)) * TH + TH);
-if (p[0] < 0 && shown > 0) p = onto(BOARD + shown * TH);
+let p = onto(topR(Math.max(0, shown), Math.max(0, shown)));
+if (p[0] < 0 && shown > 0) p = onto(faceL(shown - 1, shown));
 const [x, y] = p;
 const side0 = turn.x * ENDS > ribAt + 0.5 ? -0.076 : 0.076;
 if (Math.abs(x - side0) < 0.06 && y < -PH / 2 - 0.01 && y > -PH / 2 - 0.2) return { s: 0, tail: true };

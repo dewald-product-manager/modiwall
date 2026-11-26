@@ -20,7 +20,7 @@ cpSync('src/static', OUT, { recursive: true });
 
 /* ---- css + js ---- */
 const minCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
-const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2', 'lux3', 'lux4'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
+const css = minCss(['base', 'layout', 'home', 'pages', 'lux', 'lux2', 'lux3', 'lux4', 'cta'].map((f) => `src/css/${f}.css`).filter(existsSync).map(read).join('\n'));
 mkdirSync(`${OUT}/css`, { recursive: true });
 mkdirSync(`${OUT}/js`, { recursive: true });
 writeFileSync(`${OUT}/css/site.css`, css);
@@ -91,7 +91,24 @@ const opening = (slug) => {
   return paras.slice(0, 6).join(' ').split(' ').slice(0, 210).join(' ');
 };
 const pulled = (slug) => (read(`src/pages/journal-${slug}.html`).match(/<blockquote>([\s\S]*?)<\/blockquote>/)?.[1] ?? '').replace(/<[^>]+>/g, '').trim();
+// the closing invitation (src/partials/cta.html): a page's "cta" header is [what we say, second action, its link, role];
+// journal stories take theirs from their chapter
+const CTA = {
+  page: ['Tell us where the wall will stand and how the light falls. We will tell you what could live there.', 'See it on your wall', '/visualise.html'],
+  rooms: ['Every room asks for a different wall. Tell us about yours, and we will design one for it.', 'See it on your wall', '/visualise.html'],
+  plants: ['We choose every plant for the light it will live in, and the province it will grow in.', 'See the plantings', '/plants.html'],
+  keeping: ['We made it, so we stay. Our own team returns weekly or monthly.', 'What a care visit covers', '/maintenance.html'],
+  before: ['Bring us in while the drawings are open, when every decision still costs least.', 'Speak to us first', '/contact-us.html'],
+  evidence: ['Tell us about the room, and we will say plainly what a wall can do there, and what it cannot.', 'Clients and awards', '/clients.html'],
+};
+const CTA_ROLE = { 'office-reception-living-wall': 'business', 'hotel-restaurant-living-wall': 'business', 'living-wall-architects-brief': 'architect', 'estate-living-wall-approval': 'estate' };
+const ctaOf = (data) => {
+  const slug = data.post && posts.find((p) => p.head === data.post.head)?.slug;
+  const [say, alt, href, role = CTA_ROLE[slug]] = data.cta ?? (slug ? CTA[CHAPTERS.find((c) => c[3].includes(slug))[0]] : CTA.page);
+  return { say, alt, href, q: role ? `?role=${role}` : '' };
+};
 const helpers = {
+  cta: ctaOf,
   // the stories in their chapters, each carrying what the book sets on its pages
   index: () => CHAPTERS.map(([id, name, sub, slugs]) => `<section class="jg" id="${id}" aria-labelledby="${id}-h"><div class="jg__h"><h3 id="${id}-h">${name}</h3><p>${sub}</p>${id === 'plants' ? `<a class="link" href="/plants.html">Our plants</a><div class="jg__sp" aria-hidden="true">${['marble', 'bulb', 'fern', 'setc'].map((k) => `<img src="/img/plants/${k}.avif" width="720" height="720" alt="" loading="lazy" decoding="async">`).join('')}</div>` : ''}</div><ul class="jg__l">${slugs.map((slug, n) => {
     const p = postOf[slug];

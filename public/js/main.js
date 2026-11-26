@@ -13,7 +13,7 @@ if (tag) tag.content = 'noindex';
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('.btn').forEach((b) => {
 b.addEventListener('pointermove', (e) => {
 const r = b.getBoundingClientRect();
-b.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.16).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.26).toFixed(1)}px`;
+b.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.05).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.12).toFixed(1)}px`;
 }, { passive: true });
 b.addEventListener('pointerleave', () => { b.style.translate = ''; });
 });
@@ -96,18 +96,18 @@ if (e.target.matches('picture') && l.classList.contains('in')) l.classList.add('
 }));
 const hero = $('[data-hero]');
 if (hero) {
-const start = () => import('./wall.js?v=d99e9af5').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
+const start = () => import('./wall.js?v=ef5bcdf1').then((m) => m.heroWall(hero)).catch(() => hero.classList.add('no-webgl'));
 if (document.readyState === 'complete') start();
 else requestAnimationFrame(() => setTimeout(start, 0));
 }
 const vis = $('[data-vis]');
-if (vis) import('./visualise.js?v=b19ab5aa').then((m) => m.initVisualiser(vis));
+if (vis) import('./visualise.js?v=60750e7d').then((m) => m.initVisualiser(vis));
 const system = $('[data-system]');
 if (system) {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(system, 1.1).then(() => import('./system.js?v=d816dcbb')).then((m) => m.initSystem(system));
+quiet(system, 1.1).then(() => import('./system.js?v=d29bdaa6')).then((m) => m.initSystem(system));
 }, { rootMargin: '260% 0px' });
 near.observe(system);
 }
@@ -165,7 +165,7 @@ $$('[data-strip]').forEach((strip) => {
 const near = new IntersectionObserver(([e]) => {
 if (!e.isIntersecting) return;
 near.disconnect();
-quiet(strip, 0.7).then(() => import('./wall.js?v=d99e9af5')).then((m) => m.stripWall(strip)).catch(() => strip.remove());
+quiet(strip, 0.7).then(() => import('./wall.js?v=ef5bcdf1')).then((m) => m.stripWall(strip)).catch(() => strip.remove());
 }, { rootMargin: '200% 0px' });
 near.observe(strip);
 });
@@ -409,16 +409,16 @@ const d = e.changedTouches[0].clientX - sx;
 if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1));
 }, { passive: true });
 }
-for (const [sel, file, fn] of [['[data-book]', './book.js?v=18b56ef4', 'initBook'], ['[data-names]', './tale.js?v=2e0bf3ac', 'clearing']]) {
+for (const [sel, file, fn] of [['[data-book]', './book.js?v=cb8af821', 'initBook'], ['[data-names]', './tale.js?v=519b8f2c', 'clearing']]) {
 const el = $(sel);
 if (!el) continue;
 if (reduced) el.classList.add('is-flat');
-else (file === './book.js?v=18b56ef4' ? import('./book.js?v=18b56ef4') : import('./tale.js?v=2e0bf3ac')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
+else (file === './book.js?v=cb8af821' ? import('./book.js?v=cb8af821') : import('./tale.js?v=519b8f2c')).then((m) => m[fn](el)).catch(() => el.classList.add('is-flat'));
 }
 const visit = $('[data-visit]');
 if (visit) import('./visit.js?v=37ee7a39').then((x) => x.initVisit(visit));
 const plants = $('[data-plants]');
-if (plants) import('./plants.js?v=d43329db').then((x) => x.initPlants(plants));
+if (plants) import('./plants.js?v=85b87416').then((x) => x.initPlants(plants));
 const cut = $('[data-cut]');
 if (cut) {
 const near = new IntersectionObserver(([e]) => {

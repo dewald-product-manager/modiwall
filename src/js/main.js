@@ -14,11 +14,11 @@ if (location.hostname.endsWith('.github.io')) {
   if (tag) tag.content = 'noindex';
 }
 
-/* ---- buttons lean toward the pointer ---- */
+/* ---- buttons lean, a little, toward the pointer ---- */
 if (!reduced && matchMedia('(hover: hover) and (pointer: fine)').matches) $$('.btn').forEach((b) => {
   b.addEventListener('pointermove', (e) => {
     const r = b.getBoundingClientRect();
-    b.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.16).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.26).toFixed(1)}px`;
+    b.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.05).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.12).toFixed(1)}px`;
   }, { passive: true });
   b.addEventListener('pointerleave', () => { b.style.translate = ''; });
 });

@@ -1,9 +1,11 @@
 <section class="sec cta" aria-labelledby="cta-h">
   <div class="wrap">
     <h2 id="cta-h">Begin with one wall.</h2>
-    <div class="cta__side">
-      <p class="lede">We will tell you what could live on it.</p>
-      <div class="cta__row"><a class="btn btn--lime" href="/get-a-quote.html">Commission a wall</a><a class="link" href="tel:+27768740299">+27 76 874 0299</a></div>
+    <div class="cta__card">
+      <p class="cta__k">Commissions</p>
+      <p class="cta__say">{{js:cta(data).say}}</p>
+      <div class="cta__acts"><a class="btn" href="/get-a-quote.html{{js:cta(data).q}}">Commission a wall</a><a class="link" href="{{js:cta(data).href}}">{{js:cta(data).alt}}</a></div>
+      <p class="cta__by"><a href="tel:+27768740299">+27 76 874 0299</a><a href="mailto:info@modiwall.com">info@modiwall.com</a></p>
     </div>
   </div>
   <div class="strip" data-strip aria-hidden="true"><div class="strip__stage" data-stage></div><canvas class="strip__canvas" data-wall></canvas></div>

@@ -1,5 +1,5 @@
 
-import { createWall, STYLE_NAMES, loadPlate } from './wall.js?v=d99e9af5';
+import { createWall, STYLE_NAMES, loadPlate } from './wall.js?v=ef5bcdf1';
 import { page, box, follow, clamp } from './frame.js?v=c5329617';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LIGHT = [[1.02, [1.07, 1.0, 0.86], 0], [1.04, [1, 1, 1], 0], [0.28, [1.03, 0.98, 0.94], 0.85]];

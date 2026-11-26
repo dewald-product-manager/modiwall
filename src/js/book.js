@@ -251,8 +251,17 @@ export async function initBook(sec) {
     }
     return c;
   };
-  const endpaper = () => {
+  // pasted down inside a board: the board is a little larger than a page, so the cloth turns in round a paper the
+  // size of a page, and the endpaper faces its page at exactly that size. Its outer edge lies to the left on the front board
+  const endpaper = (back) => {
     const x = sheet();
+    x.fillStyle = '#1a312b';
+    x.fillRect(0, 0, PXW, PXH);
+    const mx = PXW * (1 - 1 / 1.022);
+    const my = (PXH * (1 - 1 / 1.026)) / 2;
+    x.beginPath();
+    x.rect(back ? 0 : mx, my, PXW - mx, PXH - my * 2);
+    x.clip();
     x.fillStyle = '#08251c';
     x.fillRect(0, 0, PXW, PXH);
     x.globalAlpha = 0.16;
@@ -541,12 +550,27 @@ export async function initBook(sec) {
   const leaves = { title: [endpaper, title], contents: [overview, chapter(groups[0])], contents2: [chapter(groups[1]), chapter(groups[2])], contents3: [chapter(groups[3]), chapter(groups[4])], plate: [plants(INP, 'For a room', page1, false), plants(EXP, 'For the open air', `${page1}#exterior`, true)] };
   const faces = (q) => (q.kind === 'story' ? [photo(stories[q.i], q.i), text(stories[q.i], q.i)] : leaves[q.kind]);
   // each sheet: what is on its upper face, then on its back
-  const sheets = [{ board: 1, a: () => cover(false), b: endpaper }];
+  const sheets = [{ board: 1, a: () => cover(false), b: () => endpaper(false) }];
   for (let k = 1; k < spreads.length; k++) sheets.push({ a: faces(spreads[k])[1], b: spreads[k + 1] ? faces(spreads[k + 1])[0] : last });
-  sheets.push({ board: 2, a: endpaper, b: () => cover(true) });
+  sheets.push({ board: 2, a: () => endpaper(true), b: () => cover(true) });
   sheets.forEach((q) => { q.aPg = {}; q.bPg = {}; });
   const N = sheets.length;
   const ENDS = N - 1; // the back board stays where it is
+  /* Open, the two halves lie level: the camera sees in perspective, so a page standing higher than the one facing it
+     would look larger. Each stack hangs down from one level, a sheet apart; sheets deeper than the block sink to the
+     board, and a side with fewer sheets stands on a board that rises to meet them. Shut, the block has its full depth. */
+  const BLOCK = TH * 6;
+  const LEVEL = BOARD * 1.02 + BLOCK;
+  // whole sheets, the next counted in over a fifth of the turn, beginning `lo` of the way through it
+  const settle = (d, lo) => { const w = Math.floor(d); return w + smooth(clamp((d - w - lo) / 0.2)); };
+  const boardR = (x) => Math.max(BOARD, LEVEL - settle(Math.max(0, N - 1 - x), 0.65) * TH); // top of the back board
+  const boardL = (x) => Math.max(BOARD * 1.02, LEVEL - settle(Math.max(0, x - 1), 0.6) * TH); // the front endpaper
+  // the upper face of sheet k while it lies on the right, and its underside once it lies on the left
+  const topR = (k, x) => {
+    const level = Math.max(boardR(x) + TH, LEVEL - settle(Math.max(0, k - x), 0.65) * TH);
+    return level + (BOARD + (N - 1 - k) * TH - level) * (1 - smooth(clamp(x)));
+  };
+  const faceL = (k, x) => Math.max(boardL(x) + TH, LEVEL - settle(Math.max(0, x - 1 - k), 0.6) * TH);
 
   const blank = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, blank);
@@ -804,12 +828,12 @@ export async function initBook(sec) {
       const moving = g > 0 && g < 1;
       gl.uniform1f(u.uTurn, g);
       gl.uniform1f(u.uCurl, s.board ? 0.0 : 1.55);
-      gl.uniform1f(u.uRest, s.board ? 0.0 : 0.42 * clamp(x * 1.6 - 0.25) * clamp((ENDS - x) * 1.6));
-      gl.uniform1f(u.uThick, s.board ? BOARD : TH);
+      gl.uniform1f(u.uRest, s.board ? 0.0 : 0.42 * clamp((x - 1) * 1.6) * clamp((ENDS - x) * 1.6)); // flat where a page faces a board, so the two stay one size
+      gl.uniform1f(u.uThick, k === N - 1 ? boardR(x) : k === 0 ? BOARD + (boardL(x) - BOARD * 1.02) * g : TH); // a board under a thin side stands up to the level
       gl.uniform1f(u.uW, s.board ? PW * 1.022 : PW);
       gl.uniform1f(u.uH, s.board ? PH * 1.026 : PH);
-      gl.uniform1f(u.uBaseR, k === N - 1 ? 0 : under + (N - 2 - k) * TH + (k === 0 ? TH * 2.2 : 0));
-      gl.uniform1f(u.uBaseL, k === 0 ? BOARD * 1.02 : BOARD * 1.02 + k * TH);
+      gl.uniform1f(u.uBaseR, k === N - 1 ? 0 : k === 0 ? under + (N - 2) * TH + TH * 2.2 : topR(k, x) - TH);
+      gl.uniform1f(u.uBaseL, k === 0 ? boardL(x) : faceL(k, x));
       gl.uniform1f(u.uBoard, s.board ?? 0);
       gl.uniform1f(u.uShade, moving ? 0 : Math.sin(th));
       gl.uniform2f(u.uHf, k === hl.sheet ? hl.x : 0, hl.face);
@@ -828,8 +852,8 @@ export async function initBook(sec) {
       const g = clamp(x - ribAt);
       const ang = g * Math.PI;
       const out = 0.05;
-      const right = under + (N - 2 - ribAt) * TH + TH;
-      const left = BOARD * 1.02 + ribAt * TH;
+      const right = topR(ribAt, x);
+      const left = faceL(ribAt, x);
       const lift = Math.sin(ang) * out;
       const bow = 0.028 * (1 - g) * clamp((x - ribAt + 1) * 2 - 1); // a leaf at rest stands up a little beside the spine
       gl.useProgram(ribP.p);
@@ -934,8 +958,8 @@ export async function initBook(sec) {
       const k = a * f - b * d;
       return [(c * f - b * g) / k, (a * g - c * d) / k];
     };
-    let p = onto(BOARD + (N - 2 - Math.max(0, shown)) * TH + TH);
-    if (p[0] < 0 && shown > 0) p = onto(BOARD + shown * TH);
+    let p = onto(topR(Math.max(0, shown), Math.max(0, shown)));
+    if (p[0] < 0 && shown > 0) p = onto(faceL(shown - 1, shown));
     const [x, y] = p;
     // the tail of the ribbon, below the book
     const side0 = turn.x * ENDS > ribAt + 0.5 ? -0.076 : 0.076;

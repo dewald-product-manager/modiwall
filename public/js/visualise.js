@@ -1,5 +1,5 @@
 
-import { frameWall } from './wall.js?v=d99e9af5';
+import { frameWall } from './wall.js?v=ef5bcdf1';
 import { picture } from './gl.js?v=da570bfd';
 const STEP = 0.5; // metres per panel
 function quadMatrix(w, h, [a, b, c, d]) { // a top left, b top right, c bottom right, d bottom left

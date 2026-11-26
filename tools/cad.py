@@ -1,6 +1,11 @@
-"""The moulded parts, from CAD to the web. Reads the STL exports (kept out of git) and writes img/system/parts.bin.
+"""The moulded parts, from CAD to the web. Reads STL (kept out of git) and writes img/system/parts.bin.
 
-    python tools/cad.py "Pannel Rev 7.STL" "Grid Rev 7.STL" "Tray Rev 7.STL" [parts.npz]
+    python tools/step.py "Panel rev19.stp" panel.stl          (STEP drawings go through tools/step.py first)
+    python tools/step.py "Tray rev15.stp" vessel.stl 12 0.6 14
+    python tools/cad.py panel.stl "Grid Rev 7.STL" vessel.stl [parts.npz]
+
+Either revision of each part is understood: Rev 7 as exported, or the newer drawings (panel rev19 about the middle of
+the grid with its face at z = 0, vessel rev15 lying on its back). All are brought to one frame below.
 
 Every sharp edge gets a fine rounded bevel, every corner its own baked shade, and the joint is drawn slightly free,
 so what the page carries is a display model and not a tool drawing. Millimetres; y up, z out of the wall.
@@ -14,7 +19,7 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OX, OY = 268.99, 279.75  # the middle of the grid, in the panel drawing
+OX, OY = 268.99, 279.75  # the middle of the grid, in the Rev 7 panel drawing
 CREASE = np.cos(np.radians(33))
 
 
@@ -169,7 +174,7 @@ def inside(P, F, y):
             seg += [t[i] + (t[(i + 1) % 3] - t[i]) * d[i] / (d[i] - d[(i + 1) % 3]) for i in range(3) if (d[i] < 0) != (d[(i + 1) % 3] < 0)]
     seg = np.array(seg)
     a, b = seg[0::2][:, [0, 2]], seg[1::2][:, [0, 2]]
-    c = np.array([0., 24.])
+    c = (np.r_[a, b].min(0) + np.r_[a, b].max(0)) / 2  # the middle of the opening
     out = []
     for k in range(48):
         th = -np.pi + (k + .5) / 48 * 2 * np.pi
@@ -184,15 +189,27 @@ def inside(P, F, y):
     return np.array(out)
 
 
+def frame(name, P, F):
+    """one frame for every revision: millimetres about the middle of the grid, y up, z out of the wall, the back of
+    the panel at z = 0; the vessel about the back of its body, level with its rim"""
+    if name == 'panel':
+        return (P + [0, 0, 50] if P[:, 2].max() < 1 else P - [OX, OY, 0]), F  # rev19 is drawn face at z = 0
+    if name == 'grid':
+        return (P + [0, 0, 10] if P[:, 2].max() < 1 else P - [230.75, 230.75, 0]), F  # rev15: face to where Rev 7's was
+    if P[:, 2].max() < 1:  # rev15 lies on its back, opening to +z: stand it up, hooks to the wall
+        return np.c_[P[:, 0], P[:, 2], -P[:, 1]], F
+    return P - [51.338, 91.287, 25], F
+
+
 if __name__ == '__main__':
-    panel, grid, tray = (stl(f) for f in sys.argv[1:4])
+    panel, grid, tray = (frame(n, *stl(f)) for n, f in zip(('panel', 'grid', 'vessel'), sys.argv[1:4]))
     P = panel[0].copy()
-    for ax, at in ((0, 530.75), (1, 18.01)):  # the rods, a little slim
+    for ax, at in ((0, 530.75 - OX), (1, 18.01 - OY)):  # the rods, a little slim
         m = np.abs(P[:, ax] - at) < 18.4
         P[m, ax] = at + (P[m, ax] - at) * .965
         P[m, 2] = 25 + (P[m, 2] - 25) * .965
-    T = tray[0] - [51.338, 91.287, 25]  # origin on the back face, level with the rim
-    parts = [('panel', P - [OX, OY, 0], panel[1], .85, .5), ('grid', grid[0] - [230.75, 230.75, 0], grid[1], .55, 4.5), ('vessel', T, tray[1], .55, -99)]
+    T = tray[0]
+    parts = [('panel', P, panel[1], .85, .5), ('grid', grid[0], grid[1], .55, 4.5), ('vessel', T, tray[1], .55, -99)]
     blob, keep = [], {}
     for name, P, F, b, front in parts:
         W, N, A = bevel(P, F, b, front)

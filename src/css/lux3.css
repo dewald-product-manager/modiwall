@@ -223,8 +223,10 @@ body:has(main > .hall) .top.is-stuck { background: rgba(3, 9, 6, .94); box-shado
 .names__t { position: absolute; z-index: 3; left: max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut))); bottom: clamp(6.6rem, 14vh, 9rem); display: grid; gap: .5rem; pointer-events: none; }
 .names__t h1 { font-size: clamp(2.6rem, 5vw, 5.6rem); line-height: 1; letter-spacing: -.025em; } .names__t .lede { color: #dbe6e0; margin: 0; }
 .names__l { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-.nm { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: 1.5rem; text-align: center; visibility: hidden; will-change: transform, opacity; }
-.nm img { width: auto; max-width: 100%; height: clamp(4rem, 8.6vw, 8.6rem); background: none; filter: brightness(0) invert(1); } .nm--old-mutual, .nm--hollard, .nm--torrecid { height: clamp(2.6rem, 5vw, 5rem) !important; } .nm--nedbank-golf { height: clamp(6.4rem, 12vw, 12rem) !important; }
+.nm { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: 1.5rem; text-align: center; visibility: hidden; will-change: transform; }
+.nm img { grid-area: 1 / 1; width: auto; max-width: 100%; height: clamp(4rem, 8.6vw, 8.6rem); background: none; filter: brightness(0) invert(1); } .nm--old-mutual, .nm--hollard, .nm--torrecid { height: clamp(2.6rem, 5vw, 5rem) !important; } .nm--nedbank-golf { height: clamp(6.4rem, 12vw, 12rem) !important; }
+/* focus without a moving filter: the soft copy is blurred once, then only its opacity changes */
+.nm :is(.nm__sharp, .nm__haze), .names.is-ready .nm p { will-change: opacity; } .nm .nm__haze { filter: brightness(0) invert(1) blur(12px); transform: scale(1.03); } .nm p { grid-row: 2; }
 .nm p { max-width: min(22em, 62vw); margin: 0; font-size: 1.05rem; line-height: 1.5; color: #e6eeea; text-shadow: 0 1px 14px #030906; }
 .names__m { position: absolute; z-index: 3; inset: auto 0 clamp(1.6rem, 4vh, 2.8rem); max-width: var(--max); margin-inline: auto; padding: 0 var(--gut); display: flex; gap: clamp(.6rem, 1.6vw, 2rem); overflow-x: auto; scrollbar-width: none; }
 .names__m button { border: 0; background: none; color: #fff; padding: .7rem 0; min-height: 2.75rem; font: inherit; font-size: .98rem; white-space: nowrap; opacity: .6; border-top: 1px solid rgba(255, 255, 255, .4); transition: opacity .5s, border-color .5s; } .names__m li { flex: 1 0 auto; } .names__m button { width: 100%; text-align: left; } .names__m button:is(.on, :hover) { opacity: 1; border-color: #fff; }

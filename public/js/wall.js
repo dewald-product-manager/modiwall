@@ -7,6 +7,9 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const STYLE_NAMES = ['in-midday', 'in-morning', 'in-evening', 'ex-morning', 'ex-midday', 'ex-evening'];
 const SIZE = { 'in-midday': [3.6, 2.4, 2304] }; // metres across, metres high, pixels the leaf table is written in
 const sizeOf = (name) => SIZE[name] ?? [2.4, 1.6, 1536];
+const HB = 60; // the height map runs from 60 mm behind the face of the panel...
+const HR = 800; // ...through 800 mm
+const WALL = -30; // the face of the panel the leaves stand off
 const COMMON = `#version 300 es
 precision highp float; precision highp int;
 uniform vec2 uRes, uOrigin, uGrid, uPlate, uPar, uCentre;
@@ -21,8 +24,9 @@ float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return 
 `;
 const LEAF_VS = `${COMMON}
 layout(location=0) in vec2 aG; layout(location=1) in vec4 aR; layout(location=2) in vec4 aB; layout(location=3) in vec4 aZ; layout(location=4) in vec2 aS;
-uniform vec2 uShade; uniform float uN; uniform int uRips; uniform sampler2D uHull;
+uniform vec2 uShade; uniform float uN; uniform int uRips; uniform sampler2D uHull, uShape;
 out vec2 vUv; out vec2 vPx; flat out float vId; out float vYoung; out float vFace; out float vZ; out float vT; flat out float vA; flat out float vSeed; out float vSun; out vec2 vRest; out float vOpen; out float vUnder;
+out float vH; flat out vec3 vRot; out vec2 vNod;
 void main(){
 vec2 q = (aR.xy - uOrigin) / uCell;
 float g = texture(uCells, q / uGrid).r;
@@ -32,7 +36,11 @@ float k = clamp((g * 1.62 - wait) / 1.04, 0., 1.);
 float gl = mix(k * k * (3. - 2. * k), 1. - (1. - k) * (1. - k) * (1. - k), smoothstep(0., .6, k)); // leaves the stem gently, settles slowly
 float unroll = smoothstep(.02, .85, k);
 vA = smoothstep(.02, .24, k);
+#ifdef HEIGHT
+vec2 hull = vec2(0., 1.);                                     // drawn coarse: the leaf's own pixels say where it is
+#else
 vec2 hull = texelFetch(uHull, ivec2(int(aG.y * 4. + .5), int(aZ.z) - 1), 0).rg;       // only as wide as the leaf is here
+#endif
 vec2 b = mix(aB.xy, aB.zw, vec2(mix(hull.x, hull.y, aG.x), aG.y));
 vUv = (aR.zw + b) / uPlate;
 vec2 c = (aB.xy + aB.zw) * .5;
@@ -48,12 +56,19 @@ vec2 p = (dir * along * ca + ac * across * mix(.46, 1., unroll)) * gl * sc;
 p.x *= sign(aS.x); float cr = cos(aS.y), sr = sin(aS.y); p = vec2(p.x * cr + p.y * sr, p.y * cr - p.x * sr);
 vec2 at0 = b * sc; at0.x *= sign(aS.x); at0 = vec2(at0.x * cr + at0.y * sr, at0.y * cr - at0.x * sr);
 vRest = (aR.xy + at0 - uTile.xy) / uTile.zw;                  // where this point lies in the finished wall
-float z = (aZ.x * uM / 500.) * mix(.25, 1., gl) + sin(curl) * along * gl * sc;
+vec4 s0 = texelFetch(uShape, ivec2(0, int(aZ.z) - 1), 0); vec2 s1 = texelFetch(uShape, ivec2(1, int(aZ.z) - 1), 0).rg;
+vec2 uv = (b - c) / max((aB.zw - aB.xy) * .5, vec2(1.));
+float hs = s0.x*uv.x + s0.y*uv.y + s0.z*uv.x*uv.x + s0.w*uv.x*uv.y + s1.x*uv.y*uv.y + s1.y;
+float z = (aZ.x * uM / 500.) * mix(.25, 1., gl) + sin(curl) * along * gl * sc + hs * sc * gl * unroll;
 vec2 px = aR.xy + p;
 float sw = sin(uT*.62 - px.x*.0052 + px.y*.0034) * (.6 + .4*sin(uT*.23 + px.x*.002));
 float tr = sin(uT*(1.1 + seed*.9) + seed*40.);
 float len = reach * sc;
 float rot = (sw * .020 + tr * (.011 + uGust*.030) + uTilt * .5 + uGust * .03 * sin(uT*3.1 + px.y*.012)) * t;
+float nod = (sin(uT*(.83 + seed*.7) + seed*23.) * (.05 + uGust*.16) + sw * .04) * smoothstep(.3, 1., unroll);
+z += nod * along * sc;
+vec2 sd = dir; sd.x *= sign(aS.x); sd = vec2(sd.x * cr + sd.y * sr, sd.y * cr - sd.x * sr);
+vNod = sd * nod * 1.4; vRot = vec3(cr, sr, sign(aS.x));
 vec2 pd = px - uPtr.xy; float d2 = dot(pd, pd);
 float pf = exp(-d2 / (uM * uM * .55)) * uPtr.z * t;
 vec2 push = normalize(pd + .01) * pf * min(16., len * .22);
@@ -65,25 +80,33 @@ float wet = exp(-pow((px.y - uWater.x) / (uM * .42), 2.)) * uWater.y;
 push += vec2(sin(seed * 60. + uT * 5.) * .35, 1.) * wet * t * min(10., len * .12);
 p += vec2(-p.y, p.x) * rot + push;
 z -= pf * len * .25;
+vH = z * 500. / uM;                                           // millimetres off the wall
 px = aR.xy + p;
 px += z * uShade;
 px += uPar * z * .34;                                         // perspective: nearer leaves move further
 px = uCentre + (px - uCentre) * (1. + z / 3400.) * uZoom;
+#ifndef HEIGHT
 vec2 w = px / uM;
 float tree = .5 + .25 * sin(w.x * 1.7 + uT * .21 + sin(w.y * 1.3 - uT * .13) * 1.6) + .25 * sin(w.y * 2.3 - uT * .17 + sin(w.x * 2.1 + uT * .11) * 1.4);
 float beam = (w.x*.62 + w.y*.78 - mod(uT * .30, (uRes.x + uRes.y) / uM + 8.) + 4.) / 1.9;
 vSun = mix(.6, 1.2, smoothstep(.3, .7, tree)) + exp(-beam*beam) * .34;
+#endif
 vPx = px; vId = aZ.z; vYoung = 1. - smoothstep(.35, 1., k); vFace = ca; vZ = zt; vT = t; vSeed = seed;
+#ifndef HEIGHT
 vec2 ua = q + vec2(-.35, -1.1), ub = q + vec2(-.9, -.35);
 float over = min(texture(uCells, ua / uGrid).r * step(0., ua.y), texture(uCells, ub / uGrid).r * step(0., ub.x));
 vOpen = 1. - over * over;
 vec2 ud = q + vec2(0., .62); vUnder = 1. - (ud.y < uGrid.y ? texture(uCells, ud / uGrid).r : 0.);
+#endif
 vec2 cl = px / uRes * 2. - 1.;
 gl_Position = k <= .001 || vA <= .001 ? vec4(2., 2., 2., 1.) : vec4(cl.x, -cl.y, .98 - clamp((aZ.x + 120.) / 760., 0., 1.) * 1.94 + (float(gl_InstanceID) + 1.) / uN * 2e-4, 1.);   // true depth, leaf by leaf
 }`;
 const LEAF_FS = `${COMMON}
-uniform float uMask;
+uniform float uMask; uniform sampler2D uH; uniform float uDbg; // DEBUG
 in vec2 vUv; in vec2 vPx; flat in float vId; in float vYoung; in float vFace; in float vZ; in float vT; flat in float vA; flat in float vSeed; in float vSun; in vec2 vRest; in float vOpen; in float vUnder; out vec4 o;
+in float vH; flat in vec3 vRot; in vec2 vNod;
+const vec3 SUN = vec3(-.55, -.78, .6);                         // towards the sun the plants were traced in: high, from the left
+float hAt(vec2 q, float lod){ return textureLod(uH, vec2(q.x / uRes.x, 1. - q.y / uRes.y), lod).r * ${HR}. - ${HB}.; }
 float at(vec2 uv){ ivec2 n = textureSize(uId, 0); ivec2 p = ivec2(floor(uv * vec2(n))); p = ((p % n) + n) % n; vec4 c = texelFetch(uId, p, 0); return floor(c.r * 255. + .5) + floor(c.g * 255. + .5) * 256. == vId ? .25 : 0.; }
 float cover(){ vec2 n = vec2(textureSize(uId, 0)), a = dFdx(vUv), b = dFdy(vUv); a *= max(1., .95 / max(length(a * n), .01)); b *= max(1., .95 / max(length(b * n), .01)); return at(vUv + a * .125 + b * .375) + at(vUv - a * .125 - b * .375) + at(vUv + a * .375 - b * .125) + at(vUv - a * .375 + b * .125); }
 void main(){
@@ -93,8 +116,32 @@ al = min(1., al * 1.5) * vA;
 if (al < .06) discard;
 vec3 col = texture(uTex, vUv, -.5).rgb;
 vec3 x = texture(uAux, vUv).rgb; vec2 n = x.yz * 2. - 1.;
+vec2 nd = vec2(n.x * vRot.z, -n.y); nd = vec2(nd.x * vRot.x + nd.y * vRot.y, nd.y * vRot.x - nd.x * vRot.y) - vNod;
+vec3 N = vec3(nd, sqrt(max(1. - dot(nd, nd), .04))); N = normalize(N);
+vec3 N0 = vec3(n.x, -n.y, N.z), S = normalize(SUN);
+float mm = uM / 500. * uZoom, tx = uRes.x / float(textureSize(uH, 0).x), sh = 0.;
+vec2 to = normalize(S.xy) * mm / (S.z / length(S.xy));
+for (int i = 0; i < 4; i++) {
+float d = 4. * pow(2.3, float(i));                            // millimetres the light climbs: 4, 9, 21, 49
+float over = hAt(vPx + to * d, max(.8, log2(d * mm * .5 / tx))) - vH - d - 2.;
+sh = max(sh, clamp(over / (3. + d * .7), 0., 1.) * (1. - float(i) * .12));
+}
+float r1 = 24. * mm, r2 = 70. * mm;
+float ao = clamp((hAt(vPx, log2(r1 / tx)) - vH) / 30., 0., 1.) * .6 + clamp((hAt(vPx, log2(r2 / tx)) - vH) / 70., 0., 1.) * .4;
+ao = ao * .62 + (1. - smoothstep(-25., 140., vH)) * .3;
+float lit = 1. - sh * .9;
+float rel = clamp((max(dot(N, S), 0.) + .12) / (max(dot(N0, S), 0.) + .12), .6, 1.5);  // turned towards the sun or away from it
+col *= 1. - x.r + x.r * mix(1., vSun, uKey) * lit * rel;      // only the direct part of the light moves
+col *= 1. + (max(dot(N, S), 0.) - .54) * .5 * x.r * lit;       // and a little more of the leaf's own form
+col *= (1. - ao * mix(.8, .5, x.r)) * (1. - sh * .28 * (1. - x.r));
+col *= mix(vec3(1.), vec3(.88, .98, 1.05), clamp(sh * x.r * .9 + ao * .7, 0., 1.)); // shade is lit by the sky and through other leaves: cooler, greener
+vec3 V = normalize(vec3(-uPar * .7, 1.)), Hv = normalize(S + V);
+float nh = max(dot(N, Hv), 0.), sun = x.r * lit * mix(1., vSun, uKey) * (1. - ao);
+col += vec3(.9, .95, .84) * (pow(nh, 60.) * .1 + pow(nh, 14.) * .022) * sun * (.6 + .4 * vSeed);
+col += col * vec3(.38, .6, .05) * clamp(-dot(N, S) + .15, 0., 1.) * lit * (1. - ao) * .5;
+float s2 = fract(vSeed * 7.31);                               // no two leaves quite the same green
+col *= vec3(1. + (s2 - .5) * .07, 1. + (vSeed - .5) * .05, 1. - (s2 - .5) * .06);
 vec2 w = vPx / uM;
-col *= 1. - x.r + x.r * mix(1., vSun, uKey);                  // only the direct part of the light moves
 vec2 pd = vPx - uPtr.xy; col *= 1. + exp(-dot(pd, pd) / (uM * uM * 2.2)) * uPtr.z * (.22 + .4 * x.r);
 col = mix(col, pow(col, vec3(.72)) * vec3(1.16, 1.12, .62), vYoung * .62);
 col *= mix(.62, 1., clamp(vFace, 0., 1.));
@@ -102,7 +149,7 @@ float wetf = uWater.y * exp(-pow((vPx.y - uWater.x) / (uM * .5), 2.)), trail = u
 float glint = pow(clamp(1. - abs(n.x * .7 + n.y * .5 - .34 + .12 * sin(vPx.x * .09 + vPx.y * .21 - uT * 6.)) * 2.4, 0., 1.), 5.);
 col = col * (1. - .16 * max(wetf, trail)) + vec3(.75, .86, .9) * glint * (wetf * .55 + trail * .26) * smoothstep(.1, .5, vZ + .25);
 vec2 ld = vPx - uLamp.xy; float fall = uLamp.w / (1. + dot(ld, ld) / (uLamp.z * uLamp.z) * 1.35);
-vec2 ln = normalize(ld + .01); float lf = clamp(.82 - dot(n, vec2(ln.x, -ln.y)) * .75 + vZ * .25, .25, 1.4);
+vec2 ln = normalize(ld + .01); float lf = clamp(.82 - dot(nd, ln) * .75 + vZ * .25, .25, 1.4) * (1. - ao * .6);
 col *= vec3(uAmb) * mix(vec3(.55, .78, 1.15), vec3(1.), uAmb) + vec3(1.5, 1.2, .8) * fall * lf;
 col = col / (1. + max(col - .78, 0.) * .9);
 vec3 L = texture(uLight, vRest).rgb; L *= L * 2.;
@@ -111,6 +158,15 @@ L *= 1. - vUnder * .42 * (1. - vZ * .75) * smoothstep(.0, .8, vT * .6 + .4);   /
 L = mix(L, vec3(1.), vYoung * .5);
 col *= L;
 o = vec4(clamp(col * uTint, 0., 1.), al);
+if (uDbg > .5) o = vec4(uDbg < 1.5 ? vec3(1. - sh) : uDbg < 2.5 ? vec3(1. - ao) : vec3(vH / 200.), al); // DEBUG
+}`;
+const HEIGHT_VS = LEAF_VS.replace('precision highp float;', '#define HEIGHT\nprecision highp float;');
+const HEIGHT_FS = `${COMMON}
+in vec2 vUv; flat in float vId; flat in float vA; in float vH; out vec4 o;
+void main(){
+ivec2 n = textureSize(uId, 0); ivec2 p = ivec2(floor(vUv * vec2(n))); p = ((p % n) + n) % n; vec4 c = texelFetch(uId, p, 0);
+if (vA < .5 || floor(c.r * 255. + .5) + floor(c.g * 255. + .5) * 256. != vId) discard;
+o = vec4(clamp((vH + ${HB}.) / ${HR}., 0., 1.), 0., 0., 1.);
 }`;
 const QUAD_VS = `#version 300 es
 layout(location=0) in vec2 aQ; out vec2 vQ; void main(){ vQ = aQ; gl_Position = vec4(aQ * 2. - 1., 0., 1.); }`;
@@ -142,7 +198,7 @@ let plants;
 const OWN = 600; // pixels to a metre in the plants drawn on their own
 async function plate(name) {
 const get = (f) => fetch(url(f)).then((r) => r.arrayBuffer());
-const [bin, lit, light, own] = await Promise.all([get(`${name}.bin`), get(`${name}-lit.bin`), picture(url(`${name}-light.avif`)), (plants ??= Promise.all([picture(url('plants.avif')), picture(url('plants-aux.avif')), picture(url('plants-id.webp'), true), get('plants.bin'), get('plants-hull.bin')]))]);
+const [bin, lit, light, own] = await Promise.all([get(`${name}.bin`), get(`${name}-lit.bin`), picture(url(`${name}-light.avif`)), (plants ??= Promise.all([picture(url('plants.avif')), picture(url('plants-aux.avif')), picture(url('plants-id.webp'), true), get('plants.bin'), get('plants-hull.bin'), get('plants-shape.bin')]))]);
 const t = new Int16Array(bin);
 const [n, np] = t;
 const b = new Int16Array(own[3]);
@@ -150,6 +206,7 @@ const [ns, , aw, ah] = b;
 return {
 own: own.slice(0, 3),
 hull: new Uint8Array(own[4]),
+shape: new Int16Array(own[5]), // every leaf's surface, see tools/leaves.py
 light,
 lit: new Uint8Array(lit), // every leaf's light, then whether it is ever seen
 plants: t.subarray(2 + n * 8, 2 + n * 8 + np * 6), // what stands where
@@ -166,7 +223,7 @@ export const loadPlate = (name) => (plates[name] ??= plate(name));
 export async function createWall(canvas, { style = 0, shadow = false, anchor = [0, 0] } = {}) {
 const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, depth: true, powerPreference: 'high-performance' });
 if (!gl) throw new Error('no webgl2');
-const making = programs(gl, [[LEAF_VS, LEAF_FS], [QUAD_VS, BASE_FS], [QUAD_VS, BLUR_FS], [SOLID_VS, SOLID_FS]], 'wall');
+const making = programs(gl, [[LEAF_VS, LEAF_FS], [QUAD_VS, BASE_FS], [QUAD_VS, BLUR_FS], [SOLID_VS, SOLID_FS], [HEIGHT_VS, HEIGHT_FS]], 'wall');
 making.catch(() => {});
 const faces = {};
 let ownTex;
@@ -179,7 +236,7 @@ faces[name] = { ...p, o: await (ownTex ??= put(p.own)), l: await texture(gl, p.l
 return faces[name];
 };
 let face = await upload(STYLE_NAMES[style]);
-const [leafP, baseP, blurP, solidP] = await making;
+const [leafP, baseP, blurP, solidP, heightP] = await making;
 const nx = 2;
 const ny = 4;
 const gridV = [];
@@ -188,6 +245,12 @@ for (let y = 0; y <= ny; y++) for (let x = 0; x <= nx; x++) gridV.push(x / nx, y
 for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
 const a = y * (nx + 1) + x;
 gridI.push(a, a + 1, a + nx + 1, a + 1, a + nx + 2, a + nx + 1);
+}
+const FINE = gridI.length;
+for (let y = 0; y < ny; y += 2) {
+const a = y * (nx + 1);
+const c = a + 2 * (nx + 1);
+gridI.push(a, a + nx, c, a + nx, c + nx, c);
 }
 const buf = (target, data, use = gl.STATIC_DRAW) => {
 const b = gl.createBuffer();
@@ -231,6 +294,12 @@ bind(7, gl.createTexture());
 gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, 5, face.hull.length / 10, 0, gl.RG, gl.UNSIGNED_BYTE, face.hull);
 for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+bind(3, gl.createTexture());
+const shape = new Float32Array((face.shape.length / 6) * 8);
+face.shape.forEach((v, i) => { shape[Math.floor(i / 6) * 8 + (i % 6)] = v / 8; });
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 2, face.shape.length / 6, 0, gl.RGBA, gl.FLOAT, shape);
+for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+const height = { t: gl.createTexture(), f: gl.createFramebuffer(), w: 0, h: 0 };
 const shade = shadow ? [0, 1].map(() => ({ t: gl.createTexture(), f: gl.createFramebuffer() })) : null;
 let shW = 0;
 let shH = 0;
@@ -361,7 +430,7 @@ if (restock) stock();
 const S = ((L.m / CELL) * face.metres) / face.w; // css px to one table px
 const common = ({ p, u }) => {
 gl.useProgram(p);
-for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uCells', 5], ['uShadow', 6], ['uHull', 7], ['uLight', 8]]) if (u[n]) gl.uniform1i(u[n], i);
+for (const [n, i] of [['uTex', 0], ['uAux', 1], ['uId', 2], ['uShape', 3], ['uCells', 5], ['uShadow', 6], ['uHull', 7], ['uLight', 8], ['uH', 9]]) if (u[n]) gl.uniform1i(u[n], i);
 gl.uniform2f(u.uRes, L.w, L.h);
 gl.uniform2f(u.uOrigin, L.ox, L.oy);
 gl.uniform2f(u.uGrid, L.cols, L.rows);
@@ -387,7 +456,7 @@ gl.uniform4f(u.uLamp, W.lamp.x, W.lamp.y, W.lamp.r, W.lamp.on);
 bind(5, cellTex);
 const ripples = W.now() - Math.max(rip[2], rip[5], rip[8], rip[11]) < 3 ? 4 : 0;
 gl.disable(gl.DEPTH_TEST);
-const leaves = (prog, mask) => {
+const leaves = (prog, mask, coarse = false) => {
 const S0 = mask ? edgeSet : ownSet;
 if (!S0.n) return;
 face.o.forEach((t, i) => bind(i, t));
@@ -398,12 +467,44 @@ bind(0, face.o[0]);
 gl.uniform4f(u.uTile, L.ox + (anchor[0] * L.m) / CELL, L.oy + (anchor[1] * L.m) / CELL, face.w * S, face.h * S);
 gl.uniform2f(u.uPlate, face.aw, face.ah);
 if (u.uMask) gl.uniform1f(u.uMask, mask);
+if (u.uDbg) gl.uniform1f(u.uDbg, globalThis.wallDbg || 0); // DEBUG
 gl.uniform1f(u.uN, S0.n + 1);
 gl.uniform1i(u.uRips, ripples);
 gl.uniform2f(u.uShade, mask * 0.62, mask * 0.78);
 gl.bindVertexArray(S0.vao);
-gl.drawElementsInstanced(gl.TRIANGLES, gridI.length, gl.UNSIGNED_SHORT, 0, S0.n);
+if (coarse) gl.drawElementsInstanced(gl.TRIANGLES, gridI.length - FINE, gl.UNSIGNED_SHORT, FINE * 2, S0.n);
+else gl.drawElementsInstanced(gl.TRIANGLES, FINE, gl.UNSIGNED_SHORT, 0, S0.n);
 };
+if (ownSet.n && !globalThis.wallNoH) { // DEBUG flag
+const hw = Math.max(2, Math.round(L.w / 2));
+const hh = Math.max(2, Math.round(L.h / 2));
+bind(9, height.t);
+if (hw !== height.w || hh !== height.h) {
+height.w = hw;
+height.h = hh;
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, hw, hh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+gl.bindFramebuffer(gl.FRAMEBUFFER, height.f);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, height.t, 0);
+}
+bind(9, null);
+gl.bindFramebuffer(gl.FRAMEBUFFER, height.f);
+gl.viewport(0, 0, hw, hh);
+gl.clearColor((WALL + HB) / HR, 0, 0, 1);
+gl.clear(gl.COLOR_BUFFER_BIT);
+gl.enable(gl.BLEND);
+gl.blendEquation(gl.MAX);
+gl.blendFunc(gl.ONE, gl.ONE);
+leaves(heightP, 0, true);
+gl.blendEquation(gl.FUNC_ADD);
+gl.disable(gl.BLEND);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+bind(9, height.t);
+gl.generateMipmap(gl.TEXTURE_2D);
+gl.clearColor(0, 0, 0, 0);
+}
 const shadows = shade && edgeSet.n > 0;
 if (shadows) {
 const sw = Math.max(2, Math.round(L.w / 5));
